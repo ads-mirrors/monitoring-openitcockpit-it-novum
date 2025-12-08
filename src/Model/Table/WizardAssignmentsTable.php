@@ -520,7 +520,15 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
-            ]
+            ],
+            'netapp'                       => [
+                'type_id'     => 'netapp',
+                'title'       => __('NetApp'),
+                'description' => __('Used to check NetApp devices.'),
+                'image'       => 'netapp.svg',
+                'category'    => ['linux', 'network', 'hardware'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];
