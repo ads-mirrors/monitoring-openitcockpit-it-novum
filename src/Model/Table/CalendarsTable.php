@@ -121,6 +121,13 @@ class CalendarsTable extends Table {
             ->scalar('description')
             ->allowEmptyString('description');
 
+        $validator
+            ->scalar('uuid')
+            ->maxLength('uuid', 37)
+            ->requirePresence('uuid', 'create')
+            ->allowEmptyString('uuid', null, false)
+            ->add('uuid', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
+
         return $validator;
     }
 
