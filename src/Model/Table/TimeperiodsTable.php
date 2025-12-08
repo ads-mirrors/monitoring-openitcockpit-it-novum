@@ -965,9 +965,14 @@ class TimeperiodsTable extends Table {
             keyField: 'id',
             valueField: 'name')
             ->where(['Timeperiods.container_id IN' => $containerIds])
-            ->whereNotInList('Timeperiods.id', [$excludedTimeperiodId])
-            ->where(['Timeperiods.exclude_timeperiod_id !=' => $excludedTimeperiodId])
-            ->disableHydration();
+            ->whereNotInList('Timeperiods.id', [$excludedTimeperiodId]);
+
+        $query->where([
+            'OR' => [
+                $query->newExpr()->isNull('Timeperiods.exclude_timeperiod_id'),
+                ['Timeperiods.exclude_timeperiod_id !=' => $excludedTimeperiodId]
+            ]
+        ])->disableHydration();
         return $this->emptyArrayIfNull($query->toArray());
     }
 
@@ -1006,4 +1011,42 @@ class TimeperiodsTable extends Table {
 
         return $extDataForChangelog;
     }
+
+    /**
+     * @param int $timeperiodId
+     * @param array $MY_RIGHTS
+     * @param bool $enableHydration
+     * @return array
+     */
+    public function getExcludedTimeperiodsByTimeperiodId($timeperiodId, $MY_RIGHTS = [], $enableHydration = true) {
+        $query = $this->find('all');
+        $query->select([
+            'Timeperiods.id',
+            'Timeperiods.name'
+        ]);
+
+        $query->where([
+            'Timeperiods.exclude_timeperiod_id' => $timeperiodId,
+        ]);
+
+        if (!empty($MY_RIGHTS)) {
+            $query->where([
+                'Timeperiods.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->enableHydration($enableHydration);
+        $query->orderBy([
+            'Timeperiods.name' => 'asc',
+            'Timeperiods.id'   => 'asc'
+        ]);
+        $query->groupBy([
+            'Timeperiods.id'
+        ]);
+
+        $result = $query->all();
+
+        return $this->emptyArrayIfNull($result->toArray());
+    }
+
 }

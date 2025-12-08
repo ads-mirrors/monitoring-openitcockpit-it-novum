@@ -477,7 +477,8 @@ class TimeperiodsController extends AppController {
             'Servicedependencies' => [],
             'Serviceescalations'  => [],
             'Services'            => [],
-            'Servicetemplates'    => []
+            'Servicetemplates'    => [],
+            'Timeperiods'         => []
         ];
 
         $MY_RIGHTS = $this->MY_RIGHTS;
@@ -536,6 +537,11 @@ class TimeperiodsController extends AppController {
         $ServicetemplatesTable = TableRegistry::getTableLocator()->get('Servicetemplates');
         $objects['Servicetemplates'] = $ServicetemplatesTable->getServicetemplatesByTimeperiodId($id, $MY_RIGHTS, false);
 
+        //Check if the time period is used by time periods as excluded time period
+        /** @var TimeperiodsTable $TimeperiodsTable */
+        $TimeperiodsTable = TableRegistry::getTableLocator()->get('Timeperiods');
+        $objects['Timeperiods'] = $TimeperiodsTable->getExcludedTimeperiodsByTimeperiodId($id, $MY_RIGHTS, false);
+
         //check if the time period is used in auto reports
         if (Plugin::isLoaded('AutoreportModule')) {
             $objects['Autoreports'] = [];
@@ -556,6 +562,7 @@ class TimeperiodsController extends AppController {
         $total += sizeof($objects['Serviceescalations']);
         $total += sizeof($objects['Services']);
         $total += sizeof($objects['Servicetemplates']);
+        $total += sizeof($objects['Timeperiods']);
 
 
         $this->set('timeperiod', $timeperiod->toArray());
