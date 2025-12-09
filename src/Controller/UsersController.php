@@ -1332,21 +1332,15 @@ class UsersController extends AppController {
     }
 
     public function listToXlsx() {
-        try {
-            $UXE = new UsersXlsxExport($this->MY_RIGHTS, $this->hasRootPrivileges);
+        $UXE = new UsersXlsxExport($this->MY_RIGHTS, $this->hasRootPrivileges);
 
-            $filePath = TMP . 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx';
+        $filePath = TMP . 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx';
 
-            $UXE->export($filePath);
-            // Download
-            return $this->response->withFile($filePath, [
-                'download' => true,
-                'name'     => 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx',
-            ]);
-        } catch (\Exception $e) {
-            $this->response = $this->response->withStatus(500);
-            $this->set('error', $e->getMessage());
-            $this->viewBuilder()->setOption('serialize', ['error']);
-        }
+        $UXE->export($filePath);
+        // Download
+        return $this->response->withFile($filePath, [
+            'download' => true,
+            'name'     => 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx',
+        ]);
     }
 }
