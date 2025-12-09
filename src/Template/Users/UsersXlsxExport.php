@@ -53,10 +53,20 @@ final class UsersXlsxExport {
     private array $Users;
 
     private array $Containers;
-
+    private array $ContainerRoles;
     private array $UserRoles;
 
     private array $Permissions;
+
+    /**
+     * I am the container permission matrix. I will look like this:
+     * $this->ContainerPermissions = [
+     *     42 => [  // CONTAINER ID
+     *         13 => 2  // USER ID => PERMISSION LEVEL
+     *     ]
+     * ]
+     */
+    private array $ContainerPermissions;
 
     public function __construct(array $MY_RIGHTS, bool $hasRootPrivileges) {
         $this->MY_RIGHTS = $MY_RIGHTS;
@@ -93,8 +103,6 @@ final class UsersXlsxExport {
     }
 
     private function buildUserRolesData(): void {
-        // Till now this is mock data.
-
         $this->UserRoles = $this->UsergroupsTable->find()
             ->contain([
                 'Aros'       => [
@@ -169,86 +177,47 @@ final class UsersXlsxExport {
         }
     }
 
+
     private function buildContainersData(): void {
-        $this->Containers = [
-            1 => [
-                'name'  => '/root',
-                'id'    => 12,
-                'Users' => [
-                    1 => 'RW',
-                    2 => 'R',
-                    3 => 'RW',
-                    4 => 'R',
-                    5 => null,
-                ]
-            ],
-            2 => [
-                'name'  => '/root/openITCOCKPIT',
-                'id'    => 12,
-                'Users' => [
-                    1 => 'RW',
-                    2 => 'R',
-                    3 => 'RW',
-                    4 => 'R',
-                    5 => null,
-                ]
-            ],
-            3 => [
-                'name'  => '/root/openITCOCKPIT/Berlin',
-                'id'    => 12,
-                'Users' => [
-                    1 => 'RW',
-                    2 => 'R',
-                    3 => 'RW',
-                    4 => 'R',
-                    5 => null,
-                ]
-            ],
-            4 => [
-                'name'  => '/root/openITCOCKPIT/Frankfurt',
-                'id'    => 12,
-                'Users' => [
-                    1 => 'RW',
-                    2 => 'R',
-                    3 => 'RW',
-                    4 => 'R',
-                    5 => null,
-                ]
-            ],
-            5 => [
-                'name'  => '/root/openITCOCKPIT/Fulda',
-                'id'    => 12,
-                'Users' => [
-                    1 => 'RW',
-                    2 => 'R',
-                    3 => 'RW',
-                    4 => 'R',
-                    5 => null,
-                ]
-            ],
-            6 => [
-                'name'  => '/root/openITCOCKPIT/Fulda/Demo',
-                'id'    => 12,
-                'Users' => [
-                    1 => 'RW',
-                    2 => 'R',
-                    3 => 'RW',
-                    4 => 'R',
-                    5 => null,
-                ]
-            ],
-            7 => [
-                'name'  => '/root/openITCOCKPIT/Hamburg',
-                'id'    => 12,
-                'Users' => [
-                    1 => 'RW',
-                    2 => 'R',
-                    3 => 'RW',
-                    4 => 'R',
-                    5 => null,
-                ]
-            ]
-        ];
+        if ($this->hasRootPrivileges === true) {
+            $this->Containers = $this->ContainersTable->find()
+                ->where(['Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE]])
+                ->disableHydration()
+                ->toArray();
+        } else {
+            $this->Containers = $this->ContainersTable->find()
+                ->andWhere([
+                    'Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE],
+                    'Containers.id IN '              => $this->MY_RIGHTS
+                ])
+                ->disableHydration()
+                ->toArray();
+        }
+
+        $this->ContainerRoles = $this
+            ->UsercontainerrolesTable
+            ->find()
+            ->contain(['Containers', 'Users'])
+            ->toArray();
+
+        $this->ContainerPermissions = [];
+
+
+        // Load permissions from Container Roles
+        foreach ($this->ContainerRoles as $ContainerRoles) {
+            foreach ($ContainerRoles['users'] as $User) {
+                foreach ($ContainerRoles['containers'] as $Container) {
+                    $this->ContainerPermissions[(int)$Container['id']][(int)$User['id']] = (int)$Container['_joinData']['permission_level'];
+                }
+            }
+        }
+
+        // Override explicitly given permissions from Users
+        foreach ($this->Users as $User) {
+            foreach ($User['containers'] as $UserContainer) {
+                $this->ContainerPermissions[(int)$UserContainer['id']][(int)$User['id']] = (int)$UserContainer['_joinData']['permission_level'];
+            }
+        }
     }
 
     /**
@@ -379,8 +348,13 @@ final class UsersXlsxExport {
             $sheet->setCellValue(self::getCellPosition($col++, $row), $Container['id']);
             $sheet->setCellValue(self::getCellPosition($col++, $row), $Container['name']);
             foreach ($this->Users as $User) {
-                $permission = $Container['Users'][$User['id']] ?? '';
-                $sheet->setCellValue(self::getCellPosition($col++, $row), $permission);
+                $permission = (int)$this->ContainerPermissions[$Container['id']][$User['id']];
+                $permissionText = match ($permission) {
+                    1 => 'R',
+                    2 => 'RW',
+                    default => '',
+                };
+                $sheet->setCellValue(self::getCellPosition($col++, $row), $permissionText);
             }
         }
     }
