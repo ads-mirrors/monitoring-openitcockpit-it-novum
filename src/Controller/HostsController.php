@@ -151,7 +151,7 @@ class HostsController extends AppController {
         }
 
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $ContainersTable ContainersTable */
@@ -497,7 +497,7 @@ class HostsController extends AppController {
      */
     public function add() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         if ($this->request->is('post')) {
@@ -616,7 +616,7 @@ class HostsController extends AppController {
      */
     public function edit($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HostsTable HostsTable */
@@ -849,7 +849,7 @@ class HostsController extends AppController {
 
     public function sharing($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HostsTable HostsTable */
@@ -969,7 +969,7 @@ class HostsController extends AppController {
 
     public function edit_details($host_id = null) {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $User = new User($this->getUser());
         /** @var HostsTable $HostsTable */
@@ -1432,7 +1432,7 @@ class HostsController extends AppController {
      */
     public function deactivate($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HostsTable HostsTable */
@@ -1496,7 +1496,7 @@ class HostsController extends AppController {
      */
     public function enable($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HostsTable HostsTable */
@@ -1651,7 +1651,7 @@ class HostsController extends AppController {
      */
     public function copy($id = null) {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
@@ -3625,7 +3625,7 @@ class HostsController extends AppController {
      */
     public function usedBy($id = null): void {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HostsTable HostsTable */
