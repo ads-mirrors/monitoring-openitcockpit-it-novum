@@ -520,7 +520,15 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
-            ]
+            ],
+            'palo-alto-firewall'           => [
+                'type_id'     => 'palo-alto-firewall',
+                'title'       => __('Palo Alto Firewall'),
+                'description' => __('Used to check Palo Alto Firewall devices'),
+                'image'       => 'network.png',
+                'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];
