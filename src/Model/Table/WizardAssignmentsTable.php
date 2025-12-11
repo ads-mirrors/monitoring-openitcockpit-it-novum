@@ -520,7 +520,15 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
-            ]
+            ],
+            'fujitsu-eternus-tape-library' => [
+                'type_id'     => 'fujitsu-eternus-tape-library',
+                'title'       => __('Fujitsu Eternus Tape Library'),
+                'description' => __('Used to check Fujitsu Eternus Tape Library devices'),
+                'image'       => 'fujitsu.svg',
+                'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];
