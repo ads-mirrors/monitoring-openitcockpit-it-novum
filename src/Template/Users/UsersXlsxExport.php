@@ -43,20 +43,13 @@ final class UsersXlsxExport {
     private array $MY_RIGHTS;
     private bool $hasRootPrivileges;
     private Spreadsheet $Spreadsheet;
-    private UsersTable $UsersTable;
     private UsercontainerrolesTable $UsercontainerrolesTable;
-    private ContainersTable $ContainersTable;
     private UsergroupsTable $UsergroupsTable;
-    private AcosTable $AcosTable;
-    private SystemsettingsTable $SystemsettingsTable;
-
-    private array $Users;
-
-    private array $Containers;
-    private array $ContainerRoles;
-    private array $UserRoles;
-
-    private array $Permissions;
+    private array $Users = [];
+    private array $Containers = [];
+    private array $ContainerRoles = [];
+    private array $UserRoles = [];
+    private array $Permissions = [];
 
     /**
      * I am the container permission matrix. I will look like this:
@@ -73,12 +66,8 @@ final class UsersXlsxExport {
         $this->hasRootPrivileges = $hasRootPrivileges;
         $this->Spreadsheet = new Spreadsheet();
 
-        $this->SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
         $this->UsercontainerrolesTable = TableRegistry::getTableLocator()->get('Usercontainerroles');
-        $this->UsersTable = TableRegistry::getTableLocator()->get('Users');
-        $this->ContainersTable = TableRegistry::getTableLocator()->get('Containers');
         $this->UsergroupsTable = TableRegistry::getTableLocator()->get('Usergroups');
-        $this->AcosTable = TableRegistry::getTableLocator()->get('Acl.Acos');
     }
 
     /**
@@ -97,127 +86,8 @@ final class UsersXlsxExport {
         $this->UserRolesSheet();
         $this->ContainersSheet();
 
-
         $writer = new Xlsx($this->Spreadsheet);
         $writer->save($fileName);
-    }
-
-    private function buildUserRolesData(): void {
-        $this->UserRoles = $this->UsergroupsTable->find()
-            ->contain([
-                'Aros'       => [
-                    'Acos'
-                ],
-                'Ldapgroups' => [
-                    'fields' => [
-                        'Ldapgroups.id'
-                    ]
-                ]
-            ])
-            ->all()->toArray();
-
-        $acos = $this->AcosTable->find('threaded')
-            ->disableHydration()
-            ->all();
-        $AclDependencies = new AclDependencies();
-        $AclDList = $AclDependencies->filterAcosForFrontend($acos->toArray());
-        foreach ($AclDList as $AclD) {
-            if ($AclD['children']) {
-                $this->addPermissionRow($AclD);
-            }
-        }
-    }
-
-    private function buildUserData(): void {
-        $all_tmp_users = $this->UsersTable->getUsersExport($this->MY_RIGHTS);
-        $LdapClient = $this->getLdapClient();
-        foreach ($all_tmp_users as $_user) {
-            /** @var User $_user */
-            $user = $_user->toArray();
-
-
-            if ($LdapClient && !empty($user['samaccountname'])) {
-                $ldapUser = $LdapClient->getUser($user['samaccountname'], true);
-                if (!$ldapUser) {
-                    continue;
-                }
-
-
-                $ldapUser['userContainerRoleContainerPermissionsLdap'] = $this->UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
-                    $ldapUser['memberof']
-                );
-
-                $permissions = [];
-                foreach ($ldapUser['userContainerRoleContainerPermissionsLdap'] as $userContainerRole) {
-                    foreach ($userContainerRole['containers'] as $container) {
-                        if (isset($permissions[$container['id']])) {
-                            //Container permission is already set.
-                            //Only overwrite it, if it is a WRITE_RIGHT
-                            if ($container['_joinData']['permission_level'] === WRITE_RIGHT) {
-                                $permissions[$container['id']] = $container;
-                            }
-                        } else {
-                            //Container is not yet in permissions - add it
-                            $permissions[$container['id']] = $container;
-                        }
-                        $permissions[$container['id']]['user_roles'][$userContainerRole['id']] = [
-                            'id'   => $userContainerRole['id'],
-                            'name' => $userContainerRole['name']
-                        ];
-                    }
-                }
-                $ldapUser['userContainerRoleContainerPermissionsLdap'] = $permissions;
-                // Load matching user role (Adminisgtrator, Viewer, etc...)
-                $ldapUser['UserRoleThroughLdap'] = $this->UsergroupsTable->getUsergroupByLdapUserMemberOf($ldapUser['memberof']);
-
-                $user = array_merge($user, $ldapUser);
-            }
-            $user['name'] = "{$user['firstname']} {$user['lastname']}";
-            $this->Users[] = $user;
-        }
-    }
-
-
-    private function buildContainersData(): void {
-        if ($this->hasRootPrivileges === true) {
-            $this->Containers = $this->ContainersTable->find()
-                ->where(['Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE]])
-                ->disableHydration()
-                ->toArray();
-        } else {
-            $this->Containers = $this->ContainersTable->find()
-                ->andWhere([
-                    'Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE],
-                    'Containers.id IN '              => $this->MY_RIGHTS
-                ])
-                ->disableHydration()
-                ->toArray();
-        }
-
-        $this->ContainerRoles = $this
-            ->UsercontainerrolesTable
-            ->find()
-            ->contain(['Containers', 'Users'])
-            ->toArray();
-
-        $this->ContainerPermissions = [];
-
-
-        // Load permissions from Container Roles
-        foreach ($this->ContainerRoles as $ContainerRoles) {
-            foreach ($ContainerRoles['users'] as $User) {
-                foreach ($ContainerRoles['containers'] as $Container) {
-                    $this->ContainerPermissions[(int)$Container['id']][(int)$User['id']] = (int)$Container['_joinData']['permission_level'];
-                }
-            }
-        }
-
-        // Override explicitly given permissions from Users
-        foreach ($this->Users as $User) {
-            foreach ($User['containers'] as $UserContainer) {
-                $this->ContainerPermissions[(int)$UserContainer['id']][(int)$User['id']] = (int)$UserContainer['_joinData']['permission_level'];
-            }
-        }
     }
 
     /**
@@ -260,6 +130,65 @@ final class UsersXlsxExport {
     }
 
     /**
+     * I will build the data for the Users Sheet.
+     * @return void
+     */
+    private function buildUserData(): void {
+        /** @var UsersTable $UsersTable */
+        $UsersTable = TableRegistry::getTableLocator()->get('Users');
+        $all_tmp_users = $UsersTable->getUsersExport($this->MY_RIGHTS);
+        $LdapClient = $this->getLdapClient();
+        foreach ($all_tmp_users as $_user) {
+            /** @var User $_user */
+            $user = $_user->toArray();
+
+            if ($LdapClient && !empty($user['samaccountname'])) {
+                $ldapUser = $LdapClient->getUser($user['samaccountname'], true);
+                if (!$ldapUser) {
+                    continue;
+                }
+
+                $ldapUser = $this->fetchLdapUserAttributes($ldapUser);
+                $user = array_merge($user, $ldapUser);
+            }
+            $user['name'] = "{$user['firstname']} {$user['lastname']}";
+            $this->Users[] = $user;
+        }
+    }
+
+    private function fetchLdapUserAttributes(array $ldapUser): array {
+        $ldapUser['userContainerRoleContainerPermissionsLdap'] = $this->UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
+            $ldapUser['memberof']
+        );
+
+        $permissions = [];
+        foreach ($ldapUser['userContainerRoleContainerPermissionsLdap'] as $userContainerRole) {
+            foreach ($userContainerRole['containers'] as $container) {
+                if (isset($permissions[$container['id']])) {
+                    //Container permission is already set.
+                    //Only overwrite it, if it is a WRITE_RIGHT
+                    if ($container['_joinData']['permission_level'] === WRITE_RIGHT) {
+                        $permissions[$container['id']] = $container;
+                    }
+                } else {
+                    //Container is not yet in permissions - add it
+                    $permissions[$container['id']] = $container;
+                }
+                $permissions[$container['id']]['user_roles'][$userContainerRole['id']] = [
+                    'id'   => $userContainerRole['id'],
+                    'name' => $userContainerRole['name']
+                ];
+            }
+        }
+        $ldapUser['userContainerRoleContainerPermissionsLdap'] = $permissions;
+
+        // Load matching user role (Adminisgtrator, Viewer, etc...)
+        $ldapUser['UserRoleThroughLdap'] = $this->UsergroupsTable->getUsergroupByLdapUserMemberOf($ldapUser['memberof']);
+
+        return $ldapUser;
+    }
+
+    /**
      * I will build the entire Sheet "User Roles".
      * @return void
      */
@@ -296,30 +225,36 @@ final class UsersXlsxExport {
         }
     }
 
-    private function addPermissionRow(array $Permission, string $controller = ''): void {
-        if ($Permission['alias'] === 'controllers') {
-            foreach ($Permission['children'] as $Child) {
-                $this->addPermissionRow($Child);
+    /**
+     * I will build the data for the User Roles Sheet.
+     * @return void
+     */
+    private function buildUserRolesData(): void {
+        $this->UserRoles = $this->UsergroupsTable->find()
+            ->contain([
+                'Aros'       => [
+                    'Acos'
+                ],
+                'Ldapgroups' => [
+                    'fields' => [
+                        'Ldapgroups.id'
+                    ]
+                ]
+            ])
+            ->all()->toArray();
+
+        /** @var AcosTable $AcosTable */
+        $AcosTable = TableRegistry::getTableLocator()->get('Acl.Acos');
+        $acos = $AcosTable->find('threaded')
+            ->disableHydration()
+            ->all();
+        $AclDependencies = new AclDependencies();
+        $AclDList = $AclDependencies->filterAcosForFrontend($acos->toArray());
+        foreach ($AclDList as $AclD) {
+            if ($AclD['children']) {
+                $this->addPermissionRow($AclD);
             }
-            return;
         }
-        if ($Permission['children']) {
-            foreach ($Permission['children'] as $Child) {
-                $this->addPermissionRow($Child, $Permission['alias']);
-            }
-            return;
-        }
-        $this->Permissions [] = [
-            'module'      => '',
-            'id'          => $Permission['id'],
-            'controller'  => $controller,
-            'action'      => $Permission['alias'],
-            'permissions' => [
-                1 => true,
-                2 => false,
-                3 => true
-            ]
-        ];
     }
 
     /**
@@ -328,6 +263,7 @@ final class UsersXlsxExport {
      */
     private function ContainersSheet(): void {
         $this->buildContainersData();
+        $this->buildPermissionsMatrix();
         $sheet = $this->Spreadsheet->createSheet();
         $sheet->setTitle('Containers');
         $row = 0;
@@ -360,6 +296,67 @@ final class UsersXlsxExport {
     }
 
     /**
+     * I will build the data for the Containers Sheet.
+     * @return void
+     */
+    private function buildContainersData(): void {
+        /** @var ContainersTable $ContainersTable */
+        $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
+        if ($this->hasRootPrivileges === true) {
+            $this->Containers = $ContainersTable->find()
+                ->where(['Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE]])
+                ->disableHydration()
+                ->toArray();
+        } else {
+            $this->Containers = $ContainersTable->find()
+                ->andWhere([
+                    'Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE],
+                    'Containers.id IN '              => $this->MY_RIGHTS
+                ])
+                ->disableHydration()
+                ->toArray();
+        }
+
+        foreach ($this->Containers as &$Container) {
+            $Container['name'] = '/' . $ContainersTable->treePath($Container['id'], '/');
+        }
+        usort($this->Containers, static function (array $a, array $b) {
+            return strcmp($a['name'], $b['name']);
+        });
+
+        $this->ContainerRoles = $this
+            ->UsercontainerrolesTable
+            ->find()
+            ->contain(['Containers', 'Users'])
+            ->toArray();
+    }
+
+    /**
+     * I will traverse ContainerRoles and Users to build the ContainerPermissions matrix.
+     * @return void
+     * @todo LDAP Permissions
+     */
+    private function buildPermissionsMatrix(): void {
+        $this->ContainerPermissions = [];
+
+        // Load permissions from Container Roles
+        foreach ($this->ContainerRoles as $ContainerRoles) {
+            foreach ($ContainerRoles['users'] as $User) {
+                foreach ($ContainerRoles['containers'] as $Container) {
+                    $this->ContainerPermissions[(int)$Container['id']][(int)$User['id']] = (int)$Container['_joinData']['permission_level'];
+                }
+            }
+        }
+
+        // Override explicitly given permissions from Users
+        foreach ($this->Users as $User) {
+            foreach ($User['containers'] as $UserContainer) {
+                $this->ContainerPermissions[(int)$UserContainer['id']][(int)$User['id']] = (int)$UserContainer['_joinData']['permission_level'];
+            }
+        }
+    }
+
+    /**
      * I will return the Excel Cell Position like A1, B2, C3, ...
      * @param int $col
      * @param int $row
@@ -381,7 +378,9 @@ final class UsersXlsxExport {
      */
     private function getLdapClient(): LdapClient|null {
         try {
-            return LdapClient::fromSystemsettings($this->SystemsettingsTable->findAsArraySection('FRONTEND'));
+            /** @var SystemsettingsTable $SystemSettingsTable */
+            $SystemSettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
+            return LdapClient::fromSystemsettings($SystemSettingsTable->findAsArraySection('FRONTEND'));
         } catch (\Exception $e) {
             return null;
         }
@@ -400,5 +399,20 @@ final class UsersXlsxExport {
             }
         }
         return false;
+    }
+
+    private function addPermissionRow(array $Permission, string $controller = ''): void {
+        if ($Permission['children']) {
+            foreach ($Permission['children'] as $Child) {
+                $this->addPermissionRow($Child, $Permission['alias']);
+            }
+            return;
+        }
+        $this->Permissions[] = [
+            'module'     => '',
+            'id'         => $Permission['id'],
+            'controller' => $controller,
+            'action'     => $Permission['alias']
+        ];
     }
 }
