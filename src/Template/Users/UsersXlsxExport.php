@@ -59,7 +59,7 @@ final class UsersXlsxExport {
      *     ]
      * ]
      */
-    private array $ContainerPermissions;
+    private array $ContainerPermissions = [];
 
     public function __construct(array $MY_RIGHTS, bool $hasRootPrivileges) {
         $this->MY_RIGHTS = $MY_RIGHTS;
@@ -337,7 +337,15 @@ final class UsersXlsxExport {
      * @todo LDAP Permissions
      */
     private function buildPermissionsMatrix(): void {
-        $this->ContainerPermissions = [];
+        foreach ($this->Users as $User) {
+            foreach ($User['usercontainerroles'] as $UCR) {
+                if ($UCR['_joinData']['through_ldap']) {
+                    foreach ($UCR['containers'] as $Container) {
+                        $this->ContainerPermissions[(int)$Container['id']][(int)$User['id']] = (int)$Container['_joinData']['permission_level'];
+                    }
+                }
+            }
+        }
 
         // Load permissions from Container Roles
         foreach ($this->ContainerRoles as $ContainerRoles) {
