@@ -37,6 +37,7 @@ use Cake\ORM\Exception\MissingEntityException;
 use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Ldap\LdapClient;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 final class UsersXlsxExport {
@@ -120,10 +121,12 @@ final class UsersXlsxExport {
             $sheet->setCellValue(self::getCellPosition($col++, $row), "{$UserId}");
             $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['firstname']}");
             $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['lastname']}");
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['email']}");
+            $sheet->setCellValue(self::getCellPosition($col, $row), "{$User['email']}");
+            $sheet->getCell(self::getCellPosition($col++, $row))->getHyperlink()->setUrl('mailto:' . $User['email']);
             $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['usergroup']['id']}");
             $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['usergroup']['name']}");
-            $sheet->setCellValue(self::getCellPosition($col++, $row), $User['samaccountname'] ? 'YES' : 'NO');
+            $sheet->setCellValue(self::getCellPosition($col, $row), $User['samaccountname'] ? 'YES' : 'NO');
+            $sheet->getStyle(self::getCellPosition($col++, $row))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->setCellValue(self::getCellPosition($col++, $row), $User['UserRoleThroughLdap']['id'] ?? '');
             $sheet->setCellValue(self::getCellPosition($col++, $row), $User['UserRoleThroughLdap']['name'] ?? '');
         }
@@ -219,8 +222,16 @@ final class UsersXlsxExport {
             $sheet->setCellValue(self::getCellPosition($col++, $row), "$moduleControllerString");
             $sheet->setCellValue(self::getCellPosition($col++, $row), "{$Permission['action']}");
             foreach ($this->UserRoles as $UserRole) {
-                $cellValue = $this->userRoleHasPermission($UserRole, $Permission) ? 'YES' : 'NO';
-                $sheet->setCellValue(self::getCellPosition($col++, $row), $cellValue);
+                $colour = 'FFFF0000';
+                $cellValue = 'NO';
+                if ($this->userRoleHasPermission($UserRole, $Permission)) {
+                    $colour = 'FF00CC00';
+                    $cellValue = 'YES';
+                }
+                $sheet->setCellValue(self::getCellPosition($col, $row), $cellValue);
+                $style = $sheet->getStyle(self::getCellPosition($col++, $row));
+                $style->getFont()->getColor()->setARGB($colour);
+                $style->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             }
         }
     }
@@ -290,7 +301,9 @@ final class UsersXlsxExport {
                     2 => 'RW',
                     default => '',
                 };
-                $sheet->setCellValue(self::getCellPosition($col++, $row), $permissionText);
+
+                $sheet->setCellValue(self::getCellPosition($col, $row), $permissionText);
+                $sheet->getStyle(self::getCellPosition($col++, $row))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             }
         }
     }
@@ -334,7 +347,6 @@ final class UsersXlsxExport {
     /**
      * I will traverse ContainerRoles and Users to build the ContainerPermissions matrix.
      * @return void
-     * @todo LDAP Permissions
      */
     private function buildPermissionsMatrix(): void {
         foreach ($this->Users as $User) {
