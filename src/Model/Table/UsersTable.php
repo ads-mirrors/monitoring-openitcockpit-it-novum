@@ -1945,6 +1945,45 @@ class UsersTable extends Table {
      * @return array
      */
     public function getUsersExport($MY_RIGHTS = []) {
+        //Get all user ids where container assigned are made directly at the user
+        $query = $this->find()
+            ->select([
+                'Users.id'
+            ])
+            ->matching('Containers')
+            ->groupBy([
+                'Users.id'
+            ])
+            ->disableHydration();
+
+        if (!empty($MY_RIGHTS)) {
+            $query->where([
+                'ContainersUsersMemberships.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+        $userIds = Hash::extract($query->toArray(), '{n}.id');
+
+        //Get all user ids where container assigned are made through an user container role
+        $query = $this->find()
+            ->select([
+                'Users.id'
+            ])
+            ->matching('Usercontainerroles.Containers')
+            ->groupBy([
+                'Users.id'
+            ])
+            ->disableHydration();
+
+        if (!empty($MY_RIGHTS)) {
+            $query->where([
+                'Containers.id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $userIdsThroughContainerRoles = Hash::extract($query->toArray(), '{n}.id');
+
+        $userIds = array_unique(array_merge($userIds, $userIdsThroughContainerRoles));
+
 
         $query = $this->find();
         $query->select([
@@ -1974,6 +2013,12 @@ class UsersTable extends Table {
                 ]
             ]);
 
+
+        if (!empty($userIds)) {
+            $query->where([
+                'Users.id IN' => $userIds
+            ]);
+        }
         $query->orderBy(
             ['Users.id' => 'asc']
         );
