@@ -300,17 +300,30 @@ final class UsersXlsxExport {
             $sheet->setCellValue(self::getCellPosition($col++, $row), $Container['id']);
             $sheet->setCellValue(self::getCellPosition($col++, $row), $Container['name']);
             foreach ($this->Users as $User) {
-                $permission = (int)$this->ContainerPermissions[$Container['id']][$User['id']];
-                $permissionText = match ($permission) {
-                    1 => 'R',
-                    2 => 'RW',
-                    default => '',
-                };
+                $permissionText = $this->getPermissionLevel($Container, $User);
 
                 $sheet->setCellValue(self::getCellPosition($col, $row), $permissionText);
                 $sheet->getStyle(self::getCellPosition($col++, $row))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             }
         }
+    }
+
+    private array $ContainerTree = [];
+
+    private function getPermissionLevel(array $Container, array $User): string {
+        // Does the user have the permission to the container directly?
+        $permission = (int)$this->ContainerPermissions[$Container['id']][$User['id']];
+
+        // Traverse the container nodes upwards to check for inherited permissions
+        foreach ($this->ContainerTree as $Container) {
+            continue;
+        }
+
+        return match ($permission) {
+            1 => 'R',
+            2 => 'RW',
+            default => '',
+        };
     }
 
     /**
@@ -337,13 +350,23 @@ final class UsersXlsxExport {
 
         foreach ($this->Containers as &$Container) {
             $Container['name'] = '/' . $ContainersTable->treePath($Container['id'], '/');
+
+            $this->buildContainerTree($Container);
         }
 
+        var_dump($this->ContainerTree);
+        die();
         $this->ContainerRoles = $this
             ->UsercontainerrolesTable
             ->find()
             ->contain(['Containers', 'Users'])
             ->toArray();
+    }
+
+    private function buildContainerTree(array $Container): void {
+        if ($Container['parent_id']) {
+            $this->ContainerTree[$Container['parent_id']] = $Container['id'];
+        }
     }
 
     /**
@@ -365,6 +388,8 @@ final class UsersXlsxExport {
         foreach ($this->ContainerRoles as $ContainerRoles) {
             foreach ($ContainerRoles['users'] as $User) {
                 foreach ($ContainerRoles['containers'] as $Container) {
+                    var_dump($Container);
+                    die(__FILE__ . '::' . __LINE__);
                     $this->ContainerPermissions[(int)$Container['id']][(int)$User['id']] = (int)$Container['_joinData']['permission_level'];
                 }
             }
@@ -373,6 +398,8 @@ final class UsersXlsxExport {
         // Override explicitly given permissions from Users
         foreach ($this->Users as $User) {
             foreach ($User['containers'] as $UserContainer) {
+                var_dump($UserContainer);
+                die(__FILE__ . '::' . __LINE__);
                 $this->ContainerPermissions[(int)$UserContainer['id']][(int)$User['id']] = (int)$UserContainer['_joinData']['permission_level'];
             }
         }
