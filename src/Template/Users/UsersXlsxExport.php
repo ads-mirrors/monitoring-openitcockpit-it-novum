@@ -338,9 +338,6 @@ final class UsersXlsxExport {
         foreach ($this->Containers as &$Container) {
             $Container['name'] = '/' . $ContainersTable->treePath($Container['id'], '/');
         }
-        usort($this->Containers, static function (array $a, array $b) {
-            return strcmp($a['name'], $b['name']);
-        });
 
         $this->ContainerRoles = $this
             ->UsercontainerrolesTable
