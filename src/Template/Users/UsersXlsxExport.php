@@ -51,6 +51,7 @@ final class UsersXlsxExport {
     private array $ContainerRoles = [];
     private array $UserRoles = [];
     private array $Permissions = [];
+    private array $Modules = [];
 
     /**
      * I am the container permission matrix. I will look like this:
@@ -107,9 +108,9 @@ final class UsersXlsxExport {
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'First name');
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'Last name');
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'Mail');
-        $sheet->setCellValue(self::getCellPosition($col++, $row), 'User Role ID');
+        $sheet->setCellValue(self::getCellPosition($col++, $row), 'User role ID');
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'User role / Fallback User role');
-        $sheet->setCellValue(self::getCellPosition($col++, $row), 'Is LDAP User');
+        $sheet->setCellValue(self::getCellPosition($col++, $row), 'LDAP User');
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'User role through LDAP ID');
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'User role through LDAP');
 
@@ -118,17 +119,17 @@ final class UsersXlsxExport {
             $row++;
             $col = 0;
 
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$UserId}");
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['firstname']}");
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['lastname']}");
-            $sheet->setCellValue(self::getCellPosition($col, $row), "{$User['email']}");
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($UserId));
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['firstname']));
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['lastname']));
+            $sheet->setCellValue(self::getCellPosition($col, $row), h($User['email']));
             $sheet->getCell(self::getCellPosition($col++, $row))->getHyperlink()->setUrl('mailto:' . $User['email']);
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['usergroup']['id']}");
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['usergroup']['name']}");
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['usergroup']['id']));
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['usergroup']['name']));
             $sheet->setCellValue(self::getCellPosition($col, $row), $User['samaccountname'] ? 'YES' : 'NO');
             $sheet->getStyle(self::getCellPosition($col++, $row))->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->setCellValue(self::getCellPosition($col++, $row), $User['UserRoleThroughLdap']['id'] ?? '');
-            $sheet->setCellValue(self::getCellPosition($col++, $row), $User['UserRoleThroughLdap']['name'] ?? '');
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['UserRoleThroughLdap']['id'] ?? ''));
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['UserRoleThroughLdap']['name'] ?? ''));
         }
     }
 
@@ -206,7 +207,7 @@ final class UsersXlsxExport {
         $sheet->setCellValue(self::getCellPosition($col++, $row), '(Module) + Controller');
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'Action');
         foreach ($this->UserRoles as $UserRole) {
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$UserRole['name']} [ID {$UserRole['id']}]");
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($UserRole['name']) . '[ID ' . h($UserRole['id']) . ']');
         }
 
         // Body Rows
@@ -214,13 +215,13 @@ final class UsersXlsxExport {
             $row++;
             $col = 0;
 
-            $moduleControllerString = $Permission['controller'];
+            $moduleControllerString = h($Permission['controller']);
             if ($Permission['module']) {
-                $moduleControllerString = "{$Permission['module']}/{$Permission['controller']}";
+                $moduleControllerString = '(' . h($Permission['module']) . ') / ' . h($Permission['controller']);
             }
 
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "$moduleControllerString");
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$Permission['action']}");
+            $sheet->setCellValue(self::getCellPosition($col++, $row), $moduleControllerString);
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($Permission['action']));
             foreach ($this->UserRoles as $UserRole) {
                 $colour = 'FFFF0000';
                 $cellValue = 'NO';
@@ -266,6 +267,10 @@ final class UsersXlsxExport {
                 $this->addPermissionRow($AclD);
             }
         }
+        // Sort $this->Permissions by module, controller, action
+        usort($this->Permissions, static function (array $a, array $b) {
+            return strcmp($a['module'] . $a['controller'], $b['module'] . $b['controller']);
+        });
     }
 
     /**
@@ -284,7 +289,7 @@ final class UsersXlsxExport {
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'Container ID');
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'Container');
         foreach ($this->Users as $User) {
-            $sheet->setCellValue(self::getCellPosition($col++, $row), "{$User['name']} [ID {$User['id']}]");
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['name']) . ' [ID ' . h($User['id']) . ']');
         }
 
         // Body Rows
@@ -421,7 +426,16 @@ final class UsersXlsxExport {
         return false;
     }
 
+    /**
+     * I will add the given $Permission. If there are children in it, I will call myself recursively.
+     * @param array $Permission
+     * @param string $controller
+     * @return void
+     */
     private function addPermissionRow(array $Permission, string $controller = ''): void {
+        if (str_contains($controller, 'Module')) {
+            $this->Modules[$Permission['id']] = $controller;
+        }
         if ($Permission['children']) {
             foreach ($Permission['children'] as $Child) {
                 $this->addPermissionRow($Child, $Permission['alias']);
@@ -429,7 +443,7 @@ final class UsersXlsxExport {
             return;
         }
         $this->Permissions[] = [
-            'module'     => '',
+            'module'     => $this->Modules[$Permission['parent_id']] ?? '',
             'id'         => $Permission['id'],
             'controller' => $controller,
             'action'     => $Permission['alias']
