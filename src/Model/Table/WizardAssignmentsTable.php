@@ -520,6 +520,14 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
+            ],
+            'nextcloud'                    => [
+                'type_id'     => 'nextcloud',
+                'title'       => __('NextCloud'),
+                'description' => __('Monitor your NextCloud instance.'),
+                'image'       => 'nextcloud.svg',
+                'category'    => ['network'],
+                'active'      => true
             ]
         ];
 
