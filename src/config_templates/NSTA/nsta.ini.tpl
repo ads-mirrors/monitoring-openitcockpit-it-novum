@@ -26,3 +26,7 @@ mycnf = "/opt/openitc/etc/mysql/mysql.cnf"
 
 ; nagios-path is used to fetch satellite configuration files
 nagios-path = "/opt/openitc/nagios"
+
+; system-metrics-interval determines how often system metrics
+; are collected from satellite systems in minutes
+system-metrics-interval = 15
