@@ -520,6 +520,14 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
+            ],
+            'gude-sensors'                 => [
+                'type_id'     => 'gude-sensors',
+                'title'       => __('Gude Sensors'),
+                'description' => __('Used to check GUDE Sensors'),
+                'image'       => 'network.png',
+                'category'    => ['hardware', 'network'],
+                'active'      => true
             ]
         ];
 
