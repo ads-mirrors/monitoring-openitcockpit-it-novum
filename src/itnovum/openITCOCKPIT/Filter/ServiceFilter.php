@@ -58,6 +58,8 @@ class ServiceFilter extends Filter {
                 'Services.disabled',
                 'servicepriority',
                 'Services.service_type',
+                'Hostgroups.id',
+                'Servicegroups.id'
             ],
             'downtime'       => [
                 'Servicestatus.scheduled_downtime_depth',

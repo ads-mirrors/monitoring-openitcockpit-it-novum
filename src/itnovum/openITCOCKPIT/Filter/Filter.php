@@ -26,6 +26,7 @@
 namespace itnovum\openITCOCKPIT\Filter;
 
 use App\itnovum\openITCOCKPIT\Database\SanitizeOrder;
+use Cake\Http\Exception\NotImplementedException;
 use Cake\Http\ServerRequest;
 use itnovum\openITCOCKPIT\Core\Views\UserTime;
 
@@ -51,7 +52,7 @@ abstract class Filter {
     /**
      * @param $filters
      * @return array
-     * @throws \Cake\Http\Exception\NotImplementedException
+     * @throws NotImplementedException
      */
     public function getConditionsByFilters($filters) {
         $conditions = [];
@@ -237,13 +238,13 @@ abstract class Filter {
                             if (is_array($values) && !empty($values) && sizeof($values) === 2) {
                                 //check value and  unit for valid values
                                 if (is_numeric($values[0]) && in_array($values[1], ['SECOND', 'MINUTE', 'HOUR', 'DAY'], true)) {
-                                    $conditions[] = sprintf('%s <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))', $field, $values[0], $values[1]);
+                                    $conditions[] = sprintf('%s >= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)', $field, $values[0], $values[1]);
                                 }
                             }
                             break;
 
                         default:
-                            throw new \Cake\Http\Exception\NotImplementedException('This filter type is not implemented yet');
+                            throw new NotImplementedException('This filter type is not implemented yet');
                     }
                 }
             }
