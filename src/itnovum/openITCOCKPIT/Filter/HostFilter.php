@@ -56,7 +56,8 @@ class HostFilter extends Filter {
                 'Hosts.disabled',
                 'Hosts.satellite_id',
                 'hostpriority',
-                'Hosts.host_type'
+                'Hosts.host_type',
+                'Hostgroups.id',
             ],
             'downtime'       => [
                 'Hoststatus.scheduled_downtime_depth',
