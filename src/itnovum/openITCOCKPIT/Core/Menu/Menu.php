@@ -551,6 +551,25 @@ class Menu {
                     true,
                     '/servicetemplates/index'
                 ))
+            )->addCategory((new MenuCategory(
+                'software_inventory',
+                __('Software Inventory'),
+                7,
+
+                ['fas', 'toolbox']
+
+            ))->addLink(new MenuLink(
+                __('Packages'),
+                'PackagesIndex',
+                'packages',
+                'index',
+                '',
+                ['fas', 'cubes'],
+                [],
+                1,
+                true,
+                '/packages/index'
+            ))
             );
 
         $Administration = new MenuHeadline(self::MENU_ADMINISTRATION, __('Administration'), 3);
