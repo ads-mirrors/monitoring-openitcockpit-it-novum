@@ -534,7 +534,7 @@ class WizardAssignmentsTable extends Table {
                 'title'       => __('Fujitsu Eternus Tape Library'),
                 'description' => __('Used to check Fujitsu Eternus Tape Library devices'),
                 'image'       => 'fujitsu.svg',
-                'category'    => ['linux', 'network'],
+                'category'    => ['hardware'],
                 'active'      => true
             ],
         ];
