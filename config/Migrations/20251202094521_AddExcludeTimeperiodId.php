@@ -23,8 +23,37 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-if (!defined('OPENITCOCKPIT_VERSION')) {
-    define('OPENITCOCKPIT_VERSION', '5.3.1');
-}
+declare(strict_types=1);
 
-return [];
+use Migrations\BaseMigration;
+
+/**
+ * Class AddExcludeTimeperiodId
+ *
+ * Created:
+ * oitc migrations create AddExcludeTimeperiodId
+ *
+ * Usage:
+ * openitcockpit-update
+ */
+class AddExcludeTimeperiodId extends BaseMigration {
+    /**
+     * Change Method.
+     *
+     * More information on this method is available here:
+     * https://book.cakephp.org/phinx/0/en/migrations.html#the-change-method
+     * @return void
+     */
+    public function change(): void {
+        if ($this->hasTable('timeperiods')) {
+            $this->table('timeperiods')
+                ->addColumn('exclude_timeperiod_id', 'integer', [
+                    'after'   => 'calendar_id',
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => true,
+                ])
+                ->update();
+        }
+    }
+}

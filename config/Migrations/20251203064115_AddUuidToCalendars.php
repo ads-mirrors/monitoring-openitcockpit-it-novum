@@ -23,8 +23,44 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-if (!defined('OPENITCOCKPIT_VERSION')) {
-    define('OPENITCOCKPIT_VERSION', '5.3.1');
-}
+declare(strict_types=1);
 
-return [];
+use Migrations\BaseMigration;
+
+/**
+ * Class AddUuidToCalendars
+ *
+ * Created:
+ * oitc migrations create AddUuidToCalendars
+ *
+ * Run migration:
+ * oitc migrations migrate
+ *
+ * Usage:
+ * openitcockpit-update
+ */
+class AddUuidToCalendars extends BaseMigration {
+    /**
+     * Change Method.
+     *
+     * More information on this method is available here:
+     * https://book.cakephp.org/phinx/0/en/migrations.html#the-change-method
+     * @return void
+     */
+    public function change(): void {
+        if ($this->hasTable('calendars')) {
+            $this->table('calendars')
+                ->addColumn('uuid', 'string', [
+                    'after'   => 'id',
+                    'default' => null,
+                    'limit'   => 37,
+                    'null'    => true,
+                ])
+                ->addIndex(
+                    [
+                        'uuid',
+                    ]
+                )->update();
+        }
+    }
+}

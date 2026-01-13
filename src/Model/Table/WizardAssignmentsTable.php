@@ -521,6 +521,14 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['linux', 'network'],
                 'active'      => true
             ],
+            'nginx'                        => [
+                'type_id'     => 'nginx',
+                'title'       => __('nginx Status'),
+                'description' => __('Monitor your nginx web server status'),
+                'image'       => 'nginx_logo.svg',
+                'category'    => ['webserver', 'cloud'],
+                'active'      => true
+            ],
             'netapp'                       => [
                 'type_id'     => 'netapp',
                 'title'       => __('NetApp'),

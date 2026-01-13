@@ -161,7 +161,7 @@ class ServicesController extends AppController {
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
 
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $ServiceFilter = new ServiceFilter($this->request);
@@ -389,7 +389,7 @@ class ServicesController extends AppController {
 
     public function notMonitored() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $ServiceFilter = new ServiceFilter($this->request);
@@ -479,7 +479,7 @@ class ServicesController extends AppController {
 
     public function disabled() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
 
@@ -559,7 +559,7 @@ class ServicesController extends AppController {
 
     public function add() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         if ($this->request->is('post')) {
@@ -683,7 +683,7 @@ class ServicesController extends AppController {
 
     public function edit($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HosttemplatesTable HosttemplatesTable */
@@ -846,7 +846,7 @@ class ServicesController extends AppController {
 
     public function deleted() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $DeletedServicesTable DeletedServicesTable */
@@ -936,7 +936,7 @@ class ServicesController extends AppController {
 
     public function copy() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HostsTable HostsTable */
@@ -3235,7 +3235,7 @@ class ServicesController extends AppController {
      */
     public function usedBy($id = null): void {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var ServicesTable $ServicesTable */
