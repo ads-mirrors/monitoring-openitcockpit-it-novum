@@ -141,6 +141,7 @@ plugins/BroadcomProxyModule
 plugins/NutanixModule
 plugins/NetworkModule
 plugins/NginxModule
+plugins/NetAppModule
 
 # NFS mounts
 .nfs.*
