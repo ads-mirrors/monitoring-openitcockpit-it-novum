@@ -528,6 +528,14 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'nginx_logo.svg',
                 'category'    => ['webserver', 'cloud'],
                 'active'      => true
+            ],
+            'citrix-netscaler'             => [
+                'type_id'     => 'citrix-netscaler',
+                'title'       => __('Citrix Netscaler'),
+                'description' => __('Used to check Citrix Netscaler devices'),
+                'image'       => 'citrix.svg',
+                'category'    => ['linux', 'network'],
+                'active'      => true
             ]
         ];
 
