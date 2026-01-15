@@ -329,38 +329,68 @@ final class UsersXlsxExport {
         /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
         if ($this->hasRootPrivileges === true) {
-            $this->Containers = $ContainersTable->find()
+            $Containers = $ContainersTable->find()
                 ->where(['Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE]])
+                ->orderBy(['Containers.id ASC'])
                 ->disableHydration()
                 ->toArray();
         } else {
-            $this->Containers = $ContainersTable->find()
+            $Containers = $ContainersTable->find()
                 ->andWhere([
                     'Containers.containertype_id IN' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE],
                     'Containers.id IN '              => $this->MY_RIGHTS
                 ])
+                ->orderBy(['Containers.id ASC'])
                 ->disableHydration()
                 ->toArray();
         }
 
-        foreach ($this->Containers as &$Container) {
+        foreach ($Containers as &$Container) {
             $Container['name'] = '/' . $ContainersTable->treePath($Container['id'], '/');
 
-            $this->buildContainerTree($Container);
+            $this->Containers[$Container['id']] = $Container;
+            $this->ContainerTree[$Container['id']] = $Container;
         }
+
+        $this->ContainerTree = $this->buildContainerTree();
 
         $this->ContainerRoles = $this
             ->UsercontainerrolesTable
             ->find()
             ->contain(['Containers', 'Users'])
             ->toArray();
+
+        $this->buildPermissionsMatrix();
     }
 
-    private function buildContainerTree(array $Container): void {
+    private function getParentContainer(array $Container): array|null {
         if ($Container['parent_id']) {
-            $this->ContainerTree[$Container['parent_id']] = $Container['id'];
+            return $this->Containers[$Container['parent_id']] ?? null;
         }
+        return null;
     }
+
+    private function buildContainerTree(): array {
+        // Ensure every object has a children array
+        foreach ($this->ContainerTree as $id => &$Container) {
+            $Container = (object)$Container;
+            $Container->children = [];
+        }
+
+        $ContainerTree = [];
+        foreach ($this->ContainerTree as $id => $Container) {
+            $Container = (object)$Container;
+            $Container->children = [];
+            if (!empty($Container->parent_id)) {
+                $this->ContainerTree[$Container->parent_id]->children[$id] = $Container;
+            } else {
+                // Root node
+                $ContainerTree[$id] = $Container;
+            }
+        }
+        return $ContainerTree;
+    }
+
 
     /**
      * I will traverse ContainerRoles and Users to build the ContainerPermissions matrix.
