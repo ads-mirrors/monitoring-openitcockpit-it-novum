@@ -91,6 +91,11 @@ class TimeperiodsTable extends Table {
         $this->belongsTo('Calendars', [
             'joinType' => 'LEFT'
         ]);
+        $this->belongsTo('ExcludedTimePeriod', [
+            'className'  => 'Timeperiods',
+            'foreignKey' => 'exclude_timeperiod_id',
+            'joinType'   => 'LEFT'
+        ]);
     }
 
     /**
@@ -254,7 +259,16 @@ class TimeperiodsTable extends Table {
      */
     public function getTimeperiodWithTimeranges() {
         $query = $this->find()
-            ->contain('TimeperiodTimeranges')
+            ->contain([
+                'TimeperiodTimeranges',
+                'ExcludedTimePeriod' => function ($query) {
+                    return $query->select([
+                        'ExcludedTimePeriod.id',
+                        'ExcludedTimePeriod.uuid'
+                    ])->disableAutoFields()
+                        ->disableHydration();
+                }
+            ])
             ->disableHydration();
         return $this->formatResultAsCake2($query->toArray(), false);
     }
@@ -283,7 +297,16 @@ class TimeperiodsTable extends Table {
      */
     public function getTimeperiodWithTimerangesByUuid($uuid) {
         $query = $this->find()
-            ->contain('TimeperiodTimeranges')
+            ->contain([
+                'TimeperiodTimeranges',
+                'ExcludedTimePeriod' => function ($query) {
+                    return $query->select([
+                        'ExcludedTimePeriod.id',
+                        'ExcludedTimePeriod.uuid'
+                    ])->disableAutoFields()
+                        ->disableHydration();
+                }
+            ])
             ->where([
                 'Timeperiods.uuid' => $uuid
             ])
@@ -365,7 +388,9 @@ class TimeperiodsTable extends Table {
             ->select([
                 'Timeperiods.id',
                 'Timeperiods.name',
-                'Timeperiods.description'
+                'Timeperiods.description',
+                'Timeperiods.calendar_id',
+                'Timeperiods.exclude_timeperiod_id'
             ])
             ->where([
                 'Timeperiods.id IN' => $ids
@@ -746,11 +771,43 @@ class TimeperiodsTable extends Table {
             $ids = [$ids];
         }
         $query = $this->find()
-            ->contain(['TimeperiodTimeranges'])
+            ->contain([
+                'TimeperiodTimeranges',
+                'Calendars',
+                'ExcludedTimePeriod' => function ($query) {
+                    return $query->select([
+                        'ExcludedTimePeriod.uuid',
+                        'ExcludedTimePeriod.name'
+                    ])
+                        ->disableAutoFields()
+                        ->disableHydration();
+                }
+            ])
             ->where([
                 'Timeperiods.id IN'        => $ids,
                 'Timeperiods.container_id' => ROOT_CONTAINER
             ])
+            ->disableHydration();
+        return $this->emptyArrayIfNull($query->toArray());
+    }
+
+    /**
+     * @param $ids
+     * @return array
+     */
+    public function getExcludedTimeperiodIdsForExport($ids) {
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+        $query = $this->find()
+            ->select([
+                'Timeperiods.exclude_timeperiod_id'
+            ])
+            ->where([
+                'Timeperiods.id IN'        => $ids,
+                'Timeperiods.container_id' => ROOT_CONTAINER
+            ])
+            ->whereNotNull('Timeperiods.exclude_timeperiod_id')
             ->disableHydration();
         return $this->emptyArrayIfNull($query->toArray());
     }
@@ -784,7 +841,11 @@ class TimeperiodsTable extends Table {
     private function getTimeperiodForEditByWhere(array $where) {
         return $this->find()
             ->where($where)
-            ->contain(['TimeperiodTimeranges'])
+            ->contain([
+                'TimeperiodTimeranges',
+                'Calendars',
+                'ExcludedTimePeriod'
+            ])
             ->firstOrFail();
     }
 
@@ -808,6 +869,7 @@ class TimeperiodsTable extends Table {
         //No errors
         /** @var ChangelogsTable $ChangelogsTable */
         $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
+        $extDataForChangelog = $this->resolveDataForChangelog($timeperiod);
 
         $changelog_data = $ChangelogsTable->parseDataForChangelog(
             'add',
@@ -817,10 +879,9 @@ class TimeperiodsTable extends Table {
             [ROOT_CONTAINER],
             $userId,
             $entity->get('name'),
-            $timeperiod
+            array_merge($extDataForChangelog, $timeperiod)
         );
         if ($changelog_data) {
-            /** @var Changelog $changelogEntry */
             $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
             $ChangelogsTable->save($changelogEntry);
         }
@@ -859,8 +920,8 @@ class TimeperiodsTable extends Table {
             [$entity->get('container_id')],
             $userId,
             $entity->get('name'),
-            $newTimeperiod,
-            $oldTimeperiod
+            array_merge($this->resolveDataForChangelog($newTimeperiod), $newTimeperiod),
+            array_merge($this->resolveDataForChangelog($oldTimeperiod), $oldTimeperiod)
         );
 
         if ($changelog_data) {
@@ -878,11 +939,114 @@ class TimeperiodsTable extends Table {
      */
     public function getTimeperiodByUuidForImportDiff($uuid) {
         $query = $this->find('all')
-            ->contain('TimeperiodTimeranges')
+            ->contain([
+                'TimeperiodTimeranges',
+                'Calendars',
+                'ExcludedTimePeriod'
+            ])
             ->where(['Timeperiods.uuid' => $uuid])
             ->disableHydration()
             ->firstOrFail();
 
         return $this->emptyArrayIfNull($query);
     }
+
+    /**
+     * @param $excludedTimeperiodId
+     * @param $containerIds
+     * @return array
+     */
+    public function getTimeperiodByContainerIdsAndExludedTimeperiodIdAsList($excludedTimeperiodId, $containerIds = []) {
+        if (!is_array($containerIds)) {
+            $containerIds = [$containerIds];
+        }
+
+        $query = $this->find('list',
+            keyField: 'id',
+            valueField: 'name')
+            ->where(['Timeperiods.container_id IN' => $containerIds])
+            ->whereNotInList('Timeperiods.id', [$excludedTimeperiodId]);
+
+        $query->where([
+            'OR' => [
+                $query->newExpr()->isNull('Timeperiods.exclude_timeperiod_id'),
+                ['Timeperiods.exclude_timeperiod_id !=' => $excludedTimeperiodId]
+            ]
+        ])->disableHydration();
+        return $this->emptyArrayIfNull($query->toArray());
+    }
+
+    /**
+     * @param array $dataToParse
+     * @return array
+     */
+    public function resolveDataForChangelog($dataToParse = []) {
+        $extDataForChangelog = [
+            'Calendar'           => [],
+            'ExcludedTimePeriod' => []
+        ];
+
+        if (!empty($dataToParse['Timeperiod']['calendar_id'])) {
+            /** @var CalendarsTable $CalendarsTable */
+            $CalendarsTable = TableRegistry::getTableLocator()->get('Calendars');
+
+            $calendar = $CalendarsTable->getCalendarById($dataToParse['Timeperiod']['calendar_id']);
+            if (!empty($calendar)) {
+                $extDataForChangelog['Calendar'] = [
+                    'id'   => $calendar['id'],
+                    'name' => $calendar['name']
+                ];
+            }
+        }
+
+        if (!empty($dataToParse['Timeperiod']['exclude_timeperiod_id'])) {
+            $excludedTimePeriod = $this->getTimeperiodById($dataToParse['Timeperiod']['exclude_timeperiod_id']);
+            if (!empty($excludedTimePeriod)) {
+                $extDataForChangelog['ExcludedTimePeriod'] = [
+                    'id'   => $excludedTimePeriod['Timeperiod']['id'],
+                    'name' => $excludedTimePeriod['Timeperiod']['name']
+                ];
+            }
+        }
+
+        return $extDataForChangelog;
+    }
+
+    /**
+     * @param int $timeperiodId
+     * @param array $MY_RIGHTS
+     * @param bool $enableHydration
+     * @return array
+     */
+    public function getExcludedTimeperiodsByTimeperiodId($timeperiodId, $MY_RIGHTS = [], $enableHydration = true) {
+        $query = $this->find('all');
+        $query->select([
+            'Timeperiods.id',
+            'Timeperiods.name'
+        ]);
+
+        $query->where([
+            'Timeperiods.exclude_timeperiod_id' => $timeperiodId,
+        ]);
+
+        if (!empty($MY_RIGHTS)) {
+            $query->where([
+                'Timeperiods.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->enableHydration($enableHydration);
+        $query->orderBy([
+            'Timeperiods.name' => 'asc',
+            'Timeperiods.id'   => 'asc'
+        ]);
+        $query->groupBy([
+            'Timeperiods.id'
+        ]);
+
+        $result = $query->all();
+
+        return $this->emptyArrayIfNull($result->toArray());
+    }
+
 }
