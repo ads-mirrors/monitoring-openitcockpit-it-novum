@@ -59,6 +59,7 @@ use CheckmkModule\Model\Table\MkSatTasksTable;
 use DistributeModule\Model\Entity\Satellite;
 use DistributeModule\Model\Entity\SatelliteTask;
 use DistributeModule\Model\Table\SatelliteTasksTable;
+use GudeModule\itnovum\openITCOCKPIT\GudeSensors\GudeSensorsScan;
 use ImportModule\Model\Table\SatellitePushAgentsTable;
 use itnovum\openITCOCKPIT\CakePHP\Folder;
 use itnovum\openITCOCKPIT\Core\MonitoringEngine\NagiosConfigDefaults;
@@ -1095,6 +1096,24 @@ class GearmanWorkerCommand extends Command {
                         'success'    => $interfaces['success'],
                         'error'      => $interfaces['errormsg'],
                         'interfaces' => $interfaces
+                    ];
+                } catch (\RuntimeException $e) {
+                    $return = [
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
+                        'exception' => 'ProcessFailedException'
+                    ];
+                }
+                break;
+
+            case 'WizardGudeSensorsList':
+                $GudeSensorsScan = new GudeSensorsScan($payload['data']);
+                try {
+                    $sensors = $GudeSensorsScan->executeSensorsDiscovery($payload['host_address']);
+                    $return = [
+                        'success' => $sensors['success'],
+                        'error'   => $sensors['errormsg'],
+                        'sensors' => $sensors
                     ];
                 } catch (\RuntimeException $e) {
                     $return = [
