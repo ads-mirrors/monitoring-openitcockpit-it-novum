@@ -113,7 +113,7 @@ class ChangelogsController extends AppController {
                 $all_changes[$index]['time'] = $UserTime->customFormat('H:i:s', $changeTimestamp);
             }
 
-            $dataUnserialized = unserialize($change['data']);
+            $dataUnserialized = unserialize($change['data'], ['allowed_classes' => false]);
             $dataUnserialized = $ChangelogsTable->replaceFieldValues($dataUnserialized);
             $dataUnserialized = $ChangelogsTable->formatDataForView($dataUnserialized, $change['action']);
             $dataUnserialized = $ChangelogsTable->replaceTableNames($dataUnserialized);
@@ -143,5 +143,5 @@ class ChangelogsController extends AppController {
         $this->set('all_changes', $all_changes);
         $this->viewBuilder()->setOption('serialize', ['all_changes']);
     }
-    
+
 }
