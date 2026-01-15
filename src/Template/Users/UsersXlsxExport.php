@@ -52,6 +52,7 @@ final class UsersXlsxExport {
     private array $UserRoles = [];
     private array $Permissions = [];
     private array $Modules = [];
+    private array $ContainerTree = [];
 
     /**
      * I am the container permission matrix. I will look like this:
@@ -279,7 +280,6 @@ final class UsersXlsxExport {
      */
     private function ContainersSheet(): void {
         $this->buildContainersData();
-        $this->buildPermissionsMatrix();
         $sheet = $this->Spreadsheet->createSheet();
         $sheet->setTitle('Containers');
         $row = 0;
@@ -308,11 +308,16 @@ final class UsersXlsxExport {
         }
     }
 
-    private array $ContainerTree = [];
+    private function getPermissionLevel(array|null $Container, array $User): string {
+        $permission = 0;
+        // As long as there's and a parent container was found...
+        while (!$permission && $Container) {
+            // Check if we have permission now.
+            $permission = (int)($this->ContainerPermissions[$Container['id']][$User['id']] ?? 0);
 
-    private function getPermissionLevel(array $Container, array $User): string {
-        // Does the user have the permission to the container directly?
-        $permission = (int)($this->ContainerPermissions[$Container['id']][$User['id']] ?? 0);
+            // Check again with parent Container.
+            $Container = $this->getParentContainer($Container);
+        }
 
         return match ($permission) {
             1 => 'R',
