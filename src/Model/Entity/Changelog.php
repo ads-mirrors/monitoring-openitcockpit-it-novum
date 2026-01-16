@@ -70,7 +70,7 @@ class Changelog extends Entity {
     public function jsonSerialize(): array {
         $data = $this->extract($this->getVisible());
         if (isset($data['data'])) {
-            $data['data_unserialized'] = unserialize($data['data']);
+            $data['data_unserialized'] = unserialize($data['data'], ['allowed_classes' => false]);
         }
         return $data;
     }

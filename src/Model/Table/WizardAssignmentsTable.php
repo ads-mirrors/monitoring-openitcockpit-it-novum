@@ -521,6 +521,22 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['linux', 'network'],
                 'active'      => true
             ],
+            'nginx'                        => [
+                'type_id'     => 'nginx',
+                'title'       => __('nginx Status'),
+                'description' => __('Monitor your nginx web server status'),
+                'image'       => 'nginx_logo.svg',
+                'category'    => ['webserver', 'cloud'],
+                'active'      => true
+            ],
+            'citrix-netscaler'             => [
+                'type_id'     => 'citrix-netscaler',
+                'title'       => __('Citrix Netscaler'),
+                'description' => __('Used to check Citrix Netscaler devices'),
+                'image'       => 'citrix.svg',
+                'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
             'aruba-network'                => [
                 'type_id'     => 'aruba-network',
                 'title'       => __('Aruba Network'),

@@ -27,6 +27,7 @@ namespace App\Model\Table;
 
 use App\Lib\Traits\Cake2ResultTableTrait;
 use App\Lib\Traits\PaginationAndScrollIndexTrait;
+use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
@@ -46,9 +47,9 @@ use itnovum\openITCOCKPIT\Filter\CalendarFilter;
  * @method \App\Model\Entity\Calendar get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
  * @method \App\Model\Entity\Calendar newEntity($data = null, array $options = [])
  * @method \App\Model\Entity\Calendar[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\Calendar|bool save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Calendar saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Calendar patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\Calendar|bool save(EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Calendar saveOrFail(EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\Calendar patchEntity(EntityInterface $entity, array $data, array $options = [])
  * @method \App\Model\Entity\Calendar[] patchEntities($entities, array $data, array $options = [])
  * @method \App\Model\Entity\Calendar findOrCreate($search, ?callable $callback = null, array $options = [])
  *
@@ -120,6 +121,13 @@ class CalendarsTable extends Table {
             ->scalar('description')
             ->allowEmptyString('description');
 
+        $validator
+            ->scalar('uuid')
+            ->maxLength('uuid', 37)
+            ->requirePresence('uuid', 'create')
+            ->allowEmptyString('uuid', null, false)
+            ->add('uuid', 'unique', ['rule' => 'validateUnique', 'provider' => 'table']);
+
         return $validator;
     }
 
@@ -178,7 +186,7 @@ class CalendarsTable extends Table {
 
     /**
      * @param int $id
-     * @return array|\Cake\Datasource\EntityInterface
+     * @return array|EntityInterface
      * @throws RecordNotFoundException
      */
     public function getCalendarById($id) {
@@ -196,7 +204,7 @@ class CalendarsTable extends Table {
     /**
      * @param int|array $containerId
      * @param string $type
-     * @return array|\Cake\Datasource\EntityInterface
+     * @return array|EntityInterface
      * @throws RecordNotFoundException
      */
     public function getCalendarsByContainerIds($containerIds, $type = 'all') {
@@ -257,5 +265,61 @@ class CalendarsTable extends Table {
             ->firstOrFail();
 
         return $result;
+    }
+
+    /**
+     * @param $ids
+     * @return array
+     */
+    public function getCalendarsByIdsForExport($ids) {
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+        $query = $this->find()
+            ->contain([
+                'CalendarHolidays'
+            ])
+            ->where([
+                'Calendars.id IN'        => $ids,
+                'Calendars.container_id' => ROOT_CONTAINER
+            ])
+            ->disableHydration();
+        return $this->emptyArrayIfNull($query->toArray());
+    }
+
+    /**
+     * @param string $uuid
+     * @return bool
+     */
+    public function existsByUuid(string $uuid): bool {
+        return $this->exists(['Calendars.uuid' => $uuid]);
+    }
+
+
+    /**
+     * @param $uuid
+     * @return array
+     */
+    public function getCalendarByUuidForImportDiff($uuid) {
+        $query = $this->find('all')
+            ->contain('CalendarHolidays')
+            ->where(['Calendars.uuid' => $uuid])
+            ->disableHydration()
+            ->firstOrFail();
+
+        return $this->emptyArrayIfNull($query);
+    }
+
+    /**
+     * @param string $uuid
+     * @return array|EntityInterface
+     */
+    public function getCalendarForEditByUuid(string $uuid) {
+        return $this->find()
+            ->where(['Calendars.uuid' => $uuid])
+            ->contain([
+                'CalendarHolidays',
+            ])
+            ->firstOrFail();
     }
 }
