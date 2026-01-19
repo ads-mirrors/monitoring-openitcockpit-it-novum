@@ -136,4 +136,24 @@ class PackagesHostDetailsTable extends Table {
 
         return $rules;
     }
+
+    /**
+     * @param int $hostId
+     * @param array $details
+     * @return \App\Model\Entity\PackagesHostDetail|\Cake\Datasource\EntityInterface|false
+     */
+    public function updateHostDetails(int $hostId, array $details) {
+        $entity = $this->find()
+            ->where(['host_id' => $hostId])
+            ->first();
+
+        if (!$entity) {
+            $entity = $this->newEmptyEntity();
+            $entity->host_id = $hostId;
+        }
+
+        $entity = $this->patchEntity($entity, $details);
+        return $this->save($entity);
+    }
+
 }

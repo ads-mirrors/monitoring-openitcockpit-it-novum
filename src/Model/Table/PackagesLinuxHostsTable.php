@@ -130,7 +130,8 @@ class PackagesLinuxHostsTable extends Table {
      * @return \Cake\ORM\RulesChecker
      */
     public function buildRules(RulesChecker $rules): RulesChecker {
-        $rules->add($rules->existsIn(['host_id'], 'Hosts'), ['errorField' => 'host_id']);
+        // Disabled due to performance concerns
+        //$rules->add($rules->existsIn(['host_id'], 'Hosts'), ['errorField' => 'host_id']);
 
         return $rules;
     }
