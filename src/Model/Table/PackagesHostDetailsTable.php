@@ -95,7 +95,7 @@ class PackagesHostDetailsTable extends Table {
             ->scalar('os_version')
             ->maxLength('os_version', 255)
             ->requirePresence('os_version', 'create')
-            ->notEmptyString('os_version');
+            ->allowEmptyString('os_version');
 
         $validator
             ->scalar('agent_version')
@@ -109,7 +109,7 @@ class PackagesHostDetailsTable extends Table {
 
         $validator
             ->requirePresence('system_uptime', 'create')
-            ->notEmptyString('system_uptime');
+            ->allowEmptyString('system_uptime');
 
         $validator
             ->dateTime('last_update')
@@ -152,6 +152,7 @@ class PackagesHostDetailsTable extends Table {
             $entity->host_id = $hostId;
         }
 
+        $entity->setAccess('host_id', false);
         $entity = $this->patchEntity($entity, $details);
         return $this->save($entity);
     }
