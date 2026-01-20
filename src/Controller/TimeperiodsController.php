@@ -67,7 +67,7 @@ class TimeperiodsController extends AppController {
 
     function index() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var TimeperiodsTable $TimeperiodsTable */
@@ -137,7 +137,7 @@ class TimeperiodsController extends AppController {
      */
     public function viewDetails($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var TimeperiodsTable $TimeperiodsTable */
@@ -165,7 +165,7 @@ class TimeperiodsController extends AppController {
      */
     public function add() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var TimeperiodsTable $TimeperiodsTable */
@@ -204,7 +204,7 @@ class TimeperiodsController extends AppController {
      */
     public function edit($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var TimeperiodsTable $TimeperiodsTable */
@@ -213,6 +213,7 @@ class TimeperiodsController extends AppController {
             throw new NotFoundException('Time period not found');
         }
         $timeperiod = $TimeperiodsTable->getTimeperiodForEdit($id);
+        $timeperiod->setAccess('calendar', false);
         $timeperiodForChangeLog['Timeperiod'] = $timeperiod->toArray();
 
         if (!$this->allowedByContainerId($timeperiod->get('container_id'))) {
@@ -333,7 +334,7 @@ class TimeperiodsController extends AppController {
      */
     public function copy($id = null) {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $MY_RIGHTS = $this->MY_RIGHTS;
@@ -352,6 +353,8 @@ class TimeperiodsController extends AppController {
         }
 
         $hasErrors = false;
+        $newTimeperiodEntity = null;
+        $postData = [];
 
         if ($this->request->is('post')) {
             $Cache = new KeyValueStore();
@@ -382,6 +385,7 @@ class TimeperiodsController extends AppController {
                         'description'           => $timeperiodData['Timeperiod']['description'],
                         'container_id'          => $sourceTimeperiod['container_id'],
                         'calendar_id'           => $sourceTimeperiod['calendar_id'],
+                        'exclude_timeperiod_id' => $sourceTimeperiod['exclude_timeperiod_id'],
                         'uuid'                  => UUID::v4(),
                         'timeperiod_timeranges' => $sourceTimeperiod['timeperiod_timeranges']
                     ];
@@ -402,33 +406,38 @@ class TimeperiodsController extends AppController {
                     $newTimeperiodData = $newTimeperiodEntity->toArray();
                     $action = 'edit';
                 }
-                $TimeperiodsTable->save($newTimeperiodEntity);
+                if ($newTimeperiodEntity) {
+                    $TimeperiodsTable->save($newTimeperiodEntity);
 
-                $postData[$index]['Error'] = [];
-                if ($newTimeperiodEntity->hasErrors()) {
-                    $hasErrors = true;
-                    $postData[$index]['Error'] = $newTimeperiodEntity->getErrors();
-                } else {
-                    //No errors
-                    $postData[$index]['Timeperiod']['id'] = $newTimeperiodEntity->get('id');
+                    $postData[$index]['Error'] = [];
+                    if ($newTimeperiodEntity->hasErrors()) {
+                        $hasErrors = true;
+                        $postData[$index]['Error'] = $newTimeperiodEntity->getErrors();
+                    } else {
+                        //No errors
+                        $postData[$index]['Timeperiod']['id'] = $newTimeperiodEntity->get('id');
 
-                    /** @var ChangelogsTable $ChangelogsTable */
-                    $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
+                        /** @var ChangelogsTable $ChangelogsTable */
+                        $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
 
-                    $changelog_data = $ChangelogsTable->parseDataForChangelog(
-                        $action,
-                        'timeperiods',
-                        $postData[$index]['Timeperiod']['id'],
-                        OBJECT_TIMEPERIOD,
-                        [ROOT_CONTAINER],
-                        $User->getId(),
-                        $newTimeperiodEntity->get('name'),
-                        ['Timeperiod' => $newTimeperiodData]
-                    );
-                    if ($changelog_data) {
-                        /** @var Changelog $changelogEntry */
-                        $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
-                        $ChangelogsTable->save($changelogEntry);
+                        $changelog_data = $ChangelogsTable->parseDataForChangelog(
+                            $action,
+                            'timeperiods',
+                            $postData[$index]['Timeperiod']['id'],
+                            OBJECT_TIMEPERIOD,
+                            [ROOT_CONTAINER],
+                            $User->getId(),
+                            $newTimeperiodEntity->get('name'),
+                            array_merge(
+                                $TimeperiodsTable->resolveDataForChangelog(['Timeperiod' => $newTimeperiodData]),
+                                ['Timeperiod' => $newTimeperiodData]
+                            )
+                        );
+                        if ($changelog_data) {
+                            /** @var Changelog $changelogEntry */
+                            $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
+                            $ChangelogsTable->save($changelogEntry);
+                        }
                     }
                 }
             }
@@ -446,7 +455,7 @@ class TimeperiodsController extends AppController {
      */
     public function usedBy($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var TimeperiodsTable $TimeperiodsTable */
@@ -468,7 +477,8 @@ class TimeperiodsController extends AppController {
             'Servicedependencies' => [],
             'Serviceescalations'  => [],
             'Services'            => [],
-            'Servicetemplates'    => []
+            'Servicetemplates'    => [],
+            'Timeperiods'         => []
         ];
 
         $MY_RIGHTS = $this->MY_RIGHTS;
@@ -527,6 +537,11 @@ class TimeperiodsController extends AppController {
         $ServicetemplatesTable = TableRegistry::getTableLocator()->get('Servicetemplates');
         $objects['Servicetemplates'] = $ServicetemplatesTable->getServicetemplatesByTimeperiodId($id, $MY_RIGHTS, false);
 
+        //Check if the time period is used by time periods as excluded time period
+        /** @var TimeperiodsTable $TimeperiodsTable */
+        $TimeperiodsTable = TableRegistry::getTableLocator()->get('Timeperiods');
+        $objects['Timeperiods'] = $TimeperiodsTable->getExcludedTimeperiodsByTimeperiodId($id, $MY_RIGHTS, false);
+
         //check if the time period is used in auto reports
         if (Plugin::isLoaded('AutoreportModule')) {
             $objects['Autoreports'] = [];
@@ -547,6 +562,7 @@ class TimeperiodsController extends AppController {
         $total += sizeof($objects['Serviceescalations']);
         $total += sizeof($objects['Services']);
         $total += sizeof($objects['Servicetemplates']);
+        $total += sizeof($objects['Timeperiods']);
 
 
         $this->set('timeperiod', $timeperiod->toArray());
@@ -571,6 +587,29 @@ class TimeperiodsController extends AppController {
         $timeperiods = $TimeperiodsTable->getTimeperiodByContainerIdsAsList([
             ROOT_CONTAINER, $containerId
         ]);
+
+        $timeperiods = Api::makeItJavaScriptAble(
+            $timeperiods
+        );
+
+        $this->set('timeperiods', $timeperiods);
+        $this->viewBuilder()->setOption('serialize', ['timeperiods']);
+    }
+
+    public function loadTimeperiodsByContainerIdAndExludeItself() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $containerId = $this->request->getQuery('containerId');
+        $excludeTimperiodId = $this->request->getQuery('timeperiodId');
+
+        /** @var TimeperiodsTable $TimeperiodsTable */
+        $TimeperiodsTable = TableRegistry::getTableLocator()->get('Timeperiods');
+        $timeperiods = $TimeperiodsTable->getTimeperiodByContainerIdsAndExludedTimeperiodIdAsList(
+            $excludeTimperiodId,
+            [ROOT_CONTAINER, $containerId]
+        );
 
         $timeperiods = Api::makeItJavaScriptAble(
             $timeperiods
