@@ -525,8 +525,8 @@ class WizardAssignmentsTable extends Table {
                 'type_id'     => 'palo-alto-firewall',
                 'title'       => __('Palo Alto Firewall'),
                 'description' => __('Used to check Palo Alto Firewall devices'),
-                'image'       => 'network.png',
-                'category'    => ['linux', 'network'],
+                'image'       => 'palo_alto.png',
+                'category'    => ['cloud', 'network', 'hardware'],
                 'active'      => true
             ],
         ];
