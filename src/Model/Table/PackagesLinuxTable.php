@@ -197,7 +197,20 @@ class PackagesLinuxTable extends Table {
         return $query->execute();
     }
 
+    /**
+     * Save installed packages for a specific host
+     *
+     * @param int $hostId
+     * @param array $installedPackages
+     * @param array $availableUpdates
+     * @return bool
+     * @throws \Exception
+     */
     public function savePackagesForHost(int $hostId, array $installedPackages, array $availableUpdates): bool {
+        if (empty($installedPackages)) {
+            return true;
+        }
+
         /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
         $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
 
