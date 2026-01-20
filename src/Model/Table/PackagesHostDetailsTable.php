@@ -86,6 +86,12 @@ class PackagesHostDetailsTable extends Table {
             ->notEmptyString('host_id');
 
         $validator
+            ->scalar('os_type')
+            ->maxLength('os_type', 255)
+            ->requirePresence('os_type', 'create')
+            ->notEmptyString('os_type');
+
+        $validator
             ->scalar('os_name')
             ->maxLength('os_name', 255)
             ->requirePresence('os_name', 'create')
@@ -96,6 +102,11 @@ class PackagesHostDetailsTable extends Table {
             ->maxLength('os_version', 255)
             ->requirePresence('os_version', 'create')
             ->allowEmptyString('os_version');
+
+        $validator
+            ->scalar('os_family')
+            ->maxLength('os_family', 255)
+            ->allowEmptyString('os_family');
 
         $validator
             ->scalar('agent_version')

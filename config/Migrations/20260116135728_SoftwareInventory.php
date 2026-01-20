@@ -91,11 +91,19 @@ class SoftwareInventory extends BaseMigration {
                     'limit'   => 11,
                     'null'    => false,
                 ])
+                ->addColumn('os_type', 'string', [
+                    'limit' => 255,
+                    'null'  => false,
+                ])
                 ->addColumn('os_name', 'string', [
                     'limit' => 255,
                     'null'  => false,
                 ])
                 ->addColumn('os_version', 'string', [
+                    'limit' => 255,
+                    'null'  => false,
+                ])
+                ->addColumn('os_family', 'string', [
                     'limit' => 255,
                     'null'  => false,
                 ])
