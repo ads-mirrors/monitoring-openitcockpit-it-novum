@@ -541,7 +541,7 @@ class WizardAssignmentsTable extends Table {
                 'type_id'     => 'aruba-network',
                 'title'       => __('Aruba Network'),
                 'description' => __('Used to check Aruba Network devices'),
-                'image'       => 'network.png',
+                'image'       => 'aruba_networks.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
             ],
