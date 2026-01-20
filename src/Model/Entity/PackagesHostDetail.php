@@ -34,8 +34,10 @@ use Cake\ORM\Entity;
  *
  * @property int $id
  * @property int $host_id
+ * @property string $os_type
  * @property string $os_name
  * @property string $os_version
+ * @property string $os_family
  * @property string $agent_version
  * @property bool $reboot_required
  * @property int $system_uptime
@@ -58,8 +60,10 @@ class PackagesHostDetail extends Entity {
      */
     protected array $_accessible = [
         'host_id'         => true,
+        'os_type'         => true,
         'os_name'         => true,
         'os_version'      => true,
+        'os_family'       => true,
         'agent_version'   => true,
         'reboot_required' => true,
         'system_uptime'   => true,
