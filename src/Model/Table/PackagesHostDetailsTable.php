@@ -27,9 +27,13 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * PackagesHostDetails Model
@@ -53,6 +57,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class PackagesHostDetailsTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -166,6 +173,141 @@ class PackagesHostDetailsTable extends Table {
         $entity->setAccess('host_id', false);
         $entity = $this->patchEntity($entity, $details);
         return $this->save($entity);
+    }
+
+    public function getSummary(GenericFilter $GenericFilter, array $MY_RIGHTS = []): array {
+
+        $summary = [
+            'totalHosts'   => 0,
+            'linuxHosts'   => 0,
+            'windowsHosts' => 0,
+            'macosHosts'   => 0,
+
+            'totalRebootRequired'   => 0,
+            'linuxRebootRequired'   => 0,
+            'windowsRebootRequired' => 0,
+            'macosRebootRequired'   => 0,
+        ];
+
+
+        $query = $this->find()
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = PackagesHostDetails.host_id']
+            )
+            ->where([
+                'Hosts.disabled' => 0
+            ]);
+
+        $where = $GenericFilter->genericFilters();
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $result = $query->toArray();
+        if (empty($result)) {
+            return $summary;
+        }
+
+        foreach ($result as $entity) {
+            $summary['totalHosts']++;
+            if ($entity->reboot_required) {
+                $summary['totalRebootRequired']++;
+            }
+            switch (strtolower($entity->os_type)) {
+                case 'linux':
+                    $summary['linuxHosts']++;
+                    if ($entity->reboot_required) {
+                        $summary['linuxRebootRequired']++;
+                    }
+                    break;
+                case 'windows':
+                    $summary['windowsHosts']++;
+                    if ($entity->reboot_required) {
+                        $summary['windowsRebootRequired']++;
+                    }
+                    break;
+                case 'macos':
+                    $summary['macosHosts']++;
+                    if ($entity->reboot_required) {
+                        $summary['macosRebootRequired']++;
+                    }
+                    break;
+            }
+        }
+
+        return $summary;
+    }
+
+
+    /**
+     * @param GenericFilter $GenericFilter
+     * @param PaginateOMat|null $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getPatchstatusIndex(GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        $query = $this->find()
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = PackagesHostDetails.host_id']
+            )
+            ->contain([
+                'Hosts' => function (Query $query) {
+                    return $query->select([
+                        'Hosts.id',
+                        'Hosts.name',
+                        'Hosts.uuid',
+                        'Hosts.container_id',
+                    ]);
+                }
+            ])
+            ->where([
+                'Hosts.disabled' => 0
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        if (!empty($GenericFilter->genericFilters())) {
+            $query->where($GenericFilter->genericFilters());
+        }
+
+        $query->orderBy(
+            $GenericFilter->getOrderForPaginator('Hosts.name', 'asc')
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
     }
 
 }

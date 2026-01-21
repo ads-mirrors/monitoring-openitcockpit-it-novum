@@ -569,6 +569,17 @@ class Menu {
                 1,
                 true,
                 '/packages/index'
+            ))->addLink(new MenuLink(
+                __('Patch status'),
+                'PatchstatusIndex',
+                'patchstatus',
+                'index',
+                '',
+                ['fas', 'bandage'],
+                [],
+                1,
+                true,
+                '/patchstatus/index'
             ))
             );
 

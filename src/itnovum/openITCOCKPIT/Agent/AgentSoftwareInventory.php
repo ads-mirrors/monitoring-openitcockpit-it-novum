@@ -80,9 +80,9 @@ class AgentSoftwareInventory {
                 'os_family'       => $result['Stats']['OsFamily'] ?? '',    // "debian", "suse",                "rhel",      "darwin", "windows"
                 'agent_version'   => $result['Stats']['AgentVersion'] ?? '',
                 'reboot_required' => !empty($result['Stats']['RebootRequired']) ? 1 : 0,
-                'system_uptime'   => $result['Stats']['SystemUptime'] ?? 0,
+                'system_uptime'   => $result['Stats']['Uptime'] ?? 0,
                 'last_update'     => date('Y-m-d H:i:s', $result['LastUpdate']),
-                'last_error'      => $result['Stats']['LastError'] ?? null
+                'last_error'      => !empty($result['Stats']['LastError']) ? $result['Stats']['LastError'] : null
             ];
             $this->PackagesHostDetailsTable->updateHostDetails($hostId, $details);
         }
