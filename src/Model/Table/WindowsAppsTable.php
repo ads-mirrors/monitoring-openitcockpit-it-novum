@@ -375,23 +375,9 @@ class WindowsAppsTable extends Table {
             $all_windows_apps['totalPackages']++;
             foreach ($windows_app['windows_apps_hosts'] as $hostApp) {
                 $all_windows_apps['totalInstallations']++;
-                $all_windows_apps['allHosts'][] = $hostApp['host_id'];
+                $all_windows_apps['allHosts'][$hostApp['host_id']] = $hostApp['host_id'];
             }
         }
-
-        /**
-         * if ($hostPackage['needs_update'] === false) {
-         * $all_packages_linux_summary['upToDate']++;
-         * } else {
-         * if ($hostPackage['is_patch'] === true) {
-         * $all_packages_linux_summary['updatesAvailable']++;
-         * }
-         * if ($hostPackage['is_security_update'] === true) {
-         * $all_packages_linux_summary['securityUpdates']++;
-         * }
-         * }
-         */
-
         return $all_windows_apps;
     }
 }

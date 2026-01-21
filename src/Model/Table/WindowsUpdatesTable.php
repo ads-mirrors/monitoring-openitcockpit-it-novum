@@ -268,11 +268,11 @@ class WindowsUpdatesTable extends Table {
         foreach ($result as $windows_update) {
             if ($windows_update['is_security_update'] === false) {
                 $all_windows_updates['updatesAvailable']++;
-                $all_windows_updates['hostsWithUpdates'][] = $windows_update['host_id'];
+                $all_windows_updates['hostsWithUpdates'][$windows_update['host_id']] = $windows_update['host_id'];
             }
             if ($windows_update['is_security_update'] === true) {
                 $all_windows_updates['securityUpdates']++;
-                $all_windows_updates['hostsWithSecurityUpdates'][] = $windows_update['host_id'];
+                $all_windows_updates['hostsWithSecurityUpdates'][$windows_update['host_id']] = $windows_update['host_id'];
             }
         }
 
