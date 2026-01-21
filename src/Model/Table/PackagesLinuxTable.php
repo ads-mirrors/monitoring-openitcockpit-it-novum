@@ -428,7 +428,10 @@ class PackagesLinuxTable extends Table {
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) {
                     $query
-                        ->innerJoinWith('Hosts')
+                        ->innerJoin(
+                            ['Hosts' => 'hosts'],
+                            ['Hosts.id = PackageLinuxHosts.host_id']
+                        )
                         ->select([
                             'PackageLinuxHosts.package_linux_id',
                             'PackageLinuxHosts.needs_update',
@@ -498,7 +501,10 @@ class PackagesLinuxTable extends Table {
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) {
                     $query
-                        ->innerJoinWith('Hosts')
+                        ->innerJoin(
+                            ['Hosts' => 'hosts'],
+                            ['Hosts.id = PackageLinuxHosts.host_id']
+                        )
                         ->select([
                             'PackageLinuxHosts.package_linux_id',
                             'PackageLinuxHosts.needs_update',
@@ -533,14 +539,19 @@ class PackagesLinuxTable extends Table {
             $all_packages_linux_summary['totalPackages']++;
             foreach ($packages_linux['package_linux_hosts'] as $hostPackage) {
                 $all_packages_linux_summary['totalInstallations']++;
+                $all_packages_linux_summary['allHosts'][$hostPackage['host_id']] = $hostPackage['host_id'];
                 if ($hostPackage['needs_update'] === false) {
                     $all_packages_linux_summary['upToDate']++;
+                    $all_packages_linux_summary['hostsUpToDate'][$hostPackage['host_id']] = $hostPackage['host_id'];
+
                 } else {
                     if ($hostPackage['is_patch'] === true) {
                         $all_packages_linux_summary['updatesAvailable']++;
+                        $all_packages_linux_summary['hostsWithUpdates'][$hostPackage['host_id']] = $hostPackage['host_id'];
                     }
                     if ($hostPackage['is_security_update'] === true) {
                         $all_packages_linux_summary['securityUpdates']++;
+                        $all_packages_linux_summary['hostsWithSecurityUpdates'][$hostPackage['host_id']] = $hostPackage['host_id'];
                     }
                 }
             }

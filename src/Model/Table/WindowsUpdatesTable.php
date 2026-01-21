@@ -222,4 +222,61 @@ class WindowsUpdatesTable extends Table {
         return true;
     }
 
+    public function getWindowsUpdatesForSummary(array $MY_RIGHTS = []): array {
+        $all_windows_updates = [
+            'upToDate'                 => 0,
+            'updatesAvailable'         => 0,
+            'securityUpdates'          => 0,
+            'totalInstallations'       => 0,
+            'hostsUpToDate'            => [],
+            'hostsWithUpdates'         => [],
+            'hostsWithSecurityUpdates' => [],
+        ];
+
+
+        $query = $this->find('all')
+            ->select([
+                'WindowsUpdates.host_id',
+                'WindowsUpdates.reboot_required',
+                'WindowsUpdates.is_security_update',
+                'WindowsUpdates.is_optional',
+            ])
+            ->disableAutoFields()
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = WindowsUpdates.host_id']
+            )
+            ->where([
+                'Hosts.disabled' => 0
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->disableHydration();
+        $result = $query->toArray();
+        if (empty($result)) {
+            return $all_windows_updates;
+        }
+        foreach ($result as $windows_update) {
+            if ($windows_update['is_security_update'] === false) {
+                $all_windows_updates['updatesAvailable']++;
+                $all_windows_updates['hostsWithUpdates'][$windows_update['host_id']] = $windows_update['host_id'];
+            }
+            if ($windows_update['is_security_update'] === true) {
+                $all_windows_updates['securityUpdates']++;
+                $all_windows_updates['hostsWithSecurityUpdates'][$windows_update['host_id']] = $windows_update['host_id'];
+            }
+        }
+
+        return $all_windows_updates;
+    }
+
 }

@@ -27,7 +27,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Table\MacosAppsTable;
+use App\Model\Table\MacosUpdatesTable;
 use App\Model\Table\PackagesLinuxTable;
+use App\Model\Table\WindowsAppsTable;
+use App\Model\Table\WindowsUpdatesTable;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
@@ -40,12 +44,11 @@ use itnovum\openITCOCKPIT\Filter\GenericFilter;
  */
 class PackagesController extends AppController {
 
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|null|void Renders view
-     */
-    public function index() {
+    //Only for ACLs
+    public function overview() {
+    }
+
+    public function linux(): void {
         if (!$this->isAngularJsRequest()) {
             throw new MethodNotAllowedException();
         }
@@ -67,6 +70,18 @@ class PackagesController extends AppController {
 
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
         $all_packages_linux = $PackagesLinuxTable->getPackagesLinuxIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+        foreach ($all_packages_linux as $index => $packages_linux) {
+            $cumulatedStatus = 0;
+            foreach ($packages_linux['package_linux_hosts'] as $packages_host) {
+                if ($packages_host['needs_update']) {
+                    $cumulatedStatus = 1;
+                }
+                if ($packages_host['needs_update'] && $packages_host['is_security_update']) {
+                    $cumulatedStatus = 2;
+                }
+            }
+            $all_packages_linux[$index]['cumulated_status'] = $cumulatedStatus;
+        }
 
         $this->set('all_packages_linux', $all_packages_linux);
         $this->viewBuilder()->setOption('serialize', ['all_packages_linux']);
@@ -132,18 +147,36 @@ class PackagesController extends AppController {
             throw new MethodNotAllowedException();
         }
 
+        /***** Linux *****/
         /** @var PackagesLinuxTable $PackagesLinuxTable */
         $PackagesLinuxTable = TableRegistry::getTableLocator()->get('PackagesLinux');
+
+        /***** Windows *****/
+        /** @var WindowsAppsTable $WindowsAppsTable */
+        $WindowsAppsTable = TableRegistry::getTableLocator()->get('WindowsApps');
+        /** @var WindowsUpdatesTable $WindowsUpdatesTable */
+        $WindowsUpdatesTable = TableRegistry::getTableLocator()->get('WindowsUpdates');
+
+        /***** macOS *****/
+        /** @var MacosAppsTable $MacosAppsTable */
+        $MacosAppsTable = TableRegistry::getTableLocator()->get('MacosApps');
+        /** @var MacosUpdatesTable $MacosUpdatesTable */
+        $MacosUpdatesTable = TableRegistry::getTableLocator()->get('MacosUpdates');
+
         $MY_RIGHTS = $this->MY_RIGHTS;
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];
         }
         $summary = [
-            'windows' => [],
-            'mac'     => [],
+            'macos' => [],
         ];
 
         $summary['linux'] = $PackagesLinuxTable->getPackagesLinuxForSummary($MY_RIGHTS);
+
+        $windowsAppsSummary = $WindowsAppsTable->getWindowsAppsForSummary($MY_RIGHTS);
+        $windowsUpdatesSummary = $WindowsUpdatesTable->getWindowsUpdatesForSummary($MY_RIGHTS);
+
+        $summary['windows'] = array_merge($windowsAppsSummary, $windowsUpdatesSummary);
 
 
         $this->set('summary', $summary);
