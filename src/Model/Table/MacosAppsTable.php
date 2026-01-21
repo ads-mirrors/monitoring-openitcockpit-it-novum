@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
-use App\Model\Entity\WindowsAppsHost;
+use App\Model\Entity\MacosAppsHost;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Log\Log;
 use Cake\ORM\Query;
@@ -36,27 +36,27 @@ use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
 
 /**
- * WindowsApps Model
+ * MacosApps Model
  *
  * @property \App\Model\Table\HostsTable&\Cake\ORM\Association\BelongsToMany $Hosts
  *
- * @method \App\Model\Entity\WindowsApp newEmptyEntity()
- * @method \App\Model\Entity\WindowsApp newEntity(array $data, array $options = [])
- * @method array<\App\Model\Entity\WindowsApp> newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\WindowsApp get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \App\Model\Entity\WindowsApp findOrCreate($search, ?callable $callback = null, array $options = [])
- * @method \App\Model\Entity\WindowsApp patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\App\Model\Entity\WindowsApp> patchEntities(iterable $entities, array $data, array $options = [])
- * @method \App\Model\Entity\WindowsApp|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method \App\Model\Entity\WindowsApp saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\App\Model\Entity\WindowsApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsApp>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\WindowsApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsApp> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\WindowsApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsApp>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\WindowsApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsApp> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\MacosApp newEmptyEntity()
+ * @method \App\Model\Entity\MacosApp newEntity(array $data, array $options = [])
+ * @method array<\App\Model\Entity\MacosApp> newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\MacosApp get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\MacosApp findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\MacosApp patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method array<\App\Model\Entity\MacosApp> patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\MacosApp|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\MacosApp saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method iterable<\App\Model\Entity\MacosApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\MacosApp>|false saveMany(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\MacosApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\MacosApp> saveManyOrFail(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\MacosApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\MacosApp>|false deleteMany(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\MacosApp>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\MacosApp> deleteManyOrFail(iterable $entities, array $options = [])
  *
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
-class WindowsAppsTable extends Table {
+class MacosAppsTable extends Table {
     /**
      * Initialize method
      *
@@ -66,15 +66,15 @@ class WindowsAppsTable extends Table {
     public function initialize(array $config): void {
         parent::initialize($config);
 
-        $this->setTable('windows_apps');
+        $this->setTable('macos_apps');
         $this->setDisplayField('name');
         $this->setPrimaryKey('id');
 
         $this->addBehavior('Timestamp');
 
-        $this->hasMany('WindowsAppsHosts', [
-            'foreignKey' => 'windows_app_id',
-            'className'  => WindowsAppsHostsTable::class,
+        $this->hasMany('MacosAppsHosts', [
+            'foreignKey' => 'macos_app_id',
+            'className'  => MacosAppsHostsTable::class,
             'dependent'  => true,
         ]);
     }
@@ -93,9 +93,9 @@ class WindowsAppsTable extends Table {
             ->notEmptyString('name');
 
         $validator
-            ->scalar('publisher')
-            ->maxLength('publisher', 255)
-            ->allowEmptyString('publisher');
+            ->scalar('description')
+            ->maxLength('description', 1000)
+            ->allowEmptyString('description');
 
         return $validator;
     }
@@ -114,11 +114,11 @@ class WindowsAppsTable extends Table {
      * @param null|int $limit
      * @param null|int $offset
      */
-    public function getWindowsAppsWithLimit(?int $limit = null, ?int $offset = null): array {
+    public function getMacosAppsWithLimit(?int $limit = null, ?int $offset = null): array {
         $query = $this->find()
             ->select([
-                'WindowsApps.id',
-                'WindowsApps.name',
+                'MacosApps.id',
+                'MacosApps.name',
             ]);
 
         if ($limit !== null) {
@@ -134,14 +134,14 @@ class WindowsAppsTable extends Table {
         return $query->toArray();
     }
 
-    public function getAllWindowsAppsAsMap(): array {
+    public function getAllMacosAppsAsMap(): array {
         //Multiple queries are faster than one big query
         $appCount = $this->getAppsCount();
         $chunk = 200;
         $queryCount = ceil($appCount / $chunk);
         $apps = [];
         for ($i = 0; $i < $queryCount; $i++) {
-            $_apps = $this->getWindowsAppsWithLimit($chunk, ($chunk * $i));
+            $_apps = $this->getMacosAppsWithLimit($chunk, ($chunk * $i));
             foreach ($_apps as $_app) {
                 $apps[$_app['name']] = $_app['id'];
             }
@@ -152,20 +152,20 @@ class WindowsAppsTable extends Table {
     }
 
     /**
-     * Get all Windows apps of a specific host
+     * Get all Macos apps of a specific host
      *
      * @param int $hostId
-     * @return WindowsAppsHost[]
+     * @return MacosAppsHost[]
      */
-    public function getAllWindowsAppsOfHost(int $hostId): array {
-        /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
-        $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
-        $query = $WindowsAppsHostsTable->find()
+    public function getAllMacosAppsOfHost(int $hostId): array {
+        /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+        $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
+        $query = $MacosAppsHostsTable->find()
             ->where([
                 'host_id' => $hostId,
             ])
             ->contain([
-                'WindowsApps' => function (Query $query) {
+                'MacosApps' => function (Query $query) {
                     return $query->select([
                         'id',
                         'name',
@@ -174,8 +174,8 @@ class WindowsAppsTable extends Table {
             ]);
 
         $result = [];
-        foreach ($query->toArray() as $windowsAppHost) {
-            $result[$windowsAppHost->windows_app_id] = $windowsAppHost;
+        foreach ($query->toArray() as $macosAppHost) {
+            $result[$macosAppHost->macos_app_id] = $macosAppHost;
         }
 
         return $result;
@@ -183,13 +183,13 @@ class WindowsAppsTable extends Table {
 
     public function deleteUnusedApps() {
         $query = $this->deleteQuery();
-        $query->delete('windows_apps')
+        $query->delete('macos_apps')
             ->where(function (QueryExpression $exp, Query\DeleteQuery $query) {
                 return $exp->notExists(
                     $this->find()
                         ->select(1)
-                        ->from(['windows_apps_hosts'])
-                        ->where(['windows_apps_hosts.windows_app_id = windows_apps.id'])
+                        ->from(['macos_apps_hosts'])
+                        ->where(['macos_apps_hosts.macos_app_id = macos_apps.id'])
                 );
             });
 
@@ -209,13 +209,13 @@ class WindowsAppsTable extends Table {
             return true;
         }
 
-        /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
-        $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
+        /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+        $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
 
         // key = app name, value = app id
-        $existingApps = $this->getAllWindowsAppsAsMap();
-        // key = app id, value = WindowsAppsHost entity
-        $existingAppsOfHost = $this->getAllWindowsAppsOfHost($hostId);
+        $existingApps = $this->getAllMacosAppsAsMap();
+        // key = app id, value = MacosAppsHost entity
+        $existingAppsOfHost = $this->getAllMacosAppsOfHost($hostId);
 
         $newApps = [];
         $newAppsHosts = [];
@@ -225,7 +225,7 @@ class WindowsAppsTable extends Table {
         $installedApps[] = [
             'Name'      => 'delete-test',
             'Version'   => '2.0.0',
-            'Publisher' => 'openITCOCKPIT Development Team',
+            'Description' => 'Fake app for deletion test',
         ];*/
         foreach ($installedApps as $app) {
             if (empty($app['Name']) || empty($app['Version'])) {
@@ -233,10 +233,15 @@ class WindowsAppsTable extends Table {
             }
 
             if (!isset($existingApps[$app['Name']])) {
-                // New App - add to windows_apps
+                // New App - add to macos_apps
+                $desc = null;
+                if (isset($app['Description'])) {
+                    $desc = substr($app['Description'], 0, 1000);
+                }
+
                 $newApps[] = $this->newEntity([
-                    'name'      => $app['Name'],
-                    'publisher' => $app['Publisher'] ?? null,
+                    'name'        => $app['Name'],
+                    'description' => $desc
                 ]);
             }
         }
@@ -264,39 +269,39 @@ class WindowsAppsTable extends Table {
             $appId = $existingApps[$app['Name']];
             if (isset($existingAppsOfHost[$appId])) {
                 // App already exists for host - update it
-                $windowsAppHostEntity = $existingAppsOfHost[$appId];
-                if ($windowsAppHostEntity->version != $app['Version']) {
-                    $windowsAppHostEntity->version = $app['Version'];
-                    if ($WindowsAppsHostsTable->save($windowsAppHostEntity)) {
-                        $existingAppsOfHost[$windowsAppHostEntity->windows_app_id] = $windowsAppHostEntity;
+                $macosAppHostEntity = $existingAppsOfHost[$appId];
+                if ($macosAppHostEntity->version != $app['Version']) {
+                    $macosAppHostEntity->version = $app['Version'];
+                    if ($MacosAppsHostsTable->save($macosAppHostEntity)) {
+                        $existingAppsOfHost[$macosAppHostEntity->macos_app_id] = $macosAppHostEntity;
                     }
                 }
             } else {
                 // Create a new entry
-                $newAppsHosts[] = $WindowsAppsHostsTable->newEntity([
-                    'host_id'        => $hostId,
-                    'windows_app_id' => $appId,
-                    'version'        => $app['Version'],
+                $newAppsHosts[] = $MacosAppsHostsTable->newEntity([
+                    'host_id'      => $hostId,
+                    'macos_app_id' => $appId,
+                    'version'      => $app['Version'],
                 ]);
             }
         }
 
         if (!empty($newAppsHosts)) {
-            $WindowsAppsHostsTable->saveMany($newAppsHosts);
+            $MacosAppsHostsTable->saveMany($newAppsHosts);
 
             // Add new apps to existingApps map
             foreach ($newAppsHosts as $newAppHost) {
-                $existingAppsOfHost[$newAppHost->windows_app_id] = $newAppHost;
+                $existingAppsOfHost[$newAppHost->macos_app_id] = $newAppHost;
             }
         }
 
         // Remove uninstalled apps
         $existingAppsOfHostNameAndId = [];
-        foreach ($existingAppsOfHost as $appWindowsHost) {
+        foreach ($existingAppsOfHost as $appMacosHost) {
             // New installed apps may have no JOIN data (app name)
-            // but this is not needed as we want to remote uninstalled apps from the windows_apps_hosts table
-            if (!empty($appWindowsHost->windows_app->name)) {
-                $existingAppsOfHostNameAndId[$appWindowsHost->windows_app->name] = $appWindowsHost->windows_app_id;
+            // but this is not needed as we want to remote uninstalled apps from the macos_apps_hosts table
+            if (!empty($appMacosHost->macos_app->name)) {
+                $existingAppsOfHostNameAndId[$appMacosHost->macos_app->name] = $appMacosHost->macos_app_id;
             }
         }
 
@@ -311,16 +316,14 @@ class WindowsAppsTable extends Table {
         }
 
         $appsThatGotRemovedFromSystem = (array_diff_key($existingAppsOfHostNameAndId, $currentlyInstalledAppsNameAndId));
-        // Remove these apps from windows_apps_hosts
+        // Remove these apps from macos_apps_hosts
         if (!empty($appsThatGotRemovedFromSystem)) {
-            $WindowsAppsHostsTable->deleteAll(conditions: [
-                'windows_app_id IN' => array_values($appsThatGotRemovedFromSystem),
-                'host_id'           => $hostId,
+            $MacosAppsHostsTable->deleteAll(conditions: [
+                'macos_app_id IN' => array_values($appsThatGotRemovedFromSystem),
+                'host_id'         => $hostId,
             ]);
         }
 
         return true;
     }
-
-
 }

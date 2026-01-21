@@ -63,8 +63,8 @@ class SoftwareInventory extends BaseMigration {
      */
     public function change(): void {
 
-        // TODO ENABLE THIS !!
-        /*if ($this->hasTable('agentconfigs')) {
+
+        if ($this->hasTable('agentconfigs')) {
             $this->table('agentconfigs')
                 ->addColumn('enable_packagemanager', 'boolean', [
                     'default' => '1',
@@ -73,7 +73,7 @@ class SoftwareInventory extends BaseMigration {
                     'after'   => 'push_noticed'
                 ])
                 ->update();
-        }*/
+        }
 
         if (!$this->hasTable('packages_host_details')) {
             $this->table('packages_host_details')
@@ -400,8 +400,141 @@ class SoftwareInventory extends BaseMigration {
                         'kbarticle_ids'
                     ]
                 )
+                ->addIndex(
+                    [
+                        'update_id',
+                        'kbarticle_ids',
+                        'host_id'
+                    ]
+                )
                 ->create();
         }
+
+        if (!$this->hasTable('macos_apps')) {
+            $this->table('macos_apps')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('name', 'string', [
+                    'limit' => 255,
+                    'null'  => false,
+                ])
+                ->addColumn('description', 'string', [
+                    'default' => null,
+                    'limit'   => 1000,
+                    'null'    => true,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'name',
+                    ]
+                )
+                ->create();
+        }
+
+        if (!$this->hasTable('macos_apps_hosts')) {
+            $this->table('macos_apps_hosts')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('macos_app_id', 'biginteger', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                    'signed'  => false
+                ])
+                ->addColumn('host_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addColumn('version', 'string', [
+                    'limit' => 64,
+                    'null'  => false,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'macos_app_id',
+                        'host_id'
+                    ]
+                )
+                ->create();
+        }
+
+        if (!$this->hasTable('macos_updates')) {
+            $this->table('macos_updates')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('host_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addColumn('name', 'string', [
+                    'limit' => 255,
+                    'null'  => false,
+                ])
+                ->addColumn('description', 'string', [
+                    'default' => null,
+                    'limit'   => 512,
+                    'null'    => true,
+                ])
+                ->addColumn('version', 'string', [
+                    'default' => null,
+                    'limit'   => 64,
+                    'null'    => true,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'host_id',
+                        'name',
+                    ]
+                )
+                ->create();
+        }
+
 
     }
 }

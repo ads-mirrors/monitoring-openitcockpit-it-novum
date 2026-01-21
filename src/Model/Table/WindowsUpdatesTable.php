@@ -27,8 +27,10 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Entity\WindowsUpdate;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
+use Cake\Utility\Hash;
 use Cake\Validation\Validator;
 
 /**
@@ -133,4 +135,91 @@ class WindowsUpdatesTable extends Table {
 
         return $rules;
     }
+
+    /**
+     * @param int $hostId
+     * @return WindowsUpdate[]
+     */
+    public function getAllWindowsUpdatesByHostId(int $hostId): array {
+        $query = $this->find()
+            ->where(['host_id' => $hostId])
+            ->orderBy(['id' => 'DESC']);
+
+        return $query->all()->toArray();
+    }
+
+    /**
+     * Store Windows updates for a host
+     *
+     * @param int $hostId
+     * @param array $availableUpdates
+     * @return bool
+     */
+    public function saveUpdatesForHost(int $hostId, array $availableUpdates): bool {
+
+        $existingUpdates = $this->getAllWindowsUpdatesByHostId($hostId);
+        $existingUpdateIds = Hash::combine($existingUpdates, '{n}.update_id', '{n}.id');
+
+        // Fake update for testing
+        /*
+        $availableUpdates[] = [
+            'Title'            => 'TEST Security Intelligence-Update für Microsoft Defender Antivirus – KB2267602 (Version 1.443.762.0) – Aktueller Kanal (Allgemein)',
+            'Description'      => 'Installieren Sie dieses Update, um die Dateien zu überarbeiten, die zum Erkenne',
+            'KBArticleIDs'     => [
+                '1122334',
+                '1122335',
+                '1122336',
+            ],
+            'IsInstalled'      => false,
+            'IsSecurityUpdate' => true,
+            'IsOptional'       => false,
+            'UpdateID'         => '69f55396-a0ef-4f79-8539-4d0ccfa35ec6',
+            'RevisionNumber'   => 201,
+            'RebootRequired'   => false
+        ];*/
+        foreach ($availableUpdates as $update) {
+            if (empty($update['UpdateID']) || empty($update['Title'])) {
+                continue;
+            }
+
+            // The update ID will generally be a GUID, but it can be any string that uniquely identifies. This identifier is required for calling many WindowsUpdateAdministrator methods.
+            // https://learn.microsoft.com/en-us/uwp/api/windows.management.update.windowsupdate.updateid?view=winrt-26100
+
+            // New update?
+            if (!isset($existingUpdateIds[$update['UpdateID']])) {
+                $desc = null;
+                if (isset($update['Description'])) {
+                    $desc = substr($update['Description'], 0, 1000);
+                }
+
+                $newUpdate = $this->newEntity([
+                    'name'               => $update['Title'],
+                    'host_id'            => $hostId,
+                    'description'        => $desc,
+                    'kbarticle_ids'      => isset($update['KBArticleIDs']) ? implode(',', $update['KBArticleIDs']) : null,
+                    'update_id'          => $update['UpdateID'],
+                    'reboot_required'    => $update['RebootRequired'] ?? false,
+                    'is_security_update' => $update['IsSecurityUpdate'] ?? false,
+                    'is_optional'        => $update['IsOptional'] ?? false,
+                ]);
+                if ($this->save($newUpdate)) {
+                    $existingUpdateIds[$update['UpdateID']] = $newUpdate->id;
+                }
+            }
+        }
+
+        // Remove old updates that are no longer reported by the agent
+        $availableUpdateIds = array_flip(Hash::extract($availableUpdates, '{n}.UpdateID'));
+
+        $updatesIdsToRemove = array_diff_key($existingUpdateIds, $availableUpdateIds);
+        if (!empty($updatesIdsToRemove)) {
+            $this->deleteAll(conditions: [
+                'update_id IN' => array_keys($updatesIdsToRemove),
+                'host_id'      => $hostId,
+            ]);
+        }
+
+        return true;
+    }
+
 }
