@@ -521,6 +521,54 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['linux', 'network'],
                 'active'      => true
             ],
+            'nginx'                        => [
+                'type_id'     => 'nginx',
+                'title'       => __('nginx Status'),
+                'description' => __('Monitor your nginx web server status'),
+                'image'       => 'nginx_logo.svg',
+                'category'    => ['webserver', 'cloud'],
+                'active'      => true
+            ],
+            'citrix-netscaler'             => [
+                'type_id'     => 'citrix-netscaler',
+                'title'       => __('Citrix Netscaler'),
+                'description' => __('Used to check Citrix Netscaler devices'),
+                'image'       => 'citrix.svg',
+                'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
+            'aruba-network'                => [
+                'type_id'     => 'aruba-network',
+                'title'       => __('Aruba Network'),
+                'description' => __('Used to check Aruba Network devices'),
+                'image'       => 'aruba_networks.png',
+                'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
+            'fortigate-firewall'           => [
+                'type_id'     => 'fortigate-firewall',
+                'title'       => __('Fortigate Firewall'),
+                'description' => __('Monitor your Fortigate Firewall.'),
+                'image'       => 'fortinet.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
+            'fujitsu-eternus-tape-library' => [
+                'type_id'     => 'fujitsu-eternus-tape-library',
+                'title'       => __('Fujitsu Eternus Tape Library'),
+                'description' => __('Used to check Fujitsu Eternus Tape Library devices'),
+                'image'       => 'fujitsu.svg',
+                'category'    => ['hardware'],
+                'active'      => true
+            ],
+            'netapp'                       => [
+                'type_id'     => 'netapp',
+                'title'       => __('NetApp'),
+                'description' => __('Used to check NetApp devices.'),
+                'image'       => 'netapp.svg',
+                'category'    => ['linux', 'network', 'hardware'],
+                'active'      => true
+            ],
             'nextcloud'                    => [
                 'type_id'     => 'nextcloud',
                 'title'       => __('NextCloud'),

@@ -40,6 +40,7 @@ use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Core\Holidays;
+use itnovum\openITCOCKPIT\Core\UUID;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\CalendarFilter;
 
@@ -109,6 +110,7 @@ class CalendarsController extends AppController {
             $CalendarsTable = TableRegistry::getTableLocator()->get('Calendars');
 
             $Entity = $CalendarsTable->newEntity($data);
+            $Entity->set('uuid', UUID::v4());
             $CalendarsTable->save($Entity);
             if ($Entity->hasErrors()) {
                 $this->response = $this->response->withStatus(400);
