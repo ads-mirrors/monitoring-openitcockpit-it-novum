@@ -539,6 +539,7 @@ class PackagesLinuxTable extends Table {
             $all_packages_linux_summary['totalPackages']++;
             foreach ($packages_linux['package_linux_hosts'] as $hostPackage) {
                 $all_packages_linux_summary['totalInstallations']++;
+                $all_packages_linux_summary['allHosts'][] = $hostPackage['host_id'];
                 if ($hostPackage['needs_update'] === false) {
                     $all_packages_linux_summary['upToDate']++;
                 } else {

@@ -322,5 +322,76 @@ class WindowsAppsTable extends Table {
         return true;
     }
 
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getWindowsAppsForSummary(array $MY_RIGHTS = []): array {
+        $all_windows_apps = [
+            'totalPackages'      => 0,
+            'totalInstallations' => 0,
+            'allHosts'           => []
+        ];
 
+
+        $query = $this->find('all')
+            ->disableAutoFields()
+            ->contain([
+                'WindowsAppsHosts' => function (Query $query) {
+                    $query
+                        ->innerJoin(
+                            ['Hosts' => 'hosts'],
+                            ['Hosts.id = WindowsAppsHosts.host_id']
+                        )
+                        ->select([
+                            'WindowsAppsHosts.windows_app_id',
+                            'WindowsAppsHosts.version',
+                            'WindowsAppsHosts.host_id'
+                        ])
+                        ->where([
+                            'Hosts.disabled' => 0
+                        ])->disableAutoFields();
+                    return $query;
+                }
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->disableHydration();
+        $result = $query->toArray();
+        if (empty($result)) {
+            return $all_windows_apps;
+        }
+
+        foreach ($result as $windows_app) {
+            $all_windows_apps['totalPackages']++;
+            foreach ($windows_app['windows_apps_hosts'] as $hostApp) {
+                $all_windows_apps['totalInstallations']++;
+                $all_windows_apps['allHosts'][] = $hostApp['host_id'];
+            }
+        }
+
+        /**
+         * if ($hostPackage['needs_update'] === false) {
+         * $all_packages_linux_summary['upToDate']++;
+         * } else {
+         * if ($hostPackage['is_patch'] === true) {
+         * $all_packages_linux_summary['updatesAvailable']++;
+         * }
+         * if ($hostPackage['is_security_update'] === true) {
+         * $all_packages_linux_summary['securityUpdates']++;
+         * }
+         * }
+         */
+
+        return $all_windows_apps;
+    }
 }

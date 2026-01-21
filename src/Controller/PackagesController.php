@@ -27,7 +27,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Table\MacosAppsTable;
+use App\Model\Table\MacosUpdatesTable;
 use App\Model\Table\PackagesLinuxTable;
+use App\Model\Table\WindowsAppsTable;
+use App\Model\Table\WindowsUpdatesTable;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
@@ -143,18 +147,36 @@ class PackagesController extends AppController {
             throw new MethodNotAllowedException();
         }
 
+        /***** Linux *****/
         /** @var PackagesLinuxTable $PackagesLinuxTable */
         $PackagesLinuxTable = TableRegistry::getTableLocator()->get('PackagesLinux');
+
+        /***** Windows *****/
+        /** @var WindowsAppsTable $WindowsAppsTable */
+        $WindowsAppsTable = TableRegistry::getTableLocator()->get('WindowsApps');
+        /** @var WindowsUpdatesTable $WindowsUpdatesTable */
+        $WindowsUpdatesTable = TableRegistry::getTableLocator()->get('WindowsUpdates');
+
+        /***** macOS *****/
+        /** @var MacosAppsTable $MacosAppsTable */
+        $MacosAppsTable = TableRegistry::getTableLocator()->get('MacosApps');
+        /** @var MacosUpdatesTable $MacosUpdatesTable */
+        $MacosUpdatesTable = TableRegistry::getTableLocator()->get('MacosUpdates');
+
         $MY_RIGHTS = $this->MY_RIGHTS;
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];
         }
         $summary = [
-            'windows' => [],
-            'macos'   => [],
+            'macos' => [],
         ];
 
         $summary['linux'] = $PackagesLinuxTable->getPackagesLinuxForSummary($MY_RIGHTS);
+
+        $windowsAppsSummary = $WindowsAppsTable->getWindowsAppsForSummary($MY_RIGHTS);
+        $windowsUpdatesSummary = $WindowsUpdatesTable->getWindowsUpdatesForSummary($MY_RIGHTS);
+
+        $summary['windows'] = array_merge($windowsAppsSummary, $windowsUpdatesSummary);
 
 
         $this->set('summary', $summary);
