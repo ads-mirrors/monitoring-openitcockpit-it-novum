@@ -242,9 +242,14 @@ class PackagesLinuxTable extends Table {
 
             if (!isset($existingPackages[$package['Name']])) {
                 // New package - add to packages_linux
+                $desc = null;
+                if (isset($package['Description'])) {
+                    $desc = substr($package['Description'], 0, 1000);
+                }
+
                 $newPackages[] = $this->newEntity([
                     'name'        => $package['Name'],
-                    'description' => $package['Description'] ?? null,
+                    'description' => $desc,
                     'is_patch'    => false,
                 ]);
             }
