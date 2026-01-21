@@ -428,7 +428,10 @@ class PackagesLinuxTable extends Table {
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) {
                     $query
-                        ->innerJoinWith('Hosts')
+                        ->innerJoin(
+                            ['Hosts' => 'hosts'],
+                            ['Hosts.id = PackagesHostDetails.host_id']
+                        )
                         ->select([
                             'PackageLinuxHosts.package_linux_id',
                             'PackageLinuxHosts.needs_update',
@@ -498,7 +501,10 @@ class PackagesLinuxTable extends Table {
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) {
                     $query
-                        ->innerJoinWith('Hosts')
+                        ->innerJoin(
+                            ['Hosts' => 'hosts'],
+                            ['Hosts.id = PackagesHostDetails.host_id']
+                        )
                         ->select([
                             'PackageLinuxHosts.package_linux_id',
                             'PackageLinuxHosts.needs_update',
