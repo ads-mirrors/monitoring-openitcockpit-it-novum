@@ -40,12 +40,11 @@ use itnovum\openITCOCKPIT\Filter\GenericFilter;
  */
 class PackagesController extends AppController {
 
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|null|void Renders view
-     */
-    public function index() {
+    //Only for ACLs
+    public function overview() {
+    }
+
+    public function linux() {
         if (!$this->isAngularJsRequest()) {
             throw new MethodNotAllowedException();
         }

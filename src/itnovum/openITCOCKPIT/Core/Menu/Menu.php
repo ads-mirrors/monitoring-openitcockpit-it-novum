@@ -562,13 +562,13 @@ class Menu {
                 __('Packages'),
                 'PackagesIndex',
                 'packages',
-                'index',
+                'linux',
                 '',
                 ['fas', 'cubes'],
                 [],
                 1,
                 true,
-                '/packages/index'
+                '/packages/linux'
             ))
             );
 

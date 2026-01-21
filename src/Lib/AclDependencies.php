@@ -658,6 +658,9 @@ class AclDependencies {
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartsByString');
 
         $this
+            ->dependency('Packages', 'index', 'Agentconnector', 'linux')
+            ->dependency('Packages', 'index', 'Agentconnector', 'windows')
+            ->dependency('Packages', 'index', 'Agentconnector', 'mac')
             ->dependency('Packages', 'index', 'Packages', 'summary');
 
 
