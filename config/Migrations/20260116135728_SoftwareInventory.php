@@ -63,8 +63,8 @@ class SoftwareInventory extends BaseMigration {
      */
     public function change(): void {
 
-        // TODO ENABLE THIS !!
-        /*if ($this->hasTable('agentconfigs')) {
+
+        if ($this->hasTable('agentconfigs')) {
             $this->table('agentconfigs')
                 ->addColumn('enable_packagemanager', 'boolean', [
                     'default' => '1',
@@ -73,7 +73,7 @@ class SoftwareInventory extends BaseMigration {
                     'after'   => 'push_noticed'
                 ])
                 ->update();
-        }*/
+        }
 
         if (!$this->hasTable('packages_host_details')) {
             $this->table('packages_host_details')
