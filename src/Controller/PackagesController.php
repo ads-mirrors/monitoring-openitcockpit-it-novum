@@ -151,7 +151,7 @@ class PackagesController extends AppController {
         }
         $summary = [
             'windows' => [],
-            'mac'     => [],
+            'macos'   => [],
         ];
 
         $summary['linux'] = $PackagesLinuxTable->getPackagesLinuxForSummary($MY_RIGHTS);
