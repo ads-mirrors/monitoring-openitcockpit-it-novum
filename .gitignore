@@ -142,6 +142,7 @@ plugins/NutanixModule
 plugins/NetworkModule
 plugins/NginxModule
 plugins/CitrixModule
+plugins/NetAppModule
 
 # NFS mounts
 .nfs.*
