@@ -430,7 +430,7 @@ class PackagesLinuxTable extends Table {
                     $query
                         ->innerJoin(
                             ['Hosts' => 'hosts'],
-                            ['Hosts.id = PackagesHostDetails.host_id']
+                            ['Hosts.id = PackageLinuxHosts.host_id']
                         )
                         ->select([
                             'PackageLinuxHosts.package_linux_id',
@@ -503,7 +503,7 @@ class PackagesLinuxTable extends Table {
                     $query
                         ->innerJoin(
                             ['Hosts' => 'hosts'],
-                            ['Hosts.id = PackagesHostDetails.host_id']
+                            ['Hosts.id = PackageLinuxHosts.host_id']
                         )
                         ->select([
                             'PackageLinuxHosts.package_linux_id',

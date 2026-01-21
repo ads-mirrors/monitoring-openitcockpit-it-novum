@@ -44,7 +44,7 @@ class PackagesController extends AppController {
     public function overview() {
     }
 
-    public function linux() {
+    public function linux(): void {
         if (!$this->isAngularJsRequest()) {
             throw new MethodNotAllowedException();
         }
@@ -66,6 +66,18 @@ class PackagesController extends AppController {
 
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
         $all_packages_linux = $PackagesLinuxTable->getPackagesLinuxIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+        foreach ($all_packages_linux as $index => $packages_linux) {
+            $cumulatedStatus = 0;
+            foreach ($packages_linux['package_linux_hosts'] as $packages_host) {
+                if ($packages_host['needs_update']) {
+                    $cumulatedStatus = 1;
+                }
+                if ($packages_host['needs_update'] && $packages_host['is_security_update']) {
+                    $cumulatedStatus = 2;
+                }
+            }
+            $all_packages_linux[$index]['cumulated_status'] = $cumulatedStatus;
+        }
 
         $this->set('all_packages_linux', $all_packages_linux);
         $this->viewBuilder()->setOption('serialize', ['all_packages_linux']);
