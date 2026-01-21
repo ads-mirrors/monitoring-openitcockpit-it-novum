@@ -227,7 +227,6 @@ class WindowsAppsTable extends Table {
             'Version'   => '2.0.0',
             'Publisher' => 'openITCOCKPIT Development Team',
         ];*/
-
         foreach ($installedApps as $app) {
             if (empty($app['Name']) || empty($app['Version'])) {
                 continue;
