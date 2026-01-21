@@ -149,7 +149,7 @@ class WindowsUpdatesTable extends Table {
     }
 
     /**
-     * Store windows updates for a host
+     * Store Windows updates for a host
      *
      * @param int $hostId
      * @param array $availableUpdates
