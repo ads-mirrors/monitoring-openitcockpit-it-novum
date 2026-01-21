@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use App\Model\Entity\PackagesLinuxHost;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Log\Log;
@@ -34,6 +35,7 @@ use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * PackagesLinux Model
@@ -57,6 +59,8 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class PackagesLinuxTable extends Table {
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -406,5 +410,136 @@ class PackagesLinuxTable extends Table {
         }
 
         return true;
+    }
+
+    /**
+     * @param GenericFilter $GenericFilter
+     * @param $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getPackagesLinuxIndex(GenericFilter $GenericFilter, $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        $query = $this->find('all')
+            ->contain([
+                'PackageLinuxHosts' => function (Query $query) {
+                    $query
+                        ->innerJoinWith('Hosts')
+                        ->select([
+                            'PackageLinuxHosts.package_linux_id',
+                            'PackageLinuxHosts.needs_update',
+                            'PackageLinuxHosts.is_security_update',
+                            'PackageLinuxHosts.is_patch',
+                            'id'   => 'Hosts.id',
+                            'name' => 'Hosts.name'
+                        ])
+                        ->where([
+                            'Hosts.disabled' => 0
+                        ])->disableAutoFields();
+                    return $query;
+                }
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        if (!empty($GenericFilter->genericFilters())) {
+            $query->where($GenericFilter->genericFilters());
+        }
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
+    }
+
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getPackagesLinuxForSummary(array $MY_RIGHTS = []): array {
+        $all_packages_linux_summary = [
+            'totalPackages'            => 0,
+            'upToDate'                 => 0,
+            'updatesAvailable'         => 0,
+            'securityUpdates'          => 0,
+            'totalInstallations'       => 0,
+            'allHosts'                 => [],
+            'hostsUpToDate'            => [],
+            'hostsWithUpdates'         => [],
+            'hostsWithSecurityUpdates' => [],
+        ];
+
+
+        $query = $this->find('all')
+            ->disableAutoFields()
+            ->contain([
+                'PackageLinuxHosts' => function (Query $query) {
+                    $query
+                        ->innerJoinWith('Hosts')
+                        ->select([
+                            'PackageLinuxHosts.package_linux_id',
+                            'PackageLinuxHosts.needs_update',
+                            'PackageLinuxHosts.is_security_update',
+                            'PackageLinuxHosts.is_patch',
+                            'PackageLinuxHosts.host_id'
+                        ])
+                        ->where([
+                            'Hosts.disabled' => 0
+                        ])->disableAutoFields();
+                    return $query;
+                }
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->disableHydration();
+        $result = $query->toArray();
+        if (empty($result)) {
+            return $all_packages_linux_summary;
+        }
+
+        foreach ($result as $packages_linux) {
+            $all_packages_linux_summary['totalPackages']++;
+            foreach ($packages_linux['package_linux_hosts'] as $hostPackage) {
+                $all_packages_linux_summary['totalInstallations']++;
+                if ($hostPackage['needs_update'] === false) {
+                    $all_packages_linux_summary['upToDate']++;
+                } else {
+                    if ($hostPackage['is_patch'] === true) {
+                        $all_packages_linux_summary['updatesAvailable']++;
+                    }
+                    if ($hostPackage['is_security_update'] === true) {
+                        $all_packages_linux_summary['securityUpdates']++;
+                    }
+                }
+            }
+        }
+        return $all_packages_linux_summary;
     }
 }

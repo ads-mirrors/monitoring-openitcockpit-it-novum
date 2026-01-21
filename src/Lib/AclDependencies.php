@@ -657,6 +657,9 @@ class AclDependencies {
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartById')
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartsByString');
 
+        $this
+            ->dependency('Packages', 'index', 'Packages', 'summary');
+
 
         //Load Plugin ALC Dependencies
         foreach (PluginManager::getAvailablePlugins() as $pluginName) {

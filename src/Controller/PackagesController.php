@@ -27,24 +27,49 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Table\PackagesLinuxTable;
+use Cake\Http\Exception\MethodNotAllowedException;
+use Cake\ORM\TableRegistry;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
+
 /**
  * Packages Controller
  *
  * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
  */
 class PackagesController extends AppController {
-    
+
     /**
      * Index method
      *
      * @return \Cake\Http\Response|null|void Renders view
      */
     public function index() {
-        $query = $this->Packages->find();
-        $query = $this->Authorization->applyScope($query);
-        $packages = $this->paginate($query);
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
 
-        $this->set(compact('packages'));
+        /** @var PackagesLinuxTable $PackagesLinuxTable */
+        $PackagesLinuxTable = TableRegistry::getTableLocator()->get('PackagesLinux');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'name',
+                'description'
+            ]
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_packages_linux = $PackagesLinuxTable->getPackagesLinuxIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+        $this->set('all_packages_linux', $all_packages_linux);
+        $this->viewBuilder()->setOption('serialize', ['all_packages_linux']);
     }
 
     /**
@@ -100,6 +125,29 @@ class PackagesController extends AppController {
             $this->Flash->error(__('The package could not be saved. Please, try again.'));
         }
         $this->set(compact('package'));
+    }
+
+    public function summary() {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var PackagesLinuxTable $PackagesLinuxTable */
+        $PackagesLinuxTable = TableRegistry::getTableLocator()->get('PackagesLinux');
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+        $summary = [
+            'windows' => [],
+            'mac'     => [],
+        ];
+
+        $summary['linux'] = $PackagesLinuxTable->getPackagesLinuxForSummary($MY_RIGHTS);
+
+
+        $this->set('summary', $summary);
+        $this->viewBuilder()->setOption('serialize', ['summary']);
     }
 
     /**
