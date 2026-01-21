@@ -254,5 +254,154 @@ class SoftwareInventory extends BaseMigration {
                 ->create();
         }
 
+        if (!$this->hasTable('windows_apps')) {
+            $this->table('windows_apps')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('name', 'string', [
+                    'limit' => 255,
+                    'null'  => false,
+                ])
+                ->addColumn('publisher', 'string', [
+                    'default' => null,
+                    'limit'   => 255,
+                    'null'    => true,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'name',
+                    ]
+                )
+                ->create();
+        }
+
+        if (!$this->hasTable('windows_apps_hosts')) {
+            $this->table('windows_apps_hosts')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('windows_app_id', 'biginteger', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                    'signed'  => false
+                ])
+                ->addColumn('host_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addColumn('version', 'string', [
+                    'limit' => 64,
+                    'null'  => false,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'windows_app_id',
+                        'host_id'
+                    ]
+                )
+                ->create();
+        }
+
+        if (!$this->hasTable('windows_updates')) {
+            $this->table('windows_updates')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('host_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addColumn('name', 'string', [
+                    'limit' => 255,
+                    'null'  => false,
+                ])
+                ->addColumn('description', 'string', [
+                    'default' => null,
+                    'limit'   => 512,
+                    'null'    => true,
+                ])
+                ->addColumn('kbarticle_ids', 'string', [
+                    'default' => null,
+                    'limit'   => 512,
+                    'null'    => true,
+                ])
+
+                // The update ID will generally be a GUID, but it can be any string that uniquely identifies. This identifier is required for calling many WindowsUpdateAdministrator methods.
+                // https://learn.microsoft.com/en-us/uwp/api/windows.management.update.windowsupdate.updateid?view=winrt-26100
+                ->addColumn('update_id', 'string', [
+                    'default' => null,
+                    'limit'   => 255,
+                    'null'    => true,
+                ])
+                ->addColumn('reboot_required', 'boolean', [
+                    'default' => false,
+                    'limit'   => null,
+                    'null'    => false,
+                ])
+                ->addColumn('is_security_update', 'boolean', [
+                    'default' => false,
+                    'limit'   => null,
+                    'null'    => false,
+                ])
+                ->addColumn('is_optional', 'boolean', [
+                    'default' => false,
+                    'limit'   => null,
+                    'null'    => false,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'host_id',
+                        'name',
+                        'kbarticle_ids'
+                    ]
+                )
+                ->create();
+        }
+
     }
 }

@@ -1,0 +1,136 @@
+<?php
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today Allgeier IT Services GmbH
+//
+// This file is dual licensed
+//
+// 1.
+//     This program is free software: you can redistribute it and/or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation, version 3 of the License.
+//
+//     This program is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//     GNU General Public License for more details.
+//
+//     You should have received a copy of the GNU General Public License
+//     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// 2.
+//     If you purchased an openITCOCKPIT Enterprise Edition you can use this file
+//     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
+//     License agreement and license key will be shipped with the order
+//     confirmation.
+
+declare(strict_types=1);
+
+namespace App\Model\Table;
+
+use Cake\ORM\RulesChecker;
+use Cake\ORM\Table;
+use Cake\Validation\Validator;
+
+/**
+ * WindowsUpdates Model
+ *
+ * @property \App\Model\Table\HostsTable&\Cake\ORM\Association\BelongsTo $Hosts
+ *
+ * @method \App\Model\Entity\WindowsUpdate newEmptyEntity()
+ * @method \App\Model\Entity\WindowsUpdate newEntity(array $data, array $options = [])
+ * @method array<\App\Model\Entity\WindowsUpdate> newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\WindowsUpdate get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\WindowsUpdate findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\WindowsUpdate patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method array<\App\Model\Entity\WindowsUpdate> patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\WindowsUpdate|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\WindowsUpdate saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method iterable<\App\Model\Entity\WindowsUpdate>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsUpdate>|false saveMany(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\WindowsUpdate>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsUpdate> saveManyOrFail(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\WindowsUpdate>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsUpdate>|false deleteMany(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\WindowsUpdate>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\WindowsUpdate> deleteManyOrFail(iterable $entities, array $options = [])
+ *
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ */
+class WindowsUpdatesTable extends Table {
+    /**
+     * Initialize method
+     *
+     * @param array<string, mixed> $config The configuration for the Table.
+     * @return void
+     */
+    public function initialize(array $config): void {
+        parent::initialize($config);
+
+        $this->setTable('windows_updates');
+        $this->setDisplayField('name');
+        $this->setPrimaryKey('id');
+
+        $this->addBehavior('Timestamp');
+
+        $this->belongsTo('Hosts', [
+            'foreignKey' => 'host_id',
+            'joinType'   => 'INNER',
+        ]);
+    }
+
+    /**
+     * Default validation rules.
+     *
+     * @param \Cake\Validation\Validator $validator Validator instance.
+     * @return \Cake\Validation\Validator
+     */
+    public function validationDefault(Validator $validator): Validator {
+        $validator
+            ->integer('host_id')
+            ->notEmptyString('host_id');
+
+        $validator
+            ->scalar('name')
+            ->maxLength('name', 255)
+            ->requirePresence('name', 'create')
+            ->notEmptyString('name');
+
+        $validator
+            ->scalar('description')
+            ->maxLength('description', 512)
+            ->allowEmptyString('description');
+
+        $validator
+            ->scalar('kbarticle_ids')
+            ->maxLength('kbarticle_ids', 512)
+            ->allowEmptyString('kbarticle_ids');
+
+        $validator
+            ->scalar('update_id')
+            ->maxLength('update_id', 255)
+            ->allowEmptyString('update_id');
+
+        $validator
+            ->boolean('reboot_required')
+            ->notEmptyString('reboot_required');
+
+        $validator
+            ->boolean('is_security_update')
+            ->notEmptyString('is_security_update');
+
+        $validator
+            ->boolean('is_optional')
+            ->notEmptyString('is_optional');
+
+        return $validator;
+    }
+
+    /**
+     * Returns a rules checker object that will be used for validating
+     * application integrity.
+     *
+     * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
+     * @return \Cake\ORM\RulesChecker
+     */
+    public function buildRules(RulesChecker $rules): RulesChecker {
+        $rules->add($rules->existsIn(['host_id'], 'Hosts'), ['errorField' => 'host_id']);
+
+        return $rules;
+    }
+}
