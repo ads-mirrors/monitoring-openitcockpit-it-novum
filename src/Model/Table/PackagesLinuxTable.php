@@ -261,6 +261,13 @@ class PackagesLinuxTable extends Table {
 
         // SUSE distributions report security updates as patches.
         // So we handle patches as packages so we can group them together later.
+        /*$availableUpdates[] = [
+            'Name'             => 'delete-test',
+            'CurrentVersion'   => '1.0.0',
+            'AvailableVersion' => '2.0.0',
+            'IsSecurityUpdate' => false,
+            'IsPatch'          => false,
+        ];*/
         foreach ($availableUpdates as $update) {
             //[
             //    'Name'             => 'kernel-default',
