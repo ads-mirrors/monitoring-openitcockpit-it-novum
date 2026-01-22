@@ -481,7 +481,38 @@ class PackagesLinuxTable extends Table {
      * @return array
      */
     public function getPackagesLinuxIndex(GenericFilter $GenericFilter, $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
+        $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
+        $subQueryForUpdates = $PackagesLinuxHostsTable->find()
+            ->select([
+                'package_linux_id',
+            ])
+            ->where([
+                'needs_update' => 1,
+            ])
+            ->where(['`PackagesLinux`.`id` =`PackagesLinuxHosts`.`package_linux_id`'])
+            ->andWhere([
+                'needs_update' => 1,
+            ]);
+
+        $subQueryForSecurityUpdates = $PackagesLinuxHostsTable->find()
+            ->select([
+                'package_linux_id',
+            ])
+            ->where(['`PackagesLinux`.`id` =`PackagesLinuxHosts`.`package_linux_id`'])
+            ->andWhere([
+                'is_security_update' => 1,
+            ]);
+
         $query = $this->find()
+            ->select([
+                'PackagesLinux.id',
+                'PackagesLinux.name',
+                'PackagesLinux.description',
+                'PackagesLinux.is_patch',
+                'PackagesLinux.created',
+                'PackagesLinux.modified'
+            ])
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) use ($MY_RIGHTS) {
                     $query->select([
@@ -490,6 +521,7 @@ class PackagesLinuxTable extends Table {
                         'PackageLinuxHosts.is_security_update',
                         'PackageLinuxHosts.is_patch',
                         'PackageLinuxHosts.host_id'
+
                     ])->innerJoin(
                         ['Hosts' => 'hosts'],
                         ['Hosts.id = PackageLinuxHosts.host_id']
@@ -505,6 +537,7 @@ class PackagesLinuxTable extends Table {
                     $query->where([
                         'Hosts.disabled' => 0
                     ])->disableAutoFields();
+
                     return $query;
                 }
             ]);
@@ -513,6 +546,14 @@ class PackagesLinuxTable extends Table {
         if (!empty($GenericFilter->genericFilters())) {
             $query->where($GenericFilter->genericFilters());
         }
+
+        /*
+         * If security updates filter is enabled
+         *
+        $query->where(function (QueryExpression $exp, Query\SelectQuery $q) use ($subQueryForSecurityUpdates) {
+            return $exp->exists($subQueryForSecurityUpdates);
+        });
+        */
 
         $query->orderBy(
             array_merge(
