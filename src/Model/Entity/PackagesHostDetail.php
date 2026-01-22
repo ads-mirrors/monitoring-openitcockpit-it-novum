@@ -42,6 +42,8 @@ use Cake\ORM\Entity;
  * @property bool $reboot_required
  * @property int $system_uptime
  * @property \Cake\I18n\DateTime $last_update
+ * @property int $available_updates
+ * @property int $available_security_updates
  * @property string|null $last_error
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime $modified
@@ -59,18 +61,20 @@ class PackagesHostDetail extends Entity {
      * @var array<string, bool>
      */
     protected array $_accessible = [
-        'host_id'         => true,
-        'os_type'         => true,
-        'os_name'         => true,
-        'os_version'      => true,
-        'os_family'       => true,
-        'agent_version'   => true,
-        'reboot_required' => true,
-        'system_uptime'   => true,
-        'last_update'     => true,
-        'last_error'      => true,
-        'created'         => true,
-        'modified'        => true,
-        'host'            => true,
+        'host_id'                    => true,
+        'os_type'                    => true,
+        'os_name'                    => true,
+        'os_version'                 => true,
+        'os_family'                  => true,
+        'agent_version'              => true,
+        'reboot_required'            => true,
+        'system_uptime'              => true,
+        'last_update'                => true,
+        'available_updates'          => true,
+        'available_security_updates' => true,
+        'last_error'                 => true,
+        'created'                    => true,
+        'modified'                   => true,
+        'host'                       => true,
     ];
 }

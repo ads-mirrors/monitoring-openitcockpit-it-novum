@@ -125,6 +125,16 @@ class SoftwareInventory extends BaseMigration {
                     'limit' => null,
                     'null'  => false,
                 ])
+                ->addColumn('available_updates', 'integer', [
+                    'default' => 0,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addColumn('available_security_updates', 'integer', [
+                    'default' => 0,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
                 ->addColumn('last_error', 'string', [
                     'limit' => 1000,
                     'null'  => true,

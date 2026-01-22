@@ -135,6 +135,16 @@ class PackagesHostDetailsTable extends Table {
             ->notEmptyDateTime('last_update');
 
         $validator
+            ->scalar('available_updates')
+            ->integer('available_updates')
+            ->allowEmptyString('available_updates');
+
+        $validator
+            ->scalar('available_security_updates')
+            ->integer('available_security_updates')
+            ->allowEmptyString('available_security_updates');
+
+        $validator
             ->scalar('last_error')
             ->maxLength('last_error', 1000)
             ->allowEmptyString('last_error');

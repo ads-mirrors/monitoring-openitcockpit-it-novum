@@ -73,16 +73,20 @@ class AgentSoftwareInventory {
         }
 
         if (!empty($result['Stats']) && !empty($result['Stats']['OperatingSystem'])) {
+            $availableUpdatesCounts = $this->getUpdateCounts($result);
+
             $details = [
-                'os_type'         => $result['Stats']['OperatingSystem'],   // "linux", "macos", "windows"
-                'os_name'         => $result['Stats']['OsName'],            // "ubuntu", "opensuse-tumbleweed", "almalinux", "macos",  "Microsoft Windows 11 Enterprise"
-                'os_version'      => $result['Stats']['OsVersion'] ?? '',   // "20.04",  "20260113",            "9.7",       "26.2",   "24H2 (10.0.26100.7462 Build 26100.7462)"
-                'os_family'       => $result['Stats']['OsFamily'] ?? '',    // "debian", "suse",                "rhel",      "darwin", "windows"
-                'agent_version'   => $result['Stats']['AgentVersion'] ?? '',
-                'reboot_required' => !empty($result['Stats']['RebootRequired']) ? 1 : 0,
-                'system_uptime'   => $result['Stats']['Uptime'] ?? 0,
-                'last_update'     => date('Y-m-d H:i:s', $result['LastUpdate']),
-                'last_error'      => !empty($result['Stats']['LastError']) ? $result['Stats']['LastError'] : null
+                'os_type'                    => $result['Stats']['OperatingSystem'],   // "linux", "macos", "windows"
+                'os_name'                    => $result['Stats']['OsName'],            // "ubuntu", "opensuse-tumbleweed", "almalinux", "macos",  "Microsoft Windows 11 Enterprise"
+                'os_version'                 => $result['Stats']['OsVersion'] ?? '',   // "20.04",  "20260113",            "9.7",       "26.2",   "24H2 (10.0.26100.7462 Build 26100.7462)"
+                'os_family'                  => $result['Stats']['OsFamily'] ?? '',    // "debian", "suse",                "rhel",      "darwin", "windows"
+                'agent_version'              => $result['Stats']['AgentVersion'] ?? '',
+                'reboot_required'            => !empty($result['Stats']['RebootRequired']) ? 1 : 0,
+                'system_uptime'              => $result['Stats']['Uptime'] ?? 0,
+                'last_update'                => date('Y-m-d H:i:s', $result['LastUpdate']),
+                'available_updates'          => $availableUpdatesCounts['available_updates'],
+                'available_security_updates' => $availableUpdatesCounts['available_security_updates'],
+                'last_error'                 => !empty($result['Stats']['LastError']) ? $result['Stats']['LastError'] : null
             ];
             $this->PackagesHostDetailsTable->updateHostDetails($hostId, $details);
         }
@@ -91,7 +95,7 @@ class AgentSoftwareInventory {
             case 'linux':
                 $installedPackages = $result['LinuxPackages'] ?? [];
                 $availableUpdates = $result['LinuxUpdates'] ?? [];
-                
+
                 $this->PackagesLinuxTable->savePackagesForHost($hostId, $installedPackages, $availableUpdates);
                 break;
 
@@ -125,6 +129,56 @@ class AgentSoftwareInventory {
         $this->PackagesLinuxTable->deleteUnusedPackages();
         $this->WindowsAppsTable->deleteUnusedApps();
         $this->MacosAppsTable->deleteUnusedApps();
+    }
+
+    /**
+     * Calculates the number of available updates and security updates from the agent result.
+     * @param array $result
+     * @return int[]
+     */
+    private function getUpdateCounts(array $result): array {
+        $counts = [
+            'available_updates'          => 0,
+            'available_security_updates' => 0
+        ];
+
+        switch ($result['Stats']['OperatingSystem']) {
+            case 'linux':
+                $availableUpdates = $result['LinuxUpdates'] ?? [];
+
+                $counts['available_updates'] = count($availableUpdates);
+                foreach ($availableUpdates as $update) {
+                    if (!empty($update['IsSecurityUpdate']) || !empty($update['IsPatch'])) {
+                        $counts['available_security_updates']++;
+                    }
+                }
+
+                break;
+
+            case 'windows':
+                $availableUpdates = $result['WindowsUpdates'] ?? [];
+
+                $counts['available_updates'] = count($availableUpdates);
+                foreach ($availableUpdates as $update) {
+                    if (!empty($update['IsSecurityUpdate'])) {
+                        $counts['available_security_updates']++;
+                    }
+                }
+                break;
+
+            case 'macos':
+                $availableUpdates = $result['MacosUpdates'] ?? [];
+
+                // macOS only has OS updates, and I think all of them are security related
+                $counts['available_updates'] = count($availableUpdates);
+                $counts['available_security_updates'] = count($availableUpdates);
+                break;
+
+            default:
+                break;
+        }
+
+        return $counts;
     }
 
 }
