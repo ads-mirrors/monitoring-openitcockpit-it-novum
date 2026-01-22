@@ -27,9 +27,13 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * PackagesLinuxHosts Model
@@ -53,6 +57,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class PackagesLinuxHostsTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -134,5 +141,67 @@ class PackagesLinuxHostsTable extends Table {
         //$rules->add($rules->existsIn(['host_id'], 'Hosts'), ['errorField' => 'host_id']);
 
         return $rules;
+    }
+
+    /**
+     * @param int $packageId
+     * @param GenericFilter $GenericFilter
+     * @param PaginateOMat|null $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return \Cake\Datasource\ResultSetInterface
+     */
+    public function getHostsWithPackage(int $packageId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []) {
+        $query = $this->find()
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = PackagesLinuxHosts.host_id']
+            )
+            ->contain([
+                'Hosts' => function (Query $query) {
+                    return $query->select([
+                        'Hosts.id',
+                        'Hosts.name',
+                        'Hosts.uuid',
+                        'Hosts.container_id',
+                    ]);
+                }
+            ])
+            ->where([
+                'Hosts.disabled'                      => 0,
+                'PackagesLinuxHosts.package_linux_id' => $packageId
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        if (!empty($GenericFilter->genericFilters())) {
+            $query->where($GenericFilter->genericFilters());
+        }
+
+        $query->orderBy(
+            $GenericFilter->getOrderForPaginator('Hosts.name', 'asc')
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
     }
 }

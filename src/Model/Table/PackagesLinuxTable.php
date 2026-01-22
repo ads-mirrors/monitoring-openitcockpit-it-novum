@@ -107,6 +107,25 @@ class PackagesLinuxTable extends Table {
     }
 
     /**
+     * @param int $id
+     * @return bool
+     */
+    public function existsById($id) {
+        return $this->exists(['PackagesLinux.id' => $id]);
+    }
+
+    public function getPackageBy($id) {
+        $query = $this->find()
+            ->where([
+                'PackagesLinux.id' => $id
+            ])
+            ->disableHydration()
+            ->firstOrFail();
+
+        return $query;
+    }
+
+    /**
      * @return int
      */
     public function getPackagesCount(): int {
@@ -494,6 +513,7 @@ class PackagesLinuxTable extends Table {
                         ['Hosts' => 'hosts'],
                         ['Hosts.id = PackageLinuxHosts.host_id']
                     );
+
                     if (!empty($MY_RIGHTS)) {
                         $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
                             'HostsToContainersSharing.host_id = Hosts.id'
@@ -513,6 +533,7 @@ class PackagesLinuxTable extends Table {
         if (!empty($GenericFilter->genericFilters())) {
             $query->where($GenericFilter->genericFilters());
         }
+
 
         $query->orderBy(
             array_merge(

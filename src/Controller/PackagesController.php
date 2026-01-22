@@ -29,10 +29,12 @@ namespace App\Controller;
 
 use App\Model\Table\MacosAppsTable;
 use App\Model\Table\MacosUpdatesTable;
+use App\Model\Table\PackagesLinuxHostsTable;
 use App\Model\Table\PackagesLinuxTable;
 use App\Model\Table\WindowsAppsTable;
 use App\Model\Table\WindowsUpdatesTable;
 use Cake\Http\Exception\MethodNotAllowedException;
+use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\GenericFilter;
@@ -150,6 +152,40 @@ class PackagesController extends AppController {
 
         $this->set('summary', $summary);
         $this->viewBuilder()->setOption('serialize', ['summary']);
+    }
+
+    public function view_linux($id = null): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $id = (int)$id;
+
+
+        /** @var PackagesLinuxTable $PackagesLinuxTable */
+        $PackagesLinuxTable = TableRegistry::getTableLocator()->get('PackagesLinux');
+        /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
+        $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
+
+        if (!$PackagesLinuxTable->existsById($id)) {
+            throw new NotFoundException(__('Invalid package'));
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $package = $PackagesLinuxTable->getPackageBy($id);
+        $hosts = [];
+
+        $GenericFilter = new GenericFilter($this->request);
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_host_packages = $PackagesLinuxHostsTable->getHostsWithPackage($id, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+
+        $this->set('package', $package);
+        $this->set('all_host_packages', $all_host_packages);
+        $this->viewBuilder()->setOption('serialize', ['package', 'all_host_packages']);
     }
 
 }
