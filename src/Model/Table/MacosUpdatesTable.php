@@ -188,4 +188,57 @@ class MacosUpdatesTable extends Table {
 
         return true;
     }
+
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMacosUpdatesForSummary(array $MY_RIGHTS = []): array {
+        $all_macos_updates = [
+            'upToDate'                 => 0,
+            'updatesAvailable'         => 0,
+            'securityUpdates'          => 0,
+            'totalInstallations'       => 0,
+            'hostsUpToDate'            => [],
+            'hostsWithUpdates'         => [],
+            'hostsWithSecurityUpdates' => [],
+        ];
+
+
+        $query = $this->find('all')
+            ->select([
+                'MacosUpdates.host_id'
+            ])
+            ->disableAutoFields()
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = MacosUpdates.host_id']
+            )
+            ->where([
+                'Hosts.disabled' => 0
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->disableHydration();
+        $result = $query->toArray();
+        if (empty($result)) {
+            return $all_macos_updates;
+        }
+        foreach ($result as $macos_update) {
+            $all_macos_updates['updatesAvailable']++;
+            $all_macos_updates['hostsWithUpdates'][$macos_update['host_id']] = $macos_update['host_id'];
+        }
+        $all_macos_updates['hostsWithUpdates'] = array_values($all_macos_updates['hostsWithUpdates']);
+        return $all_macos_updates;
+    }
+
 }

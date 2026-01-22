@@ -222,6 +222,10 @@ class WindowsUpdatesTable extends Table {
         return true;
     }
 
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
     public function getWindowsUpdatesForSummary(array $MY_RIGHTS = []): array {
         $all_windows_updates = [
             'upToDate'                 => 0,
@@ -275,6 +279,8 @@ class WindowsUpdatesTable extends Table {
                 $all_windows_updates['hostsWithSecurityUpdates'][$windows_update['host_id']] = $windows_update['host_id'];
             }
         }
+        $all_windows_updates['hostsWithUpdates'] = array_values($all_windows_updates['hostsWithUpdates']);
+        $all_windows_updates['hostsWithSecurityUpdates'] = array_values($all_windows_updates['hostsWithSecurityUpdates']);
 
         return $all_windows_updates;
     }

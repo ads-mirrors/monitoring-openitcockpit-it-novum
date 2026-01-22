@@ -326,4 +326,63 @@ class MacosAppsTable extends Table {
 
         return true;
     }
+
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMacosAppsForSummary(array $MY_RIGHTS = []): array {
+        $all_macos_apps = [
+            'totalPackages'      => 0,
+            'totalInstallations' => 0,
+            'allHosts'           => []
+        ];
+
+
+        $query = $this->find('all')
+            ->disableAutoFields()
+            ->contain([
+                'MacosAppsHosts' => function (Query $query) {
+                    $query
+                        ->innerJoin(
+                            ['Hosts' => 'hosts'],
+                            ['Hosts.id = MacosAppsHosts.host_id']
+                        )
+                        ->select([
+                            'MacosAppsHosts.macos_app_id',
+                            'MacosAppsHosts.version',
+                            'MacosAppsHosts.host_id'
+                        ])
+                        ->where([
+                            'Hosts.disabled' => 0
+                        ])->disableAutoFields();
+                    return $query;
+                }
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->disableHydration();
+        $result = $query->toArray();
+        if (empty($result)) {
+            return $all_macos_apps;
+        }
+
+        foreach ($result as $macos_app) {
+            $all_macos_apps['totalPackages']++;
+            foreach ($macos_app['macos_apps_hosts'] as $hostApp) {
+                $all_macos_apps['totalInstallations']++;
+                $all_macos_apps['allHosts'][$hostApp['host_id']] = $hostApp['host_id'];
+            }
+        }
+        return $all_macos_apps;
+    }
 }
