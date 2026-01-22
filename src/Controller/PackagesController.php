@@ -147,9 +147,15 @@ class PackagesController extends AppController {
             throw new MethodNotAllowedException();
         }
 
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
         /***** Linux *****/
         /** @var PackagesLinuxTable $PackagesLinuxTable */
         $PackagesLinuxTable = TableRegistry::getTableLocator()->get('PackagesLinux');
+        $summary['linux'] = $PackagesLinuxTable->getPackagesLinuxForSummary($MY_RIGHTS);
 
         /***** Windows *****/
         /** @var WindowsAppsTable $WindowsAppsTable */
@@ -157,26 +163,34 @@ class PackagesController extends AppController {
         /** @var WindowsUpdatesTable $WindowsUpdatesTable */
         $WindowsUpdatesTable = TableRegistry::getTableLocator()->get('WindowsUpdates');
 
+        $windowsAppsSummary = $WindowsAppsTable->getWindowsAppsForSummary($MY_RIGHTS);
+        $windowsUpdatesSummary = $WindowsUpdatesTable->getWindowsUpdatesForSummary($MY_RIGHTS);
+
+        $summary['windows'] = array_merge($windowsAppsSummary, $windowsUpdatesSummary);
+
         /***** macOS *****/
         /** @var MacosAppsTable $MacosAppsTable */
         $MacosAppsTable = TableRegistry::getTableLocator()->get('MacosApps');
         /** @var MacosUpdatesTable $MacosUpdatesTable */
         $MacosUpdatesTable = TableRegistry::getTableLocator()->get('MacosUpdates');
 
-        $MY_RIGHTS = $this->MY_RIGHTS;
-        if ($this->hasRootPrivileges) {
-            $MY_RIGHTS = [];
-        }
-        $summary = [
-            'macos' => [],
-        ];
+        $macosAppsSummary = $MacosAppsTable->getMacosAppsForSummary($MY_RIGHTS);
+        $macosUpdatesSummary = $MacosUpdatesTable->getMacosUpdatesForSummary($MY_RIGHTS);
 
-        $summary['linux'] = $PackagesLinuxTable->getPackagesLinuxForSummary($MY_RIGHTS);
+        $summary['macos'] = array_merge($macosAppsSummary, $macosUpdatesSummary);
+        $summary['total'] = $summary['linux']['totalPackages'] + $summary['windows']['totalPackages'] + $summary['macos']['totalPackages'];
+        $summary['outdated'] = $summary['linux']['updatesAvailable'] + $summary['windows']['updatesAvailable'] + $summary['macos']['updatesAvailable'];
+        $summary['security'] = $summary['linux']['securityUpdates'] + $summary['windows']['securityUpdates'] + $summary['macos']['securityUpdates'];
 
-        $windowsAppsSummary = $WindowsAppsTable->getWindowsAppsForSummary($MY_RIGHTS);
-        $windowsUpdatesSummary = $WindowsUpdatesTable->getWindowsUpdatesForSummary($MY_RIGHTS);
+        $hostsToUpdateLinux = sizeof($summary['linux']['hostsWithUpdates']);
+        $hostsToUpdateWindows = sizeof($summary['windows']['hostsWithUpdates']);
+        $hostsToUpdateMacos = sizeof($summary['macos']['hostsWithUpdates']);
+        $summary['outdated_hosts'] = $hostsToUpdateLinux + $hostsToUpdateWindows + $hostsToUpdateMacos;
 
-        $summary['windows'] = array_merge($windowsAppsSummary, $windowsUpdatesSummary);
+        $hostsWithSecurityUpdatesLinux = sizeof($summary['linux']['hostsWithSecurityUpdates']);
+        $hostsWithSecurityUpdatesWindows = sizeof($summary['windows']['hostsWithSecurityUpdates']);
+        $hostsWithSecurityUpdatesMacos = sizeof($summary['macos']['hostsWithSecurityUpdates']);
+        $summary['security_hosts'] = $hostsWithSecurityUpdatesLinux + $hostsWithSecurityUpdatesWindows + $hostsWithSecurityUpdatesMacos;
 
 
         $this->set('summary', $summary);

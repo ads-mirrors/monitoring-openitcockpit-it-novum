@@ -556,6 +556,9 @@ class PackagesLinuxTable extends Table {
                 }
             }
         }
+        $all_packages_linux_summary['hostsUpToDate'] = array_values($all_packages_linux_summary['hostsUpToDate']);
+        $all_packages_linux_summary['hostsWithUpdates'] = array_values($all_packages_linux_summary['hostsWithUpdates']);
+        $all_packages_linux_summary['hostsWithSecurityUpdates'] = array_values($all_packages_linux_summary['hostsWithSecurityUpdates']);
         return $all_packages_linux_summary;
     }
 }
