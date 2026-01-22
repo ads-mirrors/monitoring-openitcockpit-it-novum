@@ -197,6 +197,11 @@ class PackagesHostDetailsTable extends Table {
             'linuxRebootRequired'   => 0,
             'windowsRebootRequired' => 0,
             'macosRebootRequired'   => 0,
+
+            'totalOutdatedPackages'   => 0,
+            'linuxOutdatedPackages'   => 0,
+            'windowsOutdatedPackages' => 0,
+            'macosOutdatedPackages'   => 0,
         ];
 
 
@@ -233,24 +238,30 @@ class PackagesHostDetailsTable extends Table {
             if ($entity->reboot_required) {
                 $summary['totalRebootRequired']++;
             }
+
+            $summary['totalOutdatedPackages'] += (int)$entity->available_updates;
+
             switch (strtolower($entity->os_type)) {
                 case 'linux':
                     $summary['linuxHosts']++;
                     if ($entity->reboot_required) {
                         $summary['linuxRebootRequired']++;
                     }
+                    $summary['linuxOutdatedPackages'] += (int)$entity->available_updates;
                     break;
                 case 'windows':
                     $summary['windowsHosts']++;
                     if ($entity->reboot_required) {
                         $summary['windowsRebootRequired']++;
                     }
+                    $summary['windowsOutdatedPackages'] += (int)$entity->available_updates;
                     break;
                 case 'macos':
                     $summary['macosHosts']++;
                     if ($entity->reboot_required) {
                         $summary['macosRebootRequired']++;
                     }
+                    $summary['macosOutdatedPackages'] += (int)$entity->available_updates;
                     break;
             }
         }
