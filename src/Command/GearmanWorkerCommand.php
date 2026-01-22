@@ -237,7 +237,7 @@ class GearmanWorkerCommand extends Command {
         } catch (\Exception $e) {
             $payloadFromJSON = '';
         }
-        $payload = @unserialize($payload);
+        $payload = @unserialize($payload, ['allowed_classes' => false]);
 
         if (!is_array($payload)) {
             if (!is_array($payloadFromJSON)) {
@@ -1780,7 +1780,7 @@ class GearmanWorkerCommand extends Command {
      * @param \GearmanTask $task
      */
     public function exportCallback($task) {
-        $result = unserialize($task->data());
+        $result = unserialize($task->data(), ['allowed_classes' => false]);
         if (!isset($result['task'])) {
             Log::error('Export result has no "task" key ' . serialize($result));
             return;
