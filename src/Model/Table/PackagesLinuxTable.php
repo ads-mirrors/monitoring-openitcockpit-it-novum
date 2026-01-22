@@ -468,6 +468,13 @@ class PackagesLinuxTable extends Table {
             $query->where($GenericFilter->genericFilters());
         }
 
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('PackagesLinux.name', 'asc'),
+                ['PackagesLinux.id' => 'asc']
+            )
+        );
+
         $query->disableHydration();
 
         if ($PaginateOMat === null) {
