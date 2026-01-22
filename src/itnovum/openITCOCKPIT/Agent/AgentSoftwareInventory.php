@@ -89,9 +89,9 @@ class AgentSoftwareInventory {
 
         switch ($result['Stats']['OperatingSystem']) {
             case 'linux':
-                $installedPackages = $result['InstalledPackages'] ?? [];
+                $installedPackages = $result['LinuxPackages'] ?? [];
                 $availableUpdates = $result['LinuxUpdates'] ?? [];
-
+                
                 $this->PackagesLinuxTable->savePackagesForHost($hostId, $installedPackages, $availableUpdates);
                 break;
 
