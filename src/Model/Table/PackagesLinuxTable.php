@@ -34,6 +34,7 @@ use Cake\Log\Log;
 use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
 use Cake\Validation\Validator;
 use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
@@ -279,19 +280,24 @@ class PackagesLinuxTable extends Table {
 
             // A variable is considered empty if it does not exist or if its value equals false.
             // https://www.php.net/manual/en/function.empty.php
-            if (empty($update['Name']) || empty($update['CurrentVersion']) || empty($update['IsPatch'])) {
+            if (empty($update['Name']) || empty($update['IsPatch'])) {
                 continue;
             }
 
-            if (!isset($existingPackages[$package['Name']])) {
-                // New package - add to packages_linux
-                $newPackages[] = $this->newEntity([
-                    'name'        => $package['Name'],
+            if (!isset($existingPackages[$update['Name']]) && $update['IsPatch'] === true) {
+                // Save patch as new package - add to packages_linux
+                $patch = $this->newEntity([
+                    'name'        => $update['Name'],
                     'description' => null, // Patches do not have descriptions
                     'is_patch'    => $update['IsPatch'],
                 ]);
+                if ($this->save($patch)) {
+                    $existingPackages[$patch->name] = $patch->id;
+
+                }
             }
         }
+
 
         if (!empty($newPackages)) {
             $this->saveMany($newPackages);
@@ -355,9 +361,9 @@ class PackagesLinuxTable extends Table {
 
         // Update installed packages if new versions is available (but not installed yet)
         // This store only available_version (before the apt-get dist-upgrade got executed)
+        $currentlyInstalledPackagesNameAndId = [];
         foreach ($availableUpdates as $update) {
-            if (empty($update['Name']) || empty($update['CurrentVersion']) || empty($update['AvailableVersion'])) {
-                // todo handle patches
+            if (empty($update['Name']) || empty($update['AvailableVersion'])) {
                 continue;
             }
 
@@ -381,6 +387,7 @@ class PackagesLinuxTable extends Table {
                     $linuxPackageHost->current_version = $update['CurrentVersion'];
                     $linuxPackageHost->available_version = $update['AvailableVersion'];
                     $linuxPackageHost->is_security_update = $update['IsSecurityUpdate'];
+                    $linuxPackageHost->is_patch = $update['IsPatch'];
                     $linuxPackageHost->needs_update = true;
                     if ($PackagesLinuxHostsTable->save($linuxPackageHost)) {
                         $existingPackagesOfHost[$linuxPackageHost->package_linux_id] = $linuxPackageHost;
@@ -388,8 +395,25 @@ class PackagesLinuxTable extends Table {
                 }
 
             } else {
-                // This should not happen - log error
-                Log::error(sprintf('PackageLinuxHost entry for package %s and host ID %d not found during update processing.', $update['Name'], $hostId));
+                // Create new patches - as a patch will never be reported as installed package
+                if (!empty($update['IsPatch'])) {
+                    // Create new patch entry in packages_linux_hosts
+                    $entity = $PackagesLinuxHostsTable->newEntity([
+                        'package_linux_id'   => $packageId,
+                        'host_id'            => $hostId,
+                        'current_version'    => "0",
+                        'available_version'  => $update['AvailableVersion'],
+                        'needs_update'       => true,
+                        'is_security_update' => $update['IsSecurityUpdate'],
+                        'is_patch'           => $update['IsPatch'],
+                    ]);
+                    if ($PackagesLinuxHostsTable->save($entity)) {
+                        $existingPackagesOfHost[$entity->package_linux_id] = $entity;
+                    }
+                } else {
+                    // This should not happen - log error
+                    Log::error(sprintf('PackageLinuxHost entry for package %s and host ID %d not found during update processing.', $update['Name'], $hostId));
+                }
             }
         }
 
@@ -403,7 +427,6 @@ class PackagesLinuxTable extends Table {
             }
         }
 
-        $currentlyInstalledPackagesNameAndId = [];
         foreach ($installedPackages as $package) {
             if (!isset($existingPackages[$package['Name']])) {
                 continue;
@@ -418,8 +441,35 @@ class PackagesLinuxTable extends Table {
             $PackagesLinuxHostsTable->deleteAll(conditions: [
                 'package_linux_id IN' => array_values($packagesThatGotRemovedFromSystem),
                 'host_id'             => $hostId,
+                'is_patch'            => false,
             ]);
         }
+
+        if (!empty(Hash::extract($existingPackagesOfHost, '{n}[is_patch=1]'))) {
+            $availableUpdatesNames = Hash::combine($availableUpdates, '{n}.Name', '{n}.Name');
+            $existingPackagesOfHostNames = [];
+            foreach ($existingPackagesOfHost as $packageEnity) {
+                if ($packageEnity->is_patch) {
+                    if (!empty($packageEnity->packages_linux->name)) {
+                        // New created patches do not have JOIN data (package name)
+                        // Due to we have inserted the patch a few lines above, we do not have to check if it needs to be removed from this host
+                        // The name is only relevant for the next execution to identify patches that need to be removed from the database
+                        $existingPackagesOfHostNames[$packageEnity->packages_linux->name] = $packageEnity->id;
+                    }
+                }
+            }
+
+            $patchesToDelete = array_diff_key($existingPackagesOfHostNames, $availableUpdatesNames);
+
+            if (!empty($patchesToDelete)) {
+                $PackagesLinuxHostsTable->deleteAll(conditions: [
+                    'id IN'    => array_values($patchesToDelete),
+                    'host_id'  => $hostId,
+                    'is_patch' => true,
+                ]);
+            }
+        }
+
 
         return true;
     }
@@ -431,7 +481,7 @@ class PackagesLinuxTable extends Table {
      * @return array
      */
     public function getPackagesLinuxIndex(GenericFilter $GenericFilter, $PaginateOMat = null, array $MY_RIGHTS = []): array {
-        $query = $this->find('all')
+        $query = $this->find()
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) {
                     $query

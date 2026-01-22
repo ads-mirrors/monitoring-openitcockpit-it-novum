@@ -87,61 +87,6 @@ class PackagesController extends AppController {
         $this->viewBuilder()->setOption('serialize', ['all_packages_linux']);
     }
 
-    /**
-     * View method
-     *
-     * @param string|null $id Package id.
-     * @return \Cake\Http\Response|null|void Renders view
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function view($id = null) {
-        $package = $this->Packages->get($id, contain: []);
-        $this->Authorization->authorize($package);
-        $this->set(compact('package'));
-    }
-
-    /**
-     * Add method
-     *
-     * @return \Cake\Http\Response|null|void Redirects on successful add, renders view otherwise.
-     */
-    public function add() {
-        $package = $this->Packages->newEmptyEntity();
-        $this->Authorization->authorize($package);
-        if ($this->request->is('post')) {
-            $package = $this->Packages->patchEntity($package, $this->request->getData());
-            if ($this->Packages->save($package)) {
-                $this->Flash->success(__('The package has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The package could not be saved. Please, try again.'));
-        }
-        $this->set(compact('package'));
-    }
-
-    /**
-     * Edit method
-     *
-     * @param string|null $id Package id.
-     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function edit($id = null) {
-        $package = $this->Packages->get($id, contain: []);
-        $this->Authorization->authorize($package);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $package = $this->Packages->patchEntity($package, $this->request->getData());
-            if ($this->Packages->save($package)) {
-                $this->Flash->success(__('The package has been saved.'));
-
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The package could not be saved. Please, try again.'));
-        }
-        $this->set(compact('package'));
-    }
-
     public function summary() {
         if (!$this->isApiRequest()) {
             throw new MethodNotAllowedException();
@@ -197,23 +142,4 @@ class PackagesController extends AppController {
         $this->viewBuilder()->setOption('serialize', ['summary']);
     }
 
-    /**
-     * Delete method
-     *
-     * @param string|null $id Package id.
-     * @return \Cake\Http\Response|null Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function delete($id = null) {
-        $this->request->allowMethod(['post', 'delete']);
-        $package = $this->Packages->get($id);
-        $this->Authorization->authorize($package);
-        if ($this->Packages->delete($package)) {
-            $this->Flash->success(__('The package has been deleted.'));
-        } else {
-            $this->Flash->error(__('The package could not be deleted. Please, try again.'));
-        }
-
-        return $this->redirect(['action' => 'index']);
-    }
 }
