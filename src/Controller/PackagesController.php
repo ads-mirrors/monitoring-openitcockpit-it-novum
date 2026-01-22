@@ -176,7 +176,6 @@ class PackagesController extends AppController {
         }
 
         $package = $PackagesLinuxTable->getPackageBy($id);
-        $hosts = [];
 
         $GenericFilter = new GenericFilter($this->request);
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
