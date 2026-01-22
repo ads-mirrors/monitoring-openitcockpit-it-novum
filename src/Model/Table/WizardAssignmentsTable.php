@@ -577,6 +577,14 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['cloud', 'network', 'hardware'],
                 'active'      => true
             ],
+            'gude-sensors'                 => [
+                'type_id'     => 'gude-sensors',
+                'title'       => __('Gude Sensors'),
+                'description' => __('Used to check GUDE Sensors'),
+                'image'       => 'network.png',
+                'category'    => ['hardware', 'network'],
+                'active'      => true
+            ]
         ];
 
         $possibleWizardsResult = [];
