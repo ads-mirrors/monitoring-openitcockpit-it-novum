@@ -70,7 +70,8 @@ class PatchstatusController extends AppController {
                 'PackagesHostDetails.os_version',
             ],
             'equals'         => [
-                'PackagesHostDetails.os_type'
+                'PackagesHostDetails.os_type',
+                'Hosts.id'
             ],
             'greater_equals' => [
                 'PackagesHostDetails.available_updates',
