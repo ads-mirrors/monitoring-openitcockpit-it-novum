@@ -86,6 +86,7 @@ class PackagesController extends AppController {
                     }
                 }
             }
+            unset($all_packages_linux[$index]['package_linux_hosts']);
             $all_packages_linux[$index]['cumulated_status'] = $cumulatedStatus;
             $all_packages_linux[$index]['all_hosts'] = array_values($allHosts);
             $all_packages_linux[$index]['hosts_needs_update'] = array_values($hostsWithUpdates);
