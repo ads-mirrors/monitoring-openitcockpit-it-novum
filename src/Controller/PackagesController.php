@@ -178,6 +178,18 @@ class PackagesController extends AppController {
         $package = $PackagesLinuxTable->getPackageBy($id);
 
         $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Hosts.name',
+                'PackagesLinuxHosts.current_version',
+                'PackagesLinuxHosts.available_version'
+            ],
+            'bool' => [
+                'PackagesLinuxHosts.needs_update',
+                'PackagesLinuxHosts.is_security_update',
+            ]
+        ]);
+
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
         $all_host_packages = $PackagesLinuxHostsTable->getHostsWithPackage($id, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
 
