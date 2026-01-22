@@ -235,9 +235,9 @@ class MacosUpdatesTable extends Table {
         }
         foreach ($result as $macos_update) {
             $all_macos_updates['updatesAvailable']++;
-            $all_macos_updates['hostsWithUpdates'][$macos_update['host_id']] = $macos_update['host_id'];
+            $all_macos_updates['hostsWithSecurityUpdates'][$macos_update['host_id']] = $macos_update['host_id'];
         }
-        $all_macos_updates['hostsWithUpdates'] = array_values($all_macos_updates['hostsWithUpdates']);
+        $all_macos_updates['hostsWithSecurityUpdates'] = array_values($all_macos_updates['hostsWithSecurityUpdates']);
         return $all_macos_updates;
     }
 
