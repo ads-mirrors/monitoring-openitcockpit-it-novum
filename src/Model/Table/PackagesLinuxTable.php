@@ -502,22 +502,17 @@ class PackagesLinuxTable extends Table {
     public function getPackagesLinuxIndex(GenericFilter $GenericFilter, $PaginateOMat = null, array $MY_RIGHTS = []): array {
         /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
         $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
-        $subQueryForUpdates = $PackagesLinuxHostsTable->find()
-            ->select([
-                'package_linux_id',
-            ])
-            ->where([
-                'needs_update' => 1,
-            ])
+        $subQueryForUpdates = $PackagesLinuxHostsTable->find();
+        $subQueryForUpdates->select(
+            [$subQueryForUpdates->func()->count('package_linux_id')])
             ->where(['`PackagesLinux`.`id` =`PackagesLinuxHosts`.`package_linux_id`'])
             ->andWhere([
                 'needs_update' => 1,
             ]);
 
-        $subQueryForSecurityUpdates = $PackagesLinuxHostsTable->find()
-            ->select([
-                'package_linux_id',
-            ])
+        $subQueryForSecurityUpdates = $PackagesLinuxHostsTable->find();
+        $subQueryForSecurityUpdates->select(
+            [$subQueryForSecurityUpdates->func()->count('package_linux_id')])
             ->where(['`PackagesLinux`.`id` =`PackagesLinuxHosts`.`package_linux_id`'])
             ->andWhere([
                 'is_security_update' => 1,
@@ -530,7 +525,9 @@ class PackagesLinuxTable extends Table {
                 'PackagesLinux.description',
                 'PackagesLinux.is_patch',
                 'PackagesLinux.created',
-                'PackagesLinux.modified'
+                'PackagesLinux.modified',
+                'updates_count'  => $subQueryForUpdates,
+                'security_count' => $subQueryForSecurityUpdates,
             ])
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) use ($MY_RIGHTS) {
@@ -567,6 +564,7 @@ class PackagesLinuxTable extends Table {
             $query->where($GenericFilter->genericFilters());
         }
 
+        $query->having(['security_count >=' => 1]);
 
         /*
          * If security updates filter is enabled
