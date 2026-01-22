@@ -337,17 +337,25 @@ class WindowsAppsTable extends Table {
         $query = $this->find('all')
             ->disableAutoFields()
             ->contain([
-                'WindowsAppsHosts' => function (Query $query) {
+                'WindowsAppsHosts' => function (Query $query) use ($MY_RIGHTS) {
                     $query
                         ->innerJoin(
                             ['Hosts' => 'hosts'],
                             ['Hosts.id = WindowsAppsHosts.host_id']
-                        )
-                        ->select([
-                            'WindowsAppsHosts.windows_app_id',
-                            'WindowsAppsHosts.version',
-                            'WindowsAppsHosts.host_id'
-                        ])
+                        );
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->select([
+                        'WindowsAppsHosts.windows_app_id',
+                        'WindowsAppsHosts.version',
+                        'WindowsAppsHosts.host_id'
+                    ])
                         ->where([
                             'Hosts.disabled' => 0
                         ])->disableAutoFields();
@@ -355,15 +363,6 @@ class WindowsAppsTable extends Table {
                 }
             ]);
 
-
-        if (!empty($MY_RIGHTS)) {
-            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
-                'HostsToContainersSharing.host_id = Hosts.id'
-            ]);
-            $query->where([
-                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
-            ]);
-        }
 
         $query->disableHydration();
         $result = $query->toArray();

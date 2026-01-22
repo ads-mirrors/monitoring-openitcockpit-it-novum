@@ -213,12 +213,7 @@ class MacosUpdatesTable extends Table {
             ->innerJoin(
                 ['Hosts' => 'hosts'],
                 ['Hosts.id = MacosUpdates.host_id']
-            )
-            ->where([
-                'Hosts.disabled' => 0
-            ]);
-
-
+            );
         if (!empty($MY_RIGHTS)) {
             $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
                 'HostsToContainersSharing.host_id = Hosts.id'
@@ -227,6 +222,11 @@ class MacosUpdatesTable extends Table {
                 'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
             ]);
         }
+
+        $query->where([
+            'Hosts.disabled' => 0
+        ]);
+
 
         $query->disableHydration();
         $result = $query->toArray();

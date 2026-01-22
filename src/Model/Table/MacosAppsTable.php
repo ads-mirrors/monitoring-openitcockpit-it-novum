@@ -352,23 +352,22 @@ class MacosAppsTable extends Table {
                             'MacosAppsHosts.macos_app_id',
                             'MacosAppsHosts.version',
                             'MacosAppsHosts.host_id'
-                        ])
-                        ->where([
-                            'Hosts.disabled' => 0
-                        ])->disableAutoFields();
+                        ]);
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ])->disableAutoFields();
                     return $query;
                 }
             ]);
 
-
-        if (!empty($MY_RIGHTS)) {
-            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
-                'HostsToContainersSharing.host_id = Hosts.id'
-            ]);
-            $query->where([
-                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
-            ]);
-        }
 
         $query->disableHydration();
         $result = $query->toArray();

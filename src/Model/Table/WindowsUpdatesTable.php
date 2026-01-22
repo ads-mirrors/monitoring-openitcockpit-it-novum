@@ -244,17 +244,13 @@ class WindowsUpdatesTable extends Table {
                 'WindowsUpdates.reboot_required',
                 'WindowsUpdates.is_security_update',
                 'WindowsUpdates.is_optional',
-            ])
-            ->disableAutoFields()
-            ->innerJoin(
+            ])->innerJoin(
                 ['Hosts' => 'hosts'],
                 ['Hosts.id = WindowsUpdates.host_id']
             )
             ->where([
                 'Hosts.disabled' => 0
             ]);
-
-
         if (!empty($MY_RIGHTS)) {
             $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
                 'HostsToContainersSharing.host_id = Hosts.id'
@@ -264,7 +260,9 @@ class WindowsUpdatesTable extends Table {
             ]);
         }
 
-        $query->disableHydration();
+
+        $query->disableAutoFields()
+            ->disableHydration();
         $result = $query->toArray();
         if (empty($result)) {
             return $all_windows_updates;

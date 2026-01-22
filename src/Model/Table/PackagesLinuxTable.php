@@ -433,36 +433,32 @@ class PackagesLinuxTable extends Table {
     public function getPackagesLinuxIndex(GenericFilter $GenericFilter, $PaginateOMat = null, array $MY_RIGHTS = []): array {
         $query = $this->find('all')
             ->contain([
-                'PackageLinuxHosts' => function (Query $query) {
-                    $query
-                        ->innerJoin(
-                            ['Hosts' => 'hosts'],
-                            ['Hosts.id = PackageLinuxHosts.host_id']
-                        )
-                        ->select([
-                            'PackageLinuxHosts.package_linux_id',
-                            'PackageLinuxHosts.needs_update',
-                            'PackageLinuxHosts.is_security_update',
-                            'PackageLinuxHosts.is_patch',
-                            'id'   => 'Hosts.id',
-                            'name' => 'Hosts.name'
-                        ])
-                        ->where([
-                            'Hosts.disabled' => 0
-                        ])->disableAutoFields();
+                'PackageLinuxHosts' => function (Query $query) use ($MY_RIGHTS) {
+                    $query->select([
+                        'PackageLinuxHosts.package_linux_id',
+                        'PackageLinuxHosts.needs_update',
+                        'PackageLinuxHosts.is_security_update',
+                        'PackageLinuxHosts.is_patch',
+                        'PackageLinuxHosts.host_id'
+                    ])->innerJoin(
+                        ['Hosts' => 'hosts'],
+                        ['Hosts.id = PackageLinuxHosts.host_id']
+                    );
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ])->disableAutoFields();
                     return $query;
                 }
             ]);
 
-
-        if (!empty($MY_RIGHTS)) {
-            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
-                'HostsToContainersSharing.host_id = Hosts.id'
-            ]);
-            $query->where([
-                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
-            ]);
-        }
 
         if (!empty($GenericFilter->genericFilters())) {
             $query->where($GenericFilter->genericFilters());
