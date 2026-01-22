@@ -64,14 +64,19 @@ class PatchstatusController extends AppController {
 
         $GenericFilter = new GenericFilter($this->request);
         $GenericFilter->setFilters([
-            'like'  => [
+            'like'           => [
                 'Hosts.name',
-                'PackagesHostDetails.os_name'
+                'PackagesHostDetails.os_name',
+                'PackagesHostDetails.os_version',
             ],
-            'equal' => [
+            'equals'         => [
                 'PackagesHostDetails.os_type'
             ],
-            'bool'  => [
+            'greater_equals' => [
+                'PackagesHostDetails.available_updates',
+                'PackagesHostDetails.available_security_updates',
+            ],
+            'bool'           => [
                 'PackagesHostDetails.reboot_required'
             ]
         ]);
