@@ -72,15 +72,24 @@ class PackagesController extends AppController {
         $all_packages_linux = $PackagesLinuxTable->getPackagesLinuxIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
         foreach ($all_packages_linux as $index => $packages_linux) {
             $cumulatedStatus = 0;
+            $hostsWithUpdates = [];
+            $hostsWithSecurityUpdates = [];
+            $allHosts = [];
             foreach ($packages_linux['package_linux_hosts'] as $packages_host) {
+                $allHosts[$packages_host['host_id']] = $packages_host['host_id'];
                 if ($packages_host['needs_update']) {
                     $cumulatedStatus = 1;
-                }
-                if ($packages_host['needs_update'] && $packages_host['is_security_update']) {
-                    $cumulatedStatus = 2;
+                    $hostsWithUpdates[$packages_host['host_id']] = $packages_host['host_id'];
+                    if ($packages_host['is_security_update']) {
+                        $cumulatedStatus = 2;
+                        $hostsWithSecurityUpdates[$packages_host['host_id']] = $packages_host['host_id'];
+                    }
                 }
             }
             $all_packages_linux[$index]['cumulated_status'] = $cumulatedStatus;
+            $all_packages_linux[$index]['all_hosts'] = array_values($allHosts);
+            $all_packages_linux[$index]['hosts_needs_update'] = array_values($hostsWithUpdates);
+            $all_packages_linux[$index]['hosts_needs_security_update'] = array_values($hostsWithSecurityUpdates);
         }
 
         $this->set('all_packages_linux', $all_packages_linux);
