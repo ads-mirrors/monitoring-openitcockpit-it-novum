@@ -256,9 +256,14 @@ class SoftwareInventory extends BaseMigration {
                 )
                 ->addIndex(
                     [
-                        'package_linux_id',
-                        'current_version',
-                        'available_version'
+                        'needs_update',
+                        'package_linux_id'
+                    ]
+                )
+                ->addIndex(
+                    [
+                        'is_security_update',
+                        'package_linux_id'
                     ]
                 )
                 ->create();

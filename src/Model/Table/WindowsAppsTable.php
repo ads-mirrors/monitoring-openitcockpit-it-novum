@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use App\Model\Entity\WindowsAppsHost;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Log\Log;
@@ -34,6 +35,8 @@ use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * WindowsApps Model
@@ -57,6 +60,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class WindowsAppsTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -378,5 +384,74 @@ class WindowsAppsTable extends Table {
             }
         }
         return $all_windows_apps;
+    }
+
+    public function getWindowsAppsIndex(GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
+        $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
+        $query = $this->find()
+            ->select([
+                'WindowsApps.id',
+                'WindowsApps.name',
+                'WindowsApps.publisher',
+                'WindowsApps.created',
+                'WindowsApps.modified',
+            ])
+            ->contain([
+                'WindowsAppsHosts' => function (Query $query) use ($MY_RIGHTS) {
+                    $query->select([
+                        'WindowsAppsHosts.windows_app_id',
+                        'WindowsAppsHosts.host_id'
+
+                    ])->innerJoin(
+                        ['Hosts' => 'hosts'],
+                        ['Hosts.id = WindowsAppsHosts.host_id']
+                    );
+
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ])->disableAutoFields();
+
+                    return $query;
+                }
+            ]);
+
+        $where = $GenericFilter->genericFilters();
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('WindowsApps.name', 'asc'),
+                ['WindowsApps.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
     }
 }

@@ -51,7 +51,7 @@ class PackagesController extends AppController {
     }
 
     public function linux(): void {
-        if (!$this->isAngularJsRequest()) {
+        if (!$this->isApiRequest()) {
             throw new MethodNotAllowedException();
         }
 
@@ -207,6 +207,43 @@ class PackagesController extends AppController {
     }
 
     public function windows(): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var WindowsAppsTable $WindowsAppsTable */
+        $WindowsAppsTable = TableRegistry::getTableLocator()->get('WindowsApps');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'   => [
+                'WindowsApps.name',
+                'WindowsApps.publisher'
+            ],
+            'equals' => [
+                'WindowsApps.id'
+            ],
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_windows_apps = $WindowsAppsTable->getWindowsAppsIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+
+        foreach ($all_windows_apps as $index => $app) {
+            $allHosts = [];
+            foreach ($app['windows_apps_hosts'] as $packages_host) {
+                $allHosts[$packages_host['host_id']] = $packages_host['host_id'];
+            }
+            unset($all_windows_apps[$index]['windows_apps_hosts']);
+            $all_windows_apps[$index]['all_hosts'] = array_values($allHosts);
+        }
+
+        $this->set('all_windows_apps', $all_windows_apps);
+        $this->viewBuilder()->setOption('serialize', ['all_windows_apps']);
     }
 
     public function windows_updates(): void {
