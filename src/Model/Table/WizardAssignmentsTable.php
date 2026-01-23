@@ -585,6 +585,14 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['linux', 'network', 'hardware'],
                 'active'      => true
             ],
+            'nextcloud'                    => [
+                'type_id'     => 'nextcloud',
+                'title'       => __('NextCloud'),
+                'description' => __('Monitor your NextCloud instance.'),
+                'image'       => 'nextcloud.svg',
+                'category'    => ['network'],
+                'active'      => true
+            ],
             'palo-alto-firewall'           => [
                 'type_id'     => 'palo-alto-firewall',
                 'title'       => __('Palo Alto Firewall'),
