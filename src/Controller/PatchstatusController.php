@@ -85,13 +85,16 @@ class PatchstatusController extends AppController {
 
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
         $all_patchstatus = $PackagesHostDetailsTable->getPatchstatusIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
         foreach ($all_patchstatus as $index => $patchstatus) {
             $all_patchstatus[$index]['last_update_user'] = $UserTime->format($patchstatus['last_update']);
             $all_patchstatus[$index]['uptime_in_words'] = $UserTime->secondsInHumanShort($patchstatus['system_uptime']);
 
             $all_patchstatus[$index]['linux_update_ids'] = Hash::extract($patchstatus['packages_linux_hosts'], '{n}.package_linux_id');
+            $all_patchstatus[$index]['linux_security_update_ids'] = Hash::extract($patchstatus['packages_linux_hosts'], '{n}[is_security_update=1].package_linux_id');
             $all_patchstatus[$index]['macos_update_ids'] = Hash::extract($patchstatus['macos_updates'], '{n}.id');
             $all_patchstatus[$index]['windows_update_ids'] = Hash::extract($patchstatus['windows_updates'], '{n}.id');
+            $all_patchstatus[$index]['windows_security_update_ids'] = Hash::extract($patchstatus['windows_updates'], '{n}[is_security_update=1].id');
 
             unset($all_patchstatus[$index]['packages_linux_hosts']);
             unset($all_patchstatus[$index]['macos_updates']);

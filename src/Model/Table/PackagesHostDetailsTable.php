@@ -316,12 +316,14 @@ class PackagesHostDetailsTable extends Table {
                     return $query->select([
                         'PackagesLinuxHosts.package_linux_id',
                         'PackagesLinuxHosts.host_id',
+                        'PackagesLinuxHosts.is_security_update'
                     ]);
                 },
                 'WindowsUpdates'     => function (Query $query) {
                     return $query->select([
                         'WindowsUpdates.id',
                         'WindowsUpdates.host_id',
+                        'WindowsUpdates.is_security_update'
                     ]);
                 },
                 'MacosUpdates'       => function (Query $query) {
