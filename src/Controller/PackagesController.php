@@ -59,10 +59,14 @@ class PackagesController extends AppController {
         $PackagesLinuxTable = TableRegistry::getTableLocator()->get('PackagesLinux');
         $GenericFilter = new GenericFilter($this->request);
         $GenericFilter->setFilters([
-            'like' => [
-                'name',
-                'description'
-            ]
+            'like'           => [
+                'PackagesLinux.name',
+                'PackagesLinux.description'
+            ],
+            'greater_equals' => [
+                'available_updates',
+                'available_security_updates',
+            ],
         ]);
 
         $MY_RIGHTS = $this->MY_RIGHTS;
