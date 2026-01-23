@@ -139,6 +139,11 @@ plugins/MSHyperVModule
 plugins/CiscoModule
 plugins/BroadcomProxyModule
 plugins/ApacheModule
+plugins/NutanixModule
+plugins/NetworkModule
+plugins/NginxModule
+plugins/CitrixModule
+plugins/NetAppModule
 
 # NFS mounts
 .nfs.*

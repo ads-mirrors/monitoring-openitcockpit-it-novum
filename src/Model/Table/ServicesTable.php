@@ -1045,7 +1045,7 @@ class ServicesTable extends Table {
             if ($Cache === null) {
                 // Legacy - no caching
                 foreach ($ServicetemplatesTable->getServicetemplatesAsList($dataToParse['Service']['servicetemplate_id']) as $servicetemplateId => $servicetemplateName) {
-                    $extDataForChangelog['Servicetemplate'][] = [
+                    $extDataForChangelog['Servicetemplate'] = [
                         'id'   => $servicetemplateId,
                         'name' => $servicetemplateName
                     ];
@@ -1060,7 +1060,7 @@ class ServicesTable extends Table {
                         ]);
                     }
                 }
-                $extDataForChangelog['Servicetemplate'][] = $Cache->get(OBJECT_SERVICETEMPLATE, $dataToParse['Service']['servicetemplate_id']);
+                $extDataForChangelog['Servicetemplate'] = $Cache->get(OBJECT_SERVICETEMPLATE, $dataToParse['Service']['servicetemplate_id']);
             }
         }
 
@@ -2307,6 +2307,78 @@ class ServicesTable extends Table {
                 'like'
             );
             unset($where['servicedescription LIKE']);
+        }
+
+        if (!empty($where['Hostgroups.id IN']) && is_array($where['Hostgroups.id IN'])) {
+            $query->select([
+                'hostgroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                    GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                    GROUP_CONCAT(HostToHostgroups.hostgroup_id))'),
+                'hostCount'     => $query->newExpr(
+                    'SELECT COUNT(hostgroups.id)
+                                FROM hostgroups
+                                WHERE FIND_IN_SET (hostgroups.id,IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                                GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                                GROUP_CONCAT(HostToHostgroups.hostgroup_id)))
+                                AND hostgroups.id IN (' . implode(', ', $where['Hostgroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'hosts_to_hostgroups'         => [
+                    'table'      => 'hosts_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HostToHostgroups',
+                    'conditions' => 'HostToHostgroups.host_id = Hosts.id',
+                ],
+                'hosttemplates_to_hostgroups' => [
+                    'table'      => 'hosttemplates_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HosttemplatesToHostgroups',
+                    'conditions' => 'HosttemplatesToHostgroups.hosttemplate_id = Hosts.hosttemplate_id',
+                ]
+            ]);
+            $query->having([
+                'hostgroup_ids IS NOT NULL',
+                'hostCount > 0'
+            ]);
+
+            unset($where['Hostgroups.id IN']);
+        }
+
+        if (!empty($where['Servicegroups.id IN']) && is_array($where['Servicegroups.id IN'])) {
+            $query->select([
+                'servicegroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(ServiceToServicegroups.servicegroup_id) IS NULL,
+                    GROUP_CONCAT(ServicetemplatesToServicegroups.servicegroup_id),
+                    GROUP_CONCAT(ServiceToServicegroups.servicegroup_id))'),
+                'serviceCount'     => $query->newExpr(
+                    'SELECT COUNT(servicegroups.id)
+                                FROM servicegroups
+                                WHERE FIND_IN_SET (servicegroups.id,IF(GROUP_CONCAT(ServiceToServicegroups.servicegroup_id) IS NULL,
+                                GROUP_CONCAT(ServicetemplatesToServicegroups.servicegroup_id),
+                                GROUP_CONCAT(ServiceToServicegroups.servicegroup_id)))
+                                AND servicegroups.id IN (' . implode(', ', $where['Servicegroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'services_to_servicegroups'         => [
+                    'table'      => 'services_to_servicegroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'ServiceToServicegroups',
+                    'conditions' => 'ServiceToServicegroups.service_id = Services.id',
+                ],
+                'servicetemplates_to_servicegroups' => [
+                    'table'      => 'servicetemplates_to_servicegroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'ServicetemplatesToServicegroups',
+                    'conditions' => 'ServicetemplatesToServicegroups.servicetemplate_id = Services.servicetemplate_id',
+                ]
+            ]);
+            $query->having([
+                'servicegroup_ids IS NOT NULL',
+                'serviceCount > 0'
+            ]);
+
+            unset($where['Servicegroups.id IN']);
         }
 
         if (!empty($where)) {

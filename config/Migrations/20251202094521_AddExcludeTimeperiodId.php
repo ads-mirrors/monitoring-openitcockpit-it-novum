@@ -23,29 +23,37 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-namespace itnovum\openITCOCKPIT\Filter;
+declare(strict_types=1);
 
+use Migrations\BaseMigration;
 
-class MapFilter extends Filter {
-
+/**
+ * Class AddExcludeTimeperiodId
+ *
+ * Created:
+ * oitc migrations create AddExcludeTimeperiodId
+ *
+ * Usage:
+ * openitcockpit-update
+ */
+class AddExcludeTimeperiodId extends BaseMigration {
     /**
-     * @return array
+     * Change Method.
+     *
+     * More information on this method is available here:
+     * https://book.cakephp.org/phinx/0/en/migrations.html#the-change-method
+     * @return void
      */
-    public function indexFilter() {
-        $filters = [
-            'like'   => [
-                'Maps.name',
-                'Maps.title'
-            ],
-            'equals' => [
-                'Maps.id',
-            ],
-            'bool'   => [
-                'Maps.auto_generated'
-            ],
-        ];
-
-        return $this->getConditionsByFilters($filters);
+    public function change(): void {
+        if ($this->hasTable('timeperiods')) {
+            $this->table('timeperiods')
+                ->addColumn('exclude_timeperiod_id', 'integer', [
+                    'after'   => 'calendar_id',
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => true,
+                ])
+                ->update();
+        }
     }
-
 }

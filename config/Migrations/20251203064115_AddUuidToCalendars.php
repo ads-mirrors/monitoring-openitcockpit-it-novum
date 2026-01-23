@@ -23,29 +23,44 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-namespace itnovum\openITCOCKPIT\Filter;
+declare(strict_types=1);
 
+use Migrations\BaseMigration;
 
-class MapFilter extends Filter {
-
+/**
+ * Class AddUuidToCalendars
+ *
+ * Created:
+ * oitc migrations create AddUuidToCalendars
+ *
+ * Run migration:
+ * oitc migrations migrate
+ *
+ * Usage:
+ * openitcockpit-update
+ */
+class AddUuidToCalendars extends BaseMigration {
     /**
-     * @return array
+     * Change Method.
+     *
+     * More information on this method is available here:
+     * https://book.cakephp.org/phinx/0/en/migrations.html#the-change-method
+     * @return void
      */
-    public function indexFilter() {
-        $filters = [
-            'like'   => [
-                'Maps.name',
-                'Maps.title'
-            ],
-            'equals' => [
-                'Maps.id',
-            ],
-            'bool'   => [
-                'Maps.auto_generated'
-            ],
-        ];
-
-        return $this->getConditionsByFilters($filters);
+    public function change(): void {
+        if ($this->hasTable('calendars')) {
+            $this->table('calendars')
+                ->addColumn('uuid', 'string', [
+                    'after'   => 'id',
+                    'default' => null,
+                    'limit'   => 37,
+                    'null'    => true,
+                ])
+                ->addIndex(
+                    [
+                        'uuid',
+                    ]
+                )->update();
+        }
     }
-
 }

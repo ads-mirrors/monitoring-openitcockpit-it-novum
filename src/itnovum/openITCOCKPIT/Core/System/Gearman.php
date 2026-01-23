@@ -60,7 +60,7 @@ class Gearman {
 
         $result = $this->client->doNormal('oitc_gearman', $payload);
 
-        $result = @unserialize($result);
+        $result = @unserialize($result, ['allowed_classes' => false]);
         if (!is_array($result)) {
             return 'Corrupt data';
         }
@@ -74,7 +74,7 @@ class Gearman {
 
         $result = $this->client->doBackground('oitc_gearman', $payload);
 
-        $result = @unserialize($result);
+        $result = @unserialize($result, ['allowed_classes' => false]);
         if (!is_array($result)) {
             return 'Corrupt data';
         }

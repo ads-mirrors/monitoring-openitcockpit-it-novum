@@ -1,6 +1,5 @@
 <?php
-// Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) <2015-present>  <it-novum GmbH>
 //
 // This file is dual licensed
 //
@@ -23,27 +22,36 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-namespace App\Model\Entity;
+// 2.
+//	If you purchased an openITCOCKPIT Enterprise Edition you can use this file
+//	under the terms of the openITCOCKPIT Enterprise Edition license agreement.
+//	License agreement and license key will be shipped with the order
+//	confirmation.
 
+declare(strict_types=1);
+
+namespace MapModule\Model\Entity;
+
+use Cake\I18n\FrozenTime;
 use Cake\ORM\Entity;
 
 /**
- * Changelog Entity
+ * Rotation Entity
  *
  * @property int $id
- * @property string $model
- * @property string $action
- * @property int $object_id
- * @property int|null $objecttype_id
- * @property int|null $user_id
- * @property string $data
  * @property string $name
- * @property int $module_flag
- * @property \Cake\I18n\DateTime $created
+ * @property string $description
+ * @property int $map_refresh_interval
+ * @property int $type
+ * @property int $items_per_line
+ * @property FrozenTime $created
+ * @property FrozenTime $modified
  *
- * @property \App\Model\Entity\User $user
+ * @property Containers[] $containers
+ * @property Maps[] $maps
+ * @property MapgeneratorLevel[] $mapgenerator_levels
  */
-class Changelog extends Entity {
+class Mapgenerator extends Entity {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -54,24 +62,15 @@ class Changelog extends Entity {
      * @var array
      */
     protected array $_accessible = [
-        'model'         => true,
-        'action'        => true,
-        'object_id'     => true,
-        'objecttype_id' => true,
-        'user_id'       => true,
-        'data'          => true,
-        'name'          => true,
-        'module_flag'   => true,
-        'created'       => true,
-        'user'          => true,
-        'containers'    => true
+        'name'                 => true,
+        'description'          => true,
+        'map_refresh_interval' => true,
+        'items_per_line'       => true,
+        'type'                 => true,
+        'created'              => true,
+        'modified'             => true,
+        'containers'           => true,
+        'maps'                 => true,
+        'mapgenerator_levels'  => true,
     ];
-
-    public function jsonSerialize(): array {
-        $data = $this->extract($this->getVisible());
-        if (isset($data['data'])) {
-            $data['data_unserialized'] = unserialize($data['data'], ['allowed_classes' => false]);
-        }
-        return $data;
-    }
 }

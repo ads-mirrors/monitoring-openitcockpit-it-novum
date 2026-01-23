@@ -23,29 +23,43 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-namespace itnovum\openITCOCKPIT\Filter;
+declare(strict_types=1);
 
+use App\Model\Table\CalendarsTable;
+use Cake\ORM\TableRegistry;
+use itnovum\openITCOCKPIT\Core\UUID;
+use Migrations\BaseSeed;
 
-class MapFilter extends Filter {
-
+/**
+ * Class AddUuidToCalendarsSeed
+ *
+ * Created:
+ * oitc bake seed --table calendars  AddUuidToCalendarsSeed
+ *
+ * Apply:
+ * oitc migrations seed
+ */
+class AddUuidToCalendarsSeed extends BaseSeed {
     /**
-     * @return array
+     * Run Method.
+     *
+     * Write your database seeder using this method.
+     *
+     * More information on writing seeds is available here:
+     * https://book.cakephp.org/migrations/4/en/seeding.html
+     *
+     * @return void
      */
-    public function indexFilter() {
-        $filters = [
-            'like'   => [
-                'Maps.name',
-                'Maps.title'
-            ],
-            'equals' => [
-                'Maps.id',
-            ],
-            'bool'   => [
-                'Maps.auto_generated'
-            ],
-        ];
-
-        return $this->getConditionsByFilters($filters);
+    public function run(): void {
+        // ITC-2696 Add UUID to existing Calendars
+        /** @var CalendarsTable $CalendarsTable */
+        $CalendarsTable = TableRegistry::getTableLocator()->get('Calendars');
+        $calendars = $CalendarsTable->find()
+            ->whereNull(['Calendars.uuid'])
+            ->all();
+        foreach ($calendars as $calendar) {
+            $calendar->set('uuid', UUID::v4());
+            $CalendarsTable->save($calendar);
+        }
     }
-
 }

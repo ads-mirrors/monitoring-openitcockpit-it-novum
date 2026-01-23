@@ -60,16 +60,18 @@ use CheckmkModule\Model\Table\MkSatTasksTable;
 use DistributeModule\Model\Entity\Satellite;
 use DistributeModule\Model\Entity\SatelliteTask;
 use DistributeModule\Model\Table\SatelliteTasksTable;
+use GudeModule\itnovum\openITCOCKPIT\GudeSensors\GudeSensorsScan;
 use ImportModule\Model\Table\SatellitePushAgentsTable;
 use itnovum\openITCOCKPIT\CakePHP\Folder;
 use itnovum\openITCOCKPIT\Core\MonitoringEngine\NagiosConfigDefaults;
 use itnovum\openITCOCKPIT\Core\MonitoringEngine\NagiosConfigGenerator;
 use itnovum\openITCOCKPIT\Core\System\Health\LsbRelease;
 use MS365Module\itnovum\openITCOCKPIT\MS365Service\MS365ServiceScan;
+use NetworkModule\itnovum\openITCOCKPIT\NetworkInterfaces\NetworkInterfacesScan;
 use NWCModule\itnovum\openITCOCKPIT\SNMP\SNMPScanNwc;
+use ProxmoxModule\itnovum\openITCOCKPIT\ProxmoxStorage\ProxmoxStorageScan;
 use Symfony\Component\Filesystem\Filesystem;
 use VMWAREModule\itnovum\openITCOCKPIT\Datastore\DatastoreScan;
-use ProxmoxModule\itnovum\openITCOCKPIT\ProxmoxStorage\ProxmoxStorageScan;
 
 /**
  * GearmanWorker command.
@@ -236,7 +238,7 @@ class GearmanWorkerCommand extends Command {
         } catch (\Exception $e) {
             $payloadFromJSON = '';
         }
-        $payload = @unserialize($payload);
+        $payload = @unserialize($payload, ['allowed_classes' => false]);
 
         if (!is_array($payload)) {
             if (!is_array($payloadFromJSON)) {
@@ -1104,6 +1106,41 @@ class GearmanWorkerCommand extends Command {
                     ];
                 }
                 break;
+            case 'WizardNetworkInterfaceList':
+                $DatastoreScan = new NetworkInterfacesScan($payload['data']);
+                try {
+                    $interfaces = $DatastoreScan->executeNetworkInterfacesDiscovery($payload['host_address']);
+                    $return = [
+                        'success'    => $interfaces['success'],
+                        'error'      => $interfaces['errormsg'],
+                        'interfaces' => $interfaces
+                    ];
+                } catch (\RuntimeException $e) {
+                    $return = [
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
+                        'exception' => 'ProcessFailedException'
+                    ];
+                }
+                break;
+
+            case 'WizardGudeSensorsList':
+                $GudeSensorsScan = new GudeSensorsScan($payload['data']);
+                try {
+                    $sensors = $GudeSensorsScan->executeSensorsDiscovery($payload['host_address']);
+                    $return = [
+                        'success' => $sensors['success'],
+                        'error'   => $sensors['errormsg'],
+                        'sensors' => $sensors
+                    ];
+                } catch (\RuntimeException $e) {
+                    $return = [
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
+                        'exception' => 'ProcessFailedException'
+                    ];
+                }
+                break;
 
             case 'WizardProxmoxStorageDiscovery':
                 $DatastoreScan = new ProxmoxStorageScan($payload['data']);
@@ -1761,7 +1798,7 @@ class GearmanWorkerCommand extends Command {
      * @param \GearmanTask $task
      */
     public function exportCallback($task) {
-        $result = unserialize($task->data());
+        $result = unserialize($task->data(), ['allowed_classes' => false]);
         if (!isset($result['task'])) {
             Log::error('Export result has no "task" key ' . serialize($result));
             return;

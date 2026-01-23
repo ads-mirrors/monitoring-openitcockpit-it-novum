@@ -158,8 +158,20 @@ class MapsTable extends Table {
             'className'  => 'MapModule.Mapitems'
         ])->setDependent(true);
 
+        // Used to delete mapitems when a map object is deleted
+        $this->hasMany('MapitemsForDelete', [
+            'foreignKey' => 'object_id',
+            'className'  => 'MapModule.Mapitems'
+        ])->setDependent(true);
+
         $this->hasMany('Maplines', [
             'foreignKey' => 'map_id',
+            'className'  => 'MapModule.Maplines'
+        ])->setDependent(true);
+
+        // Used to delete maplines when a map object is deleted
+        $this->hasMany('MaplinesForDelete', [
+            'foreignKey' => 'object_id',
             'className'  => 'MapModule.Maplines'
         ])->setDependent(true);
 
@@ -168,8 +180,19 @@ class MapsTable extends Table {
             'className'  => 'MapModule.MapsToRotations'
         ])->setDependent(true);
 
+        $this->hasMany('MapgeneratorsToMaps', [
+            'foreignKey' => 'map_id',
+            'className'  => 'MapModule.MapgeneratorsToMaps'
+        ])->setDependent(true);
+
         $this->hasMany('Mapsummaryitems', [
             'foreignKey' => 'map_id',
+            'className'  => 'MapModule.Mapsummaryitems'
+        ])->setDependent(true);
+
+        // Used to delete mapsummaryitems when a map object is deleted
+        $this->hasMany('MapsummaryitemsForDelete', [
+            'foreignKey' => 'object_id',
             'className'  => 'MapModule.Mapsummaryitems'
         ])->setDependent(true);
 
@@ -2522,5 +2545,27 @@ class MapsTable extends Table {
             ->toArray();
         return Hash::extract($query, '{n}.Containers.id');
     }
+
+    /**
+     * @param array $mapIds
+     * @param array $contain
+     * @return array
+     */
+    public function getMapsAndItemsByIds($mapIds, $contain = []) {
+
+        if (empty($mapIds)) {
+            return [];
+        }
+
+        $query = $this->find()
+            ->contain($contain)
+            ->where([
+                'Maps.id IN' => $mapIds,
+            ])->disableHydration();
+
+        return $this->emptyArrayIfNull($query->toArray());
+
+    }
+
 
 }
