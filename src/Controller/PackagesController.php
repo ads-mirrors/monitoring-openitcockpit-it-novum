@@ -199,4 +199,15 @@ class PackagesController extends AppController {
         $this->viewBuilder()->setOption('serialize', ['package', 'all_host_packages']);
     }
 
+    public function windows(): void {
+    }
+
+    public function windows_updates(): void {
+    }
+
+    public function macos(): void {
+    }
+
+    public function macos_updates(): void {
+    }
 }
