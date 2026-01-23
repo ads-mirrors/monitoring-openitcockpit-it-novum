@@ -67,6 +67,9 @@ class PackagesController extends AppController {
                 'available_updates',
                 'available_security_updates',
             ],
+            'equals'         => [
+                'PackagesLinux.id'
+            ],
         ]);
 
         $MY_RIGHTS = $this->MY_RIGHTS;
