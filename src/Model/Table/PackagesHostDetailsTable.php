@@ -88,6 +88,18 @@ class PackagesHostDetailsTable extends Table {
             ],
             'className'  => PackagesLinuxHostsTable::class
         ]);
+
+        $this->hasMany('WindowsUpdates', [
+            'foreignKey' => 'host_id',
+            'bindingKey' => 'host_id',
+            'className'  => WindowsUpdatesTable::class
+        ]);
+
+        $this->hasMany('MacosUpdates', [
+            'foreignKey' => 'host_id',
+            'bindingKey' => 'host_id',
+            'className'  => MacosUpdatesTable::class
+        ]);
     }
 
     /**
@@ -305,7 +317,19 @@ class PackagesHostDetailsTable extends Table {
                         'PackagesLinuxHosts.package_linux_id',
                         'PackagesLinuxHosts.host_id',
                     ]);
-                }
+                },
+                'WindowsUpdates'     => function (Query $query) {
+                    return $query->select([
+                        'WindowsUpdates.id',
+                        'WindowsUpdates.host_id',
+                    ]);
+                },
+                'MacosUpdates'       => function (Query $query) {
+                    return $query->select([
+                        'MacosUpdates.id',
+                        'MacosUpdates.host_id',
+                    ]);
+                },
             ])
             ->where([
                 'Hosts.disabled' => 0
