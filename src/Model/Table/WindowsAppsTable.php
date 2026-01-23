@@ -107,6 +107,25 @@ class WindowsAppsTable extends Table {
     }
 
     /**
+     * @param int $id
+     * @return bool
+     */
+    public function existsById($id) {
+        return $this->exists(['WindowsApps.id' => $id]);
+    }
+
+    public function getAppById($id) {
+        $query = $this->find()
+            ->where([
+                'WindowsApps.id' => $id
+            ])
+            ->disableHydration()
+            ->firstOrFail();
+
+        return $query;
+    }
+
+    /**
      * @return int
      */
     public function getAppsCount(): int {

@@ -31,6 +31,7 @@ use App\Model\Table\MacosAppsTable;
 use App\Model\Table\MacosUpdatesTable;
 use App\Model\Table\PackagesLinuxHostsTable;
 use App\Model\Table\PackagesLinuxTable;
+use App\Model\Table\WindowsAppsHostsTable;
 use App\Model\Table\WindowsAppsTable;
 use App\Model\Table\WindowsUpdatesTable;
 use Cake\Http\Exception\MethodNotAllowedException;
@@ -244,6 +245,46 @@ class PackagesController extends AppController {
 
         $this->set('all_windows_apps', $all_windows_apps);
         $this->viewBuilder()->setOption('serialize', ['all_windows_apps']);
+    }
+
+    public function view_windows($id = null): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $id = (int)$id;
+
+
+        /** @var WindowsAppsTable $WindowsAppsTable */
+        $WindowsAppsTable = TableRegistry::getTableLocator()->get('WindowsApps');
+        /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
+        $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
+
+        if (!$WindowsAppsTable->existsById($id)) {
+            throw new NotFoundException(__('Invalid app'));
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $app = $WindowsAppsTable->getAppById($id);
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Hosts.name',
+                'WindowsAppsHosts.version',
+            ]
+        ]);
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_host_apps = $WindowsAppsHostsTable->getHostsWithApp($id, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+
+        $this->set('app', $app);
+        $this->set('all_host_apps', $all_host_apps);
+        $this->viewBuilder()->setOption('serialize', ['app', 'all_host_apps']);
     }
 
     public function windows_updates(): void {
