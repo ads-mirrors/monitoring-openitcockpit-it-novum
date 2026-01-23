@@ -526,8 +526,8 @@ class PackagesLinuxTable extends Table {
                 'PackagesLinux.is_patch',
                 'PackagesLinux.created',
                 'PackagesLinux.modified',
-                'updates_count'  => $subQueryForUpdates,
-                'security_count' => $subQueryForSecurityUpdates,
+                'available_updates'          => $subQueryForUpdates,
+                'available_security_updates' => $subQueryForSecurityUpdates,
             ])
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) use ($MY_RIGHTS) {
@@ -559,20 +559,21 @@ class PackagesLinuxTable extends Table {
                 }
             ]);
 
-
-        if (!empty($GenericFilter->genericFilters())) {
-            $query->where($GenericFilter->genericFilters());
+        $where = $GenericFilter->genericFilters();
+        if (isset($where['available_security_updates >=']) && $where['available_security_updates >='] > 0) {
+            $query->having(['available_security_updates >' => 0]);
+            unset($where['available_security_updates >=']);
         }
 
-        $query->having(['security_count >=' => 1]);
+        if (isset($where['available_updates >=']) && $where['available_updates >='] > 0) {
+            $query->having(['available_updates >' => 0]);
+            unset($where['available_updates >=']);
+        }
 
-        /*
-         * If security updates filter is enabled
-         *
-        $query->where(function (QueryExpression $exp, Query\SelectQuery $q) use ($subQueryForSecurityUpdates) {
-            return $exp->exists($subQueryForSecurityUpdates);
-        });
-        */
+        if (!empty($where)) {
+            $query->where($where);
+        }
+        
 
         $query->orderBy(
             array_merge(
