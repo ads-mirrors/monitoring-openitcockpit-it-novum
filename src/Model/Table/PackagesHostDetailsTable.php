@@ -79,6 +79,15 @@ class PackagesHostDetailsTable extends Table {
             'foreignKey' => 'host_id',
             'joinType'   => 'INNER',
         ]);
+
+        $this->hasMany('PackagesLinuxHosts', [
+            'foreignKey' => 'host_id',
+            'bindingKey' => 'host_id',
+            'conditions' => [
+                'PackagesLinuxHosts.needs_update' => 1
+            ],
+            'className'  => PackagesLinuxHostsTable::class
+        ]);
     }
 
     /**
@@ -283,12 +292,18 @@ class PackagesHostDetailsTable extends Table {
                 ['Hosts.id = PackagesHostDetails.host_id']
             )
             ->contain([
-                'Hosts' => function (Query $query) {
+                'Hosts'              => function (Query $query) {
                     return $query->select([
                         'Hosts.id',
                         'Hosts.name',
                         'Hosts.uuid',
                         'Hosts.container_id',
+                    ]);
+                },
+                'PackagesLinuxHosts' => function (Query $query) {
+                    return $query->select([
+                        'PackagesLinuxHosts.package_linux_id',
+                        'PackagesLinuxHosts.host_id',
                     ]);
                 }
             ])
