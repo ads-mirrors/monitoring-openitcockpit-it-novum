@@ -329,4 +329,76 @@ class WindowsUpdatesTable extends Table {
             ]);
         }
     }
+
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getWindowsUpdatesForSummary(array $MY_RIGHTS = []): array {
+        $all_windows_updates = [
+            'upToDate'                 => 0,
+            'updatesAvailable'         => 0,
+            'securityUpdates'          => 0,
+            'totalInstallations'       => 0,
+            'hostsUpToDate'            => [],
+            'hostsWithUpdates'         => [],
+            'hostsWithSecurityUpdates' => [],
+        ];
+
+        $query = $this->find('all')
+            ->select([
+                'WindowsUpdates.id',
+                'WindowsUpdates.name',
+                'WindowsUpdates.description',
+                'WindowsUpdates.kbarticle_ids',
+                'WindowsUpdates.update_id'
+            ])->contain([
+                'WindowsUpdatesHosts' => function (Query $q) use ($MY_RIGHTS) {
+                    $query = $q->select([
+                        'windows_update_id',
+                        'host_id',
+                        'is_security_update',
+                    ])->innerJoin(
+                        ['Hosts' => 'hosts'],
+                        ['Hosts.id = WindowsUpdatesHosts.host_id']
+                    )
+                        ->where([
+                            'Hosts.disabled' => 0
+                        ]);
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+
+                    return $query;
+                }
+            ]);
+
+        $query->disableAutoFields()
+            ->disableHydration();
+        $result = $query->toArray();
+        if (empty($result)) {
+            return $all_windows_updates;
+        }
+        foreach ($result as $windows_update) {
+            foreach ($windows_update['windows_updates_hosts'] as $windows_update_host) {
+                if ($windows_update_host['is_security_update'] === false) {
+                    $all_windows_updates['updatesAvailable']++;
+                    $all_windows_updates['hostsWithUpdates'][$windows_update_host['host_id']] = $windows_update_host['host_id'];
+                }
+                if ($windows_update_host['is_security_update'] === true) {
+                    $all_windows_updates['securityUpdates']++;
+                    $all_windows_updates['hostsWithSecurityUpdates'][$windows_update_host['host_id']] = $windows_update_host['host_id'];
+                }
+            }
+        }
+        $all_windows_updates['hostsWithUpdates'] = array_values($all_windows_updates['hostsWithUpdates']);
+        $all_windows_updates['hostsWithSecurityUpdates'] = array_values($all_windows_updates['hostsWithSecurityUpdates']);
+
+        return $all_windows_updates;
+    }
 }
