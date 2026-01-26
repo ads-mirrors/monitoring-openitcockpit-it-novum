@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use App\Model\Entity\MacosAppsHost;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Log\Log;
@@ -34,6 +35,8 @@ use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * MacosApps Model
@@ -57,6 +60,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class MacosAppsTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -383,5 +389,74 @@ class MacosAppsTable extends Table {
             }
         }
         return $all_macos_apps;
+    }
+
+    public function getMacosAppsIndex(GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+        $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
+        $query = $this->find()
+            ->select([
+                'MacosApps.id',
+                'MacosApps.name',
+                'MacosApps.description',
+                'MacosApps.created',
+                'MacosApps.modified',
+            ])
+            ->contain([
+                'MacosAppsHosts' => function (Query $query) use ($MY_RIGHTS) {
+                    $query->select([
+                        'MacosAppsHosts.macos_app_id',
+                        'MacosAppsHosts.host_id'
+
+                    ])->innerJoin(
+                        ['Hosts' => 'hosts'],
+                        ['Hosts.id = MacosAppsHosts.host_id']
+                    );
+
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ])->disableAutoFields();
+
+                    return $query;
+                }
+            ]);
+
+        $where = $GenericFilter->genericFilters();
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('MacosApps.name', 'asc'),
+                ['MacosApps.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
     }
 }

@@ -334,6 +334,43 @@ class PackagesController extends AppController {
     }
 
     public function macos(): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var MacosAppsTable $MacosAppsTable */
+        $MacosAppsTable = TableRegistry::getTableLocator()->get('MacosApps');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'   => [
+                'MacosApps.name',
+                'MacosApps.description'
+            ],
+            'equals' => [
+                'MacosApps.id'
+            ],
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_macos_apps = $MacosAppsTable->getMacosAppsIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+
+        foreach ($all_macos_apps as $index => $app) {
+            $allHosts = [];
+            foreach ($app['macos_apps_hosts'] as $packages_host) {
+                $allHosts[$packages_host['host_id']] = $packages_host['host_id'];
+            }
+            unset($all_macos_apps[$index]['macos_apps_hosts']);
+            $all_macos_apps[$index]['all_hosts'] = array_values($allHosts);
+        }
+
+        $this->set('all_macos_apps', $all_macos_apps);
+        $this->viewBuilder()->setOption('serialize', ['all_macos_apps']);
     }
 
     public function macos_updates(): void {
