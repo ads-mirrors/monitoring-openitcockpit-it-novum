@@ -27,7 +27,11 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use Cake\Database\Expression\QueryExpression;
+use Cake\Log\Log;
+use Cake\ORM\Query;
 use Cake\ORM\Table;
+use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
 
 /**
@@ -98,5 +102,193 @@ class MacosUpdatesTable extends Table {
             ->allowEmptyString('version');
 
         return $validator;
+    }
+
+    /**
+     * @param int $id
+     * @return bool
+     */
+    public function existsById($id) {
+        return $this->exists(['MacosUpdates.id' => $id]);
+    }
+
+    public function getUpdateById($id) {
+        $query = $this->find()
+            ->where([
+                'MacosUpdates.id' => $id
+            ])
+            ->disableHydration()
+            ->firstOrFail();
+
+        return $query;
+    }
+
+    /**
+     * @return int
+     */
+    public function getUpdatesCount(): int {
+        $query = $this->find()
+            ->count();
+
+        return $query;
+    }
+
+    public function deleteUnusedUpdates() {
+        $query = $this->deleteQuery();
+        $query->delete('macos_updates')
+            ->where(function (QueryExpression $exp, Query\DeleteQuery $query) {
+                return $exp->notExists(
+                    $this->find()
+                        ->select(1)
+                        ->from(['macos_updates_hosts'])
+                        ->where(['macos_updates_hosts.macos_update_id = macos_updates.id'])
+                );
+            });
+
+        return $query->execute();
+    }
+
+    /**
+     * @param null|int $limit
+     * @param null|int $offset
+     */
+    public function getMacosUpdatesWithLimit(?int $limit = null, ?int $offset = null): array {
+        $query = $this->find()
+            ->select([
+                'MacosUpdates.id',
+                'MacosUpdates.name',
+            ]);
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+        if ($offset !== null) {
+            $query->offset($offset);
+        }
+
+        $query->disableHydration();
+
+        $query->all();
+        return $query->toArray();
+    }
+
+    public function getAllMacosUpdatesAsMap() {
+        //Multiple queries are faster than one big query
+        $updateCount = $this->getUpdatesCount();
+        $chunk = 200;
+        $queryCount = ceil($updateCount / $chunk);
+        $updates = [];
+        for ($i = 0; $i < $queryCount; $i++) {
+            $_updates = $this->getMacosUpdatesWithLimit($chunk, ($chunk * $i));
+            foreach ($_updates as $_update) {
+                $updates[$_update['name']] = $_update['id'];
+            }
+            unset($_updates);
+        }
+
+        return $updates;
+    }
+
+
+    /**
+     * @param int $hostId
+     * @param array $availableUpdates
+     * @return true|void
+     * @throws \Exception
+     */
+    public function saveUpdatesForHost(int $hostId, array $availableUpdates) {
+        if (empty($availableUpdates)) {
+            return true;
+        }
+
+        /** @var MacosUpdatesHostsTable $MacosUpdatesHostsTable */
+        $MacosUpdatesHostsTable = TableRegistry::getTableLocator()->get('MacosUpdatesHosts');
+
+        // key = name, value = id
+        $existingUpdates = $this->getAllMacosUpdatesAsMap();
+
+        // key = macos_update_id, value = MacosUpdatesHost entity
+        $existingUpdatesOfHost = $MacosUpdatesHostsTable->getAllUpdatesOfHost($hostId);
+
+        // Fake update for testing
+        /*$availableUpdates[] = [
+            'Name'        => 'macOS Fake 36.2-35C56',
+            'Description' => 'macOS Fake 36.2',
+            'Version'     => '36.2',
+        ];*/
+        foreach ($availableUpdates as $update) {
+            // [
+            //     'Name'        => 'macOS Tahoe 26.2-25C56',
+            //     'Description' => 'macOS Tahoe 26.2',
+            //     'Version'     => '26.2',
+            // ];
+
+            if (empty($update['Name'])) {
+                continue;
+            }
+
+            if (!isset($existingUpdates[$update['Name']])) {
+                // New update - add to macos_updates
+                $desc = null;
+                if (isset($update['Description'])) {
+                    $desc = substr($update['Description'], 0, 512);
+                }
+
+                $newUpdates[] = $this->newEntity([
+                    'name'        => $update['Name'],
+                    'description' => $desc,
+                    'version'     => $update['Version'],
+                ]);
+            }
+        }
+
+        if (!empty($newUpdates)) {
+            $this->saveMany($newUpdates);
+
+            // Add new update to $existingUpdates map
+            foreach ($newUpdates as $newUpdate) {
+                $existingUpdates[$newUpdate->name] = $newUpdate->id;
+            }
+        }
+
+        foreach ($availableUpdates as $update) {
+            if (empty($update['Name'])) {
+                continue;
+            }
+
+            if (!isset($existingUpdates[$update['Name']])) {
+                Log::error(sprintf('Update %s not found in existing updates during update processing.', $update['Name']));
+                continue;
+            }
+
+            $updateId = $existingUpdates[$update['Name']];
+            $updatesForDiff[$updateId] = $update['Name'];
+
+            if (!isset($existingUpdatesOfHost[$updateId])) {
+                // Create new MacosUpdatesHosts entry
+                // For macOS we do not need to update existing updates as for now wo do not save any extra info
+                $entity = $MacosUpdatesHostsTable->newEntity([
+                    'macos_update_id' => $updateId,
+                    'host_id'         => $hostId
+                ]);
+                if ($MacosUpdatesHostsTable->save($entity)) {
+                    $existingUpdatesOfHost[$entity->macos_update_id] = $entity;
+                }
+            }
+        }
+
+        // If the update got installed (is no longer present in $availableUpdates), remove the MacosUpdatesHost entry
+        $databaseUpdates = [];
+        foreach ($existingUpdatesOfHost as $update) {
+            $databaseUpdates[$update->macos_update_id] = $update->id;
+        }
+
+        $updatesThatGotInstalledOnHost = (array_diff_key($databaseUpdates, $updatesForDiff));
+        if (!empty($updatesThatGotInstalledOnHost)) {
+            $MacosUpdatesHostsTable->deleteAll(conditions: [
+                'id IN'   => array_values($updatesThatGotInstalledOnHost),
+                'host_id' => $hostId
+            ]);
+        }
     }
 }

@@ -112,7 +112,7 @@ class AgentSoftwareInventory {
                 $availableUpdates = $result['MacosUpdates'] ?? [];
 
                 $this->MacosAppsTable->saveAppsForHost($hostId, $apps);
-                //$this->MacosUpdatesTable->saveUpdatesForHost($hostId, $availableUpdates);
+                $this->MacosUpdatesTable->saveUpdatesForHost($hostId, $availableUpdates);
                 break;
 
             default:
@@ -130,6 +130,7 @@ class AgentSoftwareInventory {
         $this->WindowsAppsTable->deleteUnusedApps();
         $this->WindowsUpdatesTable->deleteUnusedUpdates();
         $this->MacosAppsTable->deleteUnusedApps();
+        $this->MacosUpdatesTable->deleteUnusedUpdates();
     }
 
     /**

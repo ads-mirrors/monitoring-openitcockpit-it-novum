@@ -202,7 +202,6 @@ class WindowsUpdatesTable extends Table {
      * @throws \Exception
      */
     public function saveUpdatesForHost(int $hostId, array $availableUpdates) {
-
         if (empty($availableUpdates)) {
             return true;
         }

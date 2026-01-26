@@ -27,6 +27,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Model\Entity\MacosUpdatesHost;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -108,5 +110,32 @@ class MacosUpdatesHostsTable extends Table {
         $rules->add($rules->existsIn(['host_id'], 'Hosts'), ['errorField' => 'host_id']);
 
         return $rules;
+    }
+
+    /**
+     * @param int $hostId
+     * @return MacosUpdatesHost[]
+     */
+    public function getAllUpdatesOfHost(int $hostId): array {
+        $query = $this->find()
+            ->where([
+                'MacosUpdatesHosts.host_id' => $hostId
+            ])
+            ->contain([
+                'MacosUpdates' => function (Query $query) {
+                    return $query->select([
+                        'id',
+                        'name',
+                    ]);
+                }
+            ]);
+
+        $result = [];
+        foreach ($query->toArray() as $item) {
+            $result[$item->macos_update_id] = $item;
+        }
+
+
+        return $result;
     }
 }
