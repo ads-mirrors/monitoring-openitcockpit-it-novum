@@ -62,7 +62,7 @@ class PatchstatusController extends AppController {
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];
         }
-
+        
         $GenericFilter = new GenericFilter($this->request);
         $GenericFilter->setFilters([
             'like'           => [
@@ -92,13 +92,13 @@ class PatchstatusController extends AppController {
 
             $all_patchstatus[$index]['linux_update_ids'] = Hash::extract($patchstatus['packages_linux_hosts'], '{n}.package_linux_id');
             $all_patchstatus[$index]['linux_security_update_ids'] = Hash::extract($patchstatus['packages_linux_hosts'], '{n}[is_security_update=1].package_linux_id');
-            $all_patchstatus[$index]['macos_update_ids'] = Hash::extract($patchstatus['macos_updates'], '{n}.id');
-            $all_patchstatus[$index]['windows_update_ids'] = Hash::extract($patchstatus['windows_updates'], '{n}.id');
-            $all_patchstatus[$index]['windows_security_update_ids'] = Hash::extract($patchstatus['windows_updates'], '{n}[is_security_update=1].id');
+            $all_patchstatus[$index]['macos_update_ids'] = Hash::extract($patchstatus['macos_updates_hosts'], '{n}.macos_update_id');
+            $all_patchstatus[$index]['windows_update_ids'] = Hash::extract($patchstatus['windows_updates_hosts'], '{n}.windows_update_id');
+            $all_patchstatus[$index]['windows_security_update_ids'] = Hash::extract($patchstatus['windows_updates_hosts'], '{n}[is_security_update=1].windows_update_id');
 
             unset($all_patchstatus[$index]['packages_linux_hosts']);
-            unset($all_patchstatus[$index]['macos_updates']);
-            unset($all_patchstatus[$index]['windows_updates']);
+            unset($all_patchstatus[$index]['packages_linux_hosts']);
+            unset($all_patchstatus[$index]['windows_updates_hosts']);
 
         }
 

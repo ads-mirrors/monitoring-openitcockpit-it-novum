@@ -89,16 +89,16 @@ class PackagesHostDetailsTable extends Table {
             'className'  => PackagesLinuxHostsTable::class
         ]);
 
-        $this->hasMany('WindowsUpdates', [
+        $this->hasMany('WindowsUpdatesHosts', [
             'foreignKey' => 'host_id',
             'bindingKey' => 'host_id',
-            'className'  => WindowsUpdatesTable::class
+            'className'  => WindowsUpdatesHostsTable::class
         ]);
 
-        $this->hasMany('MacosUpdates', [
+        $this->hasMany('MacosUpdatesHosts', [
             'foreignKey' => 'host_id',
             'bindingKey' => 'host_id',
-            'className'  => MacosUpdatesTable::class
+            'className'  => MacosUpdatesHostsTable::class
         ]);
     }
 
@@ -304,7 +304,7 @@ class PackagesHostDetailsTable extends Table {
                 ['Hosts.id = PackagesHostDetails.host_id']
             )
             ->contain([
-                'Hosts'              => function (Query $query) {
+                'Hosts'               => function (Query $query) {
                     return $query->select([
                         'Hosts.id',
                         'Hosts.name',
@@ -312,24 +312,24 @@ class PackagesHostDetailsTable extends Table {
                         'Hosts.container_id',
                     ]);
                 },
-                'PackagesLinuxHosts' => function (Query $query) {
+                'PackagesLinuxHosts'  => function (Query $query) {
                     return $query->select([
                         'PackagesLinuxHosts.package_linux_id',
                         'PackagesLinuxHosts.host_id',
                         'PackagesLinuxHosts.is_security_update'
                     ]);
                 },
-                'WindowsUpdates'     => function (Query $query) {
+                'WindowsUpdatesHosts' => function (Query $query) {
                     return $query->select([
-                        'WindowsUpdates.id',
-                        'WindowsUpdates.host_id',
-                        'WindowsUpdates.is_security_update'
+                        'WindowsUpdatesHosts.windows_update_id',
+                        'WindowsUpdatesHosts.host_id',
+                        'WindowsUpdatesHosts.is_security_update'
                     ]);
                 },
-                'MacosUpdates'       => function (Query $query) {
+                'MacosUpdatesHosts'   => function (Query $query) {
                     return $query->select([
-                        'MacosUpdates.id',
-                        'MacosUpdates.host_id',
+                        'MacosUpdatesHosts.macos_update_id',
+                        'MacosUpdatesHosts.host_id',
                     ]);
                 },
             ])
