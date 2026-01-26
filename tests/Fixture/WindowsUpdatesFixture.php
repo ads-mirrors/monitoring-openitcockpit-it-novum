@@ -20,16 +20,12 @@ class WindowsUpdatesFixture extends TestFixture
         $this->records = [
             [
                 'id' => 1,
-                'host_id' => 1,
                 'name' => 'Lorem ipsum dolor sit amet',
                 'description' => 'Lorem ipsum dolor sit amet',
                 'kbarticle_ids' => 'Lorem ipsum dolor sit amet',
                 'update_id' => 'Lorem ipsum dolor sit amet',
-                'reboot_required' => 1,
-                'is_security_update' => 1,
-                'is_optional' => 1,
-                'created' => '2026-01-20 07:43:08',
-                'modified' => '2026-01-20 07:43:08',
+                'created' => '2026-01-26 07:59:32',
+                'modified' => '2026-01-26 07:59:32',
             ],
         ];
         parent::init();

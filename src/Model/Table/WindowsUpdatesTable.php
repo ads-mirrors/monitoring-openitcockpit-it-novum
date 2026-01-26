@@ -27,16 +27,17 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
-use App\Model\Entity\WindowsUpdate;
-use Cake\ORM\RulesChecker;
+use Cake\Database\Expression\QueryExpression;
+use Cake\Log\Log;
+use Cake\ORM\Query;
 use Cake\ORM\Table;
-use Cake\Utility\Hash;
+use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
 
 /**
  * WindowsUpdates Model
  *
- * @property \App\Model\Table\HostsTable&\Cake\ORM\Association\BelongsTo $Hosts
+ * @property \App\Model\Table\HostsTable&\Cake\ORM\Association\BelongsToMany $Hosts
  *
  * @method \App\Model\Entity\WindowsUpdate newEmptyEntity()
  * @method \App\Model\Entity\WindowsUpdate newEntity(array $data, array $options = [])
@@ -70,9 +71,10 @@ class WindowsUpdatesTable extends Table {
 
         $this->addBehavior('Timestamp');
 
-        $this->belongsTo('Hosts', [
-            'foreignKey' => 'host_id',
-            'joinType'   => 'INNER',
+        $this->hasMany('WindowsUpdatesHosts', [
+            'foreignKey' => 'windows_update_id',
+            'className'  => WindowsUpdatesHostsTable::class,
+            'dependent'  => true,
         ]);
     }
 
@@ -83,10 +85,6 @@ class WindowsUpdatesTable extends Table {
      * @return \Cake\Validation\Validator
      */
     public function validationDefault(Validator $validator): Validator {
-        $validator
-            ->integer('host_id')
-            ->notEmptyString('host_id');
-
         $validator
             ->scalar('name')
             ->maxLength('name', 255)
@@ -108,179 +106,228 @@ class WindowsUpdatesTable extends Table {
             ->maxLength('update_id', 255)
             ->allowEmptyString('update_id');
 
-        $validator
-            ->boolean('reboot_required')
-            ->notEmptyString('reboot_required');
-
-        $validator
-            ->boolean('is_security_update')
-            ->notEmptyString('is_security_update');
-
-        $validator
-            ->boolean('is_optional')
-            ->notEmptyString('is_optional');
-
         return $validator;
     }
 
     /**
-     * Returns a rules checker object that will be used for validating
-     * application integrity.
-     *
-     * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
-     * @return \Cake\ORM\RulesChecker
-     */
-    public function buildRules(RulesChecker $rules): RulesChecker {
-        $rules->add($rules->existsIn(['host_id'], 'Hosts'), ['errorField' => 'host_id']);
-
-        return $rules;
-    }
-
-    /**
-     * @param int $hostId
-     * @return WindowsUpdate[]
-     */
-    public function getAllWindowsUpdatesByHostId(int $hostId): array {
-        $query = $this->find()
-            ->where(['host_id' => $hostId])
-            ->orderBy(['id' => 'DESC']);
-
-        return $query->all()->toArray();
-    }
-
-    /**
-     * Store Windows updates for a host
-     *
-     * @param int $hostId
-     * @param array $availableUpdates
+     * @param int $id
      * @return bool
      */
-    public function saveUpdatesForHost(int $hostId, array $availableUpdates): bool {
+    public function existsById($id) {
+        return $this->exists(['WindowsUpdates.id' => $id]);
+    }
 
-        $existingUpdates = $this->getAllWindowsUpdatesByHostId($hostId);
-        $existingUpdateIds = Hash::combine($existingUpdates, '{n}.update_id', '{n}.id');
+    public function getUpdateById($id) {
+        $query = $this->find()
+            ->where([
+                'WindowsUpdates.id' => $id
+            ])
+            ->disableHydration()
+            ->firstOrFail();
+
+        return $query;
+    }
+
+    /**
+     * @return int
+     */
+    public function getUpdatesCount(): int {
+        $query = $this->find()
+            ->count();
+
+        return $query;
+    }
+
+    public function deleteUnusedUpdates() {
+        $query = $this->deleteQuery();
+        $query->delete('windows_updates')
+            ->where(function (QueryExpression $exp, Query\DeleteQuery $query) {
+                return $exp->notExists(
+                    $this->find()
+                        ->select(1)
+                        ->from(['windows_updates_hosts'])
+                        ->where(['windows_updates_hosts.windows_update_id = windows_updates.id'])
+                );
+            });
+
+        return $query->execute();
+    }
+
+    /**
+     * @param null|int $limit
+     * @param null|int $offset
+     */
+    public function getWindowsUpdatesWithLimit(?int $limit = null, ?int $offset = null): array {
+        $query = $this->find()
+            ->select([
+                'WindowsUpdates.id',
+                'WindowsUpdates.update_id',
+            ]);
+
+        if ($limit !== null) {
+            $query->limit($limit);
+        }
+        if ($offset !== null) {
+            $query->offset($offset);
+        }
+
+        $query->disableHydration();
+
+        $query->all();
+        return $query->toArray();
+    }
+
+    public function getAllWindowsUpdatesAsMap() {
+        //Multiple queries are faster than one big query
+        $updateCount = $this->getUpdatesCount();
+        $chunk = 200;
+        $queryCount = ceil($updateCount / $chunk);
+        $updates = [];
+        for ($i = 0; $i < $queryCount; $i++) {
+            $_updates = $this->getWindowsUpdatesWithLimit($chunk, ($chunk * $i));
+            foreach ($_updates as $_update) {
+                $updates[$_update['update_id']] = $_update['id'];
+            }
+            unset($_updates);
+        }
+
+        return $updates;
+    }
+
+
+    /**
+     * @param int $hostId
+     * @param array $availableUpdates
+     * @return true|void
+     * @throws \Exception
+     */
+    public function saveUpdatesForHost(int $hostId, array $availableUpdates) {
+
+        if (empty($availableUpdates)) {
+            return true;
+        }
+
+        /** @var WindowsUpdatesHostsTable $WindowsUpdatesHostsTable */
+        $WindowsUpdatesHostsTable = TableRegistry::getTableLocator()->get('WindowsUpdatesHosts');
+
+        // key = update_id(uuid), value = id
+        $existingUpdates = $this->getAllWindowsUpdatesAsMap();
+
+        // key = windows_update_id, value = WindowsUpdatesHost entity
+        $existingUpdatesOfHost = $WindowsUpdatesHostsTable->getAllUpdatesOfHost($hostId);
+
+        $newUpdates = [];
+        $updatesForDiff = [];
 
         // Fake update for testing
-        /*
-        $availableUpdates[] = [
-            'Title'            => 'TEST Security Intelligence-Update für Microsoft Defender Antivirus – KB2267602 (Version 1.443.762.0) – Aktueller Kanal (Allgemein)',
-            'Description'      => 'Installieren Sie dieses Update, um die Dateien zu überarbeiten, die zum Erkenne',
-            'KBArticleIDs'     => [
-                '1122334',
-                '1122335',
-                '1122336',
-            ],
+        /*$availableUpdates[] = [
+            'Title'            => 'Fake Windows Update (1.2.3)',
+            'Description'      => 'A Fake Windows Update released in January 2026',
+            'KBArticleIDs'     => [],
             'IsInstalled'      => false,
             'IsSecurityUpdate' => true,
             'IsOptional'       => false,
-            'UpdateID'         => '69f55396-a0ef-4f79-8539-4d0ccfa35ec6',
-            'RevisionNumber'   => 201,
-            'RebootRequired'   => false
+            'UpdateID'         => 'b0f9d02b-5d50-4293-aa18-b5922bc915b8',
+            'RevisionNumber'   => 1,
+            'RebootRequired'   => true
         ];*/
         foreach ($availableUpdates as $update) {
-            if (empty($update['UpdateID']) || empty($update['Title'])) {
+            // [
+            //     'Title'            => 'Lenovo Driver Update (1.69.132.0)',
+            //     'Description'      => 'Lenovo System  driver update released in  October 2025',
+            //     'KBArticleIDs'     => [],
+            //     'IsInstalled'      => false,
+            //     'IsSecurityUpdate' => false,
+            //     'IsOptional'       => false,
+            //     'UpdateID'         => 'fb02eeba-e36e-4740-8695-dbe706fee161',
+            //     'RevisionNumber'   => 1,
+            //     'RebootRequired'   => false
+            // ];
+
+            if (empty($update['Title']) || empty($update['UpdateID'])) {
                 continue;
             }
 
-            // The update ID will generally be a GUID, but it can be any string that uniquely identifies. This identifier is required for calling many WindowsUpdateAdministrator methods.
-            // https://learn.microsoft.com/en-us/uwp/api/windows.management.update.windowsupdate.updateid?view=winrt-26100
-
-            // New update?
-            if (!isset($existingUpdateIds[$update['UpdateID']])) {
+            if (!isset($existingUpdates[$update['UpdateID']])) {
+                // New update - add to windows_updates
                 $desc = null;
                 if (isset($update['Description'])) {
-                    $desc = substr($update['Description'], 0, 1000);
+                    $desc = substr($update['Description'], 0, 512);
                 }
 
-                $newUpdate = $this->newEntity([
-                    'name'               => $update['Title'],
-                    'host_id'            => $hostId,
-                    'description'        => $desc,
-                    'kbarticle_ids'      => isset($update['KBArticleIDs']) ? implode(',', $update['KBArticleIDs']) : null,
-                    'update_id'          => $update['UpdateID'],
-                    'reboot_required'    => $update['RebootRequired'] ?? false,
-                    'is_security_update' => $update['IsSecurityUpdate'] ?? false,
-                    'is_optional'        => $update['IsOptional'] ?? false,
+                $newUpdates[] = $this->newEntity([
+                    'name'          => $update['Title'],
+                    'description'   => $desc,
+                    'kbarticle_ids' => implode(',', $update['KBArticleIDs']),
+                    'update_id'     => $update['UpdateID'],
                 ]);
-                if ($this->save($newUpdate)) {
-                    $existingUpdateIds[$update['UpdateID']] = $newUpdate->id;
+            }
+        }
+
+        if (!empty($newUpdates)) {
+            $this->saveMany($newUpdates);
+
+            // Add new update to $existingUpdates map
+            foreach ($newUpdates as $newUpdate) {
+                $existingUpdates[$newUpdate->update_id] = $newUpdate->id;
+            }
+        }
+
+        foreach ($availableUpdates as $update) {
+            if (empty($update['UpdateID'])) {
+                continue;
+            }
+
+            if (!isset($existingUpdates[$update['UpdateID']])) {
+                Log::error(sprintf('Update %s not found in existing updates during update processing.', $update['UpdateID']));
+                continue;
+            }
+
+            $updateId = $existingUpdates[$update['UpdateID']];
+            $updatesForDiff[$updateId] = $update['UpdateID'];
+
+            if (isset($existingUpdatesOfHost[$updateId])) {
+                // Update exists - update it
+                $windowsUpdateHost = $existingUpdatesOfHost[$updateId];
+                if (
+                    $windowsUpdateHost->is_security_update != $update['IsSecurityUpdate'] ||
+                    $windowsUpdateHost->reboot_required != $update['RebootRequired'] ||
+                    $windowsUpdateHost->is_optional != $update['IsOptional']
+                ) {
+                    $windowsUpdateHost->is_security_update = !empty($update['IsSecurityUpdate']) ? 1 : 0;
+                    $windowsUpdateHost->reboot_required = !empty($update['RebootRequired']) ? 1 : 0;
+                    $windowsUpdateHost->is_optional = !empty($update['IsOptional']) ? 1 : 0;
+                    if ($WindowsUpdatesHostsTable->save($windowsUpdateHost)) {
+                        $existingUpdatesOfHost[$windowsUpdateHost->windows_update_id] = $windowsUpdateHost;
+                    }
+                }
+            } else {
+                // Create new WindowsUpdatesHost entry
+                $entity = $WindowsUpdatesHostsTable->newEntity([
+                    'windows_update_id'  => $updateId,
+                    'host_id'            => $hostId,
+                    'reboot_required'    => !empty($update['RebootRequired']) ? 1 : 0,
+                    'is_security_update' => !empty($update['IsSecurityUpdate']) ? 1 : 0,
+                    'is_optional'        => !empty($update['IsOptional']) ? 1 : 0
+                ]);
+                if ($WindowsUpdatesHostsTable->save($entity)) {
+                    $existingUpdatesOfHost[$entity->windows_update_id] = $entity;
                 }
             }
         }
 
-        // Remove old updates that are no longer reported by the agent
-        $availableUpdateIds = array_flip(Hash::extract($availableUpdates, '{n}.UpdateID'));
-
-        $updatesIdsToRemove = array_diff_key($existingUpdateIds, $availableUpdateIds);
-        if (!empty($updatesIdsToRemove)) {
-            $this->deleteAll(conditions: [
-                'update_id IN' => array_keys($updatesIdsToRemove),
-                'host_id'      => $hostId,
-            ]);
+        // If the update got installed (is no longer present in $availableUpdates), remove the WindowsUpdatesHost entry
+        $databaseUpdates = [];
+        foreach ($existingUpdatesOfHost as $update) {
+            $databaseUpdates[$update->windows_update_id] = $update->id;
         }
 
-        return true;
+        $updatesThatGotInstalledOnHost = (array_diff_key($databaseUpdates, $updatesForDiff));
+        if (!empty($updatesThatGotInstalledOnHost)) {
+            $WindowsUpdatesHostsTable->deleteAll(conditions: [
+                'id IN'   => array_values($updatesThatGotInstalledOnHost),
+                'host_id' => $hostId
+            ]);
+        }
     }
-
-    /**
-     * @param array $MY_RIGHTS
-     * @return array
-     */
-    public function getWindowsUpdatesForSummary(array $MY_RIGHTS = []): array {
-        $all_windows_updates = [
-            'upToDate'                 => 0,
-            'updatesAvailable'         => 0,
-            'securityUpdates'          => 0,
-            'totalInstallations'       => 0,
-            'hostsUpToDate'            => [],
-            'hostsWithUpdates'         => [],
-            'hostsWithSecurityUpdates' => [],
-        ];
-
-
-        $query = $this->find('all')
-            ->select([
-                'WindowsUpdates.host_id',
-                'WindowsUpdates.reboot_required',
-                'WindowsUpdates.is_security_update',
-                'WindowsUpdates.is_optional',
-            ])->innerJoin(
-                ['Hosts' => 'hosts'],
-                ['Hosts.id = WindowsUpdates.host_id']
-            )
-            ->where([
-                'Hosts.disabled' => 0
-            ]);
-        if (!empty($MY_RIGHTS)) {
-            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
-                'HostsToContainersSharing.host_id = Hosts.id'
-            ]);
-            $query->where([
-                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
-            ]);
-        }
-
-
-        $query->disableAutoFields()
-            ->disableHydration();
-        $result = $query->toArray();
-        if (empty($result)) {
-            return $all_windows_updates;
-        }
-        foreach ($result as $windows_update) {
-            if ($windows_update['is_security_update'] === false) {
-                $all_windows_updates['updatesAvailable']++;
-                $all_windows_updates['hostsWithUpdates'][$windows_update['host_id']] = $windows_update['host_id'];
-            }
-            if ($windows_update['is_security_update'] === true) {
-                $all_windows_updates['securityUpdates']++;
-                $all_windows_updates['hostsWithSecurityUpdates'][$windows_update['host_id']] = $windows_update['host_id'];
-            }
-        }
-        $all_windows_updates['hostsWithUpdates'] = array_values($all_windows_updates['hostsWithUpdates']);
-        $all_windows_updates['hostsWithSecurityUpdates'] = array_values($all_windows_updates['hostsWithSecurityUpdates']);
-
-        return $all_windows_updates;
-    }
-
 }

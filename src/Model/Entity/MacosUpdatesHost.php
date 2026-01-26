@@ -30,19 +30,18 @@ namespace App\Model\Entity;
 use Cake\ORM\Entity;
 
 /**
- * WindowsUpdate Entity
+ * MacosUpdatesHost Entity
  *
  * @property int $id
- * @property string $name
- * @property string|null $description
- * @property string|null $kbarticle_ids
- * @property string|null $update_id
+ * @property int $macos_update_id
+ * @property int $host_id
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime $modified
  *
- * @property WindowsUpdatesHost[] $windows_updates_hosts
+ * @property \App\Model\Entity\MacosUpdate $macos_update
+ * @property \App\Model\Entity\Host $host
  */
-class WindowsUpdate extends Entity {
+class MacosUpdatesHost extends Entity {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -53,12 +52,11 @@ class WindowsUpdate extends Entity {
      * @var array<string, bool>
      */
     protected array $_accessible = [
-        'name'                  => true,
-        'description'           => true,
-        'kbarticle_ids'         => true,
-        'update_id'             => true,
-        'created'               => true,
-        'modified'              => true,
-        'windows_updates_hosts' => true,
+        'macos_update_id' => true,
+        'host_id'         => true,
+        'created'         => true,
+        'modified'        => true,
+        'macos_update'    => true,
+        'host'            => true,
     ];
 }

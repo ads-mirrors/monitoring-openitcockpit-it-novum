@@ -27,20 +27,20 @@ declare(strict_types=1);
 
 namespace App\Model\Entity;
 
+use App\Model\Table\MacosUpdatesTable;
 use Cake\ORM\Entity;
 
 /**
  * MacosUpdate Entity
  *
  * @property int $id
- * @property int $host_id
  * @property string $name
  * @property string|null $description
  * @property string|null $version
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime $modified
  *
- * @property \App\Model\Entity\Host $host
+ * @property MacosUpdatesTable[] $macos_updates_hosts
  */
 class MacosUpdate extends Entity {
     /**
@@ -53,12 +53,11 @@ class MacosUpdate extends Entity {
      * @var array<string, bool>
      */
     protected array $_accessible = [
-        'host_id'     => true,
-        'name'        => true,
-        'description' => true,
-        'version'     => true,
-        'created'     => true,
-        'modified'    => true,
-        'host'        => true,
+        'name'                => true,
+        'description'         => true,
+        'version'             => true,
+        'created'             => true,
+        'modified'            => true,
+        'macos_updates_hosts' => true,
     ];
 }

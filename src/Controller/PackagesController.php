@@ -288,6 +288,49 @@ class PackagesController extends AppController {
     }
 
     public function windows_updates(): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var WindowsUpdatesTable $WindowsUpdatesTable */
+        $WindowsUpdatesTable = TableRegistry::getTableLocator()->get('WindowsUpdates');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'   => [
+                'WindowsUpdates.name',
+                'WindowsUpdates.description',
+                'WindowsUpdates.kbarticle_ids'
+            ],
+            'equals' => [
+                'WindowsUpdates.update_id',
+                'WindowsUpdates.is_security_update'
+            ],
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_windows_updates = $WindowsUpdatesTable->getWindowsUpdatesIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+        debug($all_windows_updates);
+
+
+        foreach ($all_windows_updates as $index => $app) {
+            $allHosts = [];
+            foreach ($app['windows_apps_hosts'] as $packages_host) {
+                $allHosts[$packages_host['host_id']] = $packages_host['host_id'];
+            }
+            unset($all_windows_updates[$index]['windows_apps_hosts']);
+            $all_windows_updates[$index]['all_hosts'] = array_values($allHosts);
+        }
+
+        $this->set('all_windows_updates', $all_windows_updates);
+        $this->viewBuilder()->setOption('serialize', ['all_windows_updates']);
     }
 
     public function macos(): void {

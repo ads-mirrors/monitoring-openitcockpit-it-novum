@@ -358,11 +358,6 @@ class SoftwareInventory extends BaseMigration {
 
                 ])
                 ->addPrimaryKey(['id'])
-                ->addColumn('host_id', 'integer', [
-                    'default' => null,
-                    'limit'   => 11,
-                    'null'    => false,
-                ])
                 ->addColumn('name', 'string', [
                     'limit' => 255,
                     'null'  => false,
@@ -384,6 +379,51 @@ class SoftwareInventory extends BaseMigration {
                     'default' => null,
                     'limit'   => 255,
                     'null'    => true,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'name',
+                        'kbarticle_ids'
+                    ]
+                )
+                ->addIndex(
+                    [
+                        'update_id',
+                        'kbarticle_ids',
+                    ]
+                )
+                ->create();
+        }
+
+        if (!$this->hasTable('windows_updates_hosts')) {
+            $this->table('windows_updates_hosts')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('windows_update_id', 'biginteger', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                    'signed'  => false
+                ])
+                ->addColumn('host_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
                 ])
                 ->addColumn('reboot_required', 'boolean', [
                     'default' => false,
@@ -410,16 +450,9 @@ class SoftwareInventory extends BaseMigration {
                 ])
                 ->addIndex(
                     [
+                        'windows_update_id',
                         'host_id',
-                        'name',
-                        'kbarticle_ids'
-                    ]
-                )
-                ->addIndex(
-                    [
-                        'update_id',
-                        'kbarticle_ids',
-                        'host_id'
+                        'is_security_update',
                     ]
                 )
                 ->create();
@@ -514,11 +547,6 @@ class SoftwareInventory extends BaseMigration {
 
                 ])
                 ->addPrimaryKey(['id'])
-                ->addColumn('host_id', 'integer', [
-                    'default' => null,
-                    'limit'   => 11,
-                    'null'    => false,
-                ])
                 ->addColumn('name', 'string', [
                     'limit' => 255,
                     'null'  => false,
@@ -543,8 +571,46 @@ class SoftwareInventory extends BaseMigration {
                 ])
                 ->addIndex(
                     [
-                        'host_id',
                         'name',
+                    ]
+                )
+                ->create();
+        }
+
+        if (!$this->hasTable('macos_updates_hosts')) {
+            $this->table('macos_updates_hosts')
+                ->addColumn('id', 'biginteger', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                    'signed'        => false
+
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('macos_update_id', 'biginteger', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                    'signed'  => false
+                ])
+                ->addColumn('host_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addColumn('modified', 'datetime', [
+                    'limit' => null,
+                    'null'  => false,
+                ])
+                ->addIndex(
+                    [
+                        'macos_update_id',
+                        'host_id',
                     ]
                 )
                 ->create();

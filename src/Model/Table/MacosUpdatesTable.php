@@ -27,16 +27,13 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
-use App\Model\Entity\MacosUpdate;
-use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
-use Cake\Utility\Hash;
 use Cake\Validation\Validator;
 
 /**
  * MacosUpdates Model
  *
- * @property \App\Model\Table\HostsTable&\Cake\ORM\Association\BelongsTo $Hosts
+ * @property \App\Model\Table\HostsTable&\Cake\ORM\Association\BelongsToMany $Hosts
  *
  * @method \App\Model\Entity\MacosUpdate newEmptyEntity()
  * @method \App\Model\Entity\MacosUpdate newEntity(array $data, array $options = [])
@@ -70,9 +67,10 @@ class MacosUpdatesTable extends Table {
 
         $this->addBehavior('Timestamp');
 
-        $this->belongsTo('Hosts', [
-            'foreignKey' => 'host_id',
-            'joinType'   => 'INNER',
+        $this->hasMany('MacosUpdatesHosts', [
+            'foreignKey' => 'macos_update_id',
+            'className'  => MacosUpdatesHostsTable::class,
+            'dependent'  => true,
         ]);
     }
 
@@ -83,10 +81,6 @@ class MacosUpdatesTable extends Table {
      * @return \Cake\Validation\Validator
      */
     public function validationDefault(Validator $validator): Validator {
-        $validator
-            ->integer('host_id')
-            ->notEmptyString('host_id');
-
         $validator
             ->scalar('name')
             ->maxLength('name', 255)
@@ -105,140 +99,4 @@ class MacosUpdatesTable extends Table {
 
         return $validator;
     }
-
-    /**
-     * Returns a rules checker object that will be used for validating
-     * application integrity.
-     *
-     * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
-     * @return \Cake\ORM\RulesChecker
-     */
-    public function buildRules(RulesChecker $rules): RulesChecker {
-        $rules->add($rules->existsIn(['host_id'], 'Hosts'), ['errorField' => 'host_id']);
-
-        return $rules;
-    }
-
-    /**
-     * @param int $hostId
-     * @return MacosUpdate[]
-     */
-    public function getAllMacosUpdatesByHostId(int $hostId): array {
-        $query = $this->find()
-            ->where(['host_id' => $hostId])
-            ->orderBy(['id' => 'DESC']);
-
-        return $query->all()->toArray();
-    }
-
-    /**
-     * Store macOS updates for a host
-     *
-     * @param int $hostId
-     * @param array $availableUpdates
-     * @return bool
-     */
-    public function saveUpdatesForHost(int $hostId, array $availableUpdates): bool {
-
-        $existingUpdates = $this->getAllMacosUpdatesByHostId($hostId);
-        $existingUpdateNames = Hash::combine($existingUpdates, '{n}.name', '{n}.id');
-
-        // Fake update for testing
-        /*
-        $availableUpdates[] = [
-            'Name'        => 'TEST Command Line Tools for Xcode 26.2-26.2',
-            'Description' => 'TEST DESC Command Line Tools for Xcode 26.2',
-            'Version'     => '26.2.1'
-        ];*/
-        foreach ($availableUpdates as $update) {
-            if (empty($update['Name']) || empty($update['Version'])) {
-                continue;
-            }
-
-            // New update?
-            if (!isset($existingUpdateNames[$update['Name']])) {
-                $desc = null;
-                if (isset($update['Description'])) {
-                    $desc = substr($update['Description'], 0, 512);
-                }
-
-                $newUpdate = $this->newEntity([
-                    'name'        => $update['Name'],
-                    'host_id'     => $hostId,
-                    'description' => $desc,
-                    'version'     => $update['Version']
-                ]);
-                if ($this->save($newUpdate)) {
-                    $existingUpdateNames[$update['Name']] = $newUpdate->id;
-                }
-            }
-        }
-
-        // Remove old updates that are no longer reported by the agent
-        $availableUpdateNames = array_flip(Hash::extract($availableUpdates, '{n}.Name'));
-
-
-        $updatesIdsToRemove = array_diff_key($existingUpdateNames, $availableUpdateNames);
-        if (!empty($updatesIdsToRemove)) {
-            $this->deleteAll(conditions: [
-                'id IN'   => array_values($updatesIdsToRemove),
-                'host_id' => $hostId,
-            ]);
-        }
-
-        return true;
-    }
-
-    /**
-     * @param array $MY_RIGHTS
-     * @return array
-     */
-    public function getMacosUpdatesForSummary(array $MY_RIGHTS = []): array {
-        $all_macos_updates = [
-            'upToDate'                 => 0,
-            'updatesAvailable'         => 0,
-            'securityUpdates'          => 0,
-            'totalInstallations'       => 0,
-            'hostsUpToDate'            => [],
-            'hostsWithUpdates'         => [],
-            'hostsWithSecurityUpdates' => [],
-        ];
-
-
-        $query = $this->find('all')
-            ->select([
-                'MacosUpdates.host_id'
-            ])
-            ->disableAutoFields()
-            ->innerJoin(
-                ['Hosts' => 'hosts'],
-                ['Hosts.id = MacosUpdates.host_id']
-            );
-        if (!empty($MY_RIGHTS)) {
-            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
-                'HostsToContainersSharing.host_id = Hosts.id'
-            ]);
-            $query->where([
-                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
-            ]);
-        }
-
-        $query->where([
-            'Hosts.disabled' => 0
-        ]);
-
-
-        $query->disableHydration();
-        $result = $query->toArray();
-        if (empty($result)) {
-            return $all_macos_updates;
-        }
-        foreach ($result as $macos_update) {
-            $all_macos_updates['updatesAvailable']++;
-            $all_macos_updates['hostsWithSecurityUpdates'][$macos_update['host_id']] = $macos_update['host_id'];
-        }
-        $all_macos_updates['hostsWithSecurityUpdates'] = array_values($all_macos_updates['hostsWithSecurityUpdates']);
-        return $all_macos_updates;
-    }
-
 }

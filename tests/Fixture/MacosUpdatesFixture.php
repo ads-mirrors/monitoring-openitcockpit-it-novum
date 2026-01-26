@@ -20,12 +20,11 @@ class MacosUpdatesFixture extends TestFixture
         $this->records = [
             [
                 'id' => 1,
-                'host_id' => 1,
                 'name' => 'Lorem ipsum dolor sit amet',
                 'description' => 'Lorem ipsum dolor sit amet',
                 'version' => 'Lorem ipsum dolor sit amet',
-                'created' => '2026-01-21 10:47:43',
-                'modified' => '2026-01-21 10:47:43',
+                'created' => '2026-01-26 07:59:50',
+                'modified' => '2026-01-26 07:59:50',
             ],
         ];
         parent::init();

@@ -62,15 +62,4 @@ class MacosUpdatesTableTest extends TestCase
     {
         $this->markTestIncomplete('Not implemented yet.');
     }
-
-    /**
-     * Test buildRules method
-     *
-     * @return void
-     * @link \App\Model\Table\MacosUpdatesTable::buildRules()
-     */
-    public function testBuildRules(): void
-    {
-        $this->markTestIncomplete('Not implemented yet.');
-    }
 }
