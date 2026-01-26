@@ -107,6 +107,26 @@ class MacosAppsTable extends Table {
     }
 
     /**
+     * @param int $id
+     * @return bool
+     */
+    public function existsById($id) {
+        return $this->exists(['MacosApps.id' => $id]);
+    }
+
+
+    public function getAppById($id) {
+        $query = $this->find()
+            ->where([
+                'MacosApps.id' => $id
+            ])
+            ->disableHydration()
+            ->firstOrFail();
+
+        return $query;
+    }
+
+    /**
      * @return int
      */
     public function getAppsCount(): int {

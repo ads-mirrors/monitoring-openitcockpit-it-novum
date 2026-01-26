@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Table\MacosAppsHostsTable;
 use App\Model\Table\MacosAppsTable;
 use App\Model\Table\MacosUpdatesTable;
 use App\Model\Table\PackagesLinuxHostsTable;
@@ -371,6 +372,46 @@ class PackagesController extends AppController {
 
         $this->set('all_macos_apps', $all_macos_apps);
         $this->viewBuilder()->setOption('serialize', ['all_macos_apps']);
+    }
+
+    public function view_macos($id = null): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $id = (int)$id;
+
+
+        /** @var MacosAppsTable $MacosAppsTable */
+        $MacosAppsTable = TableRegistry::getTableLocator()->get('MacosApps');
+        /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+        $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
+
+        if (!$MacosAppsTable->existsById($id)) {
+            throw new NotFoundException(__('Invalid app'));
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+        
+        $app = $MacosAppsTable->getAppById($id);
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Hosts.name',
+                'MacosAppsHosts.version',
+            ]
+        ]);
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_host_apps = $MacosAppsHostsTable->getHostsWithApp($id, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+
+        $this->set('app', $app);
+        $this->set('all_host_apps', $all_host_apps);
+        $this->viewBuilder()->setOption('serialize', ['app', 'all_host_apps']);
     }
 
     public function macos_updates(): void {
