@@ -34,6 +34,7 @@ use App\Model\Table\PackagesLinuxHostsTable;
 use App\Model\Table\PackagesLinuxTable;
 use App\Model\Table\WindowsAppsHostsTable;
 use App\Model\Table\WindowsAppsTable;
+use App\Model\Table\WindowsUpdatesHostsTable;
 use App\Model\Table\WindowsUpdatesTable;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
@@ -297,14 +298,18 @@ class PackagesController extends AppController {
         $WindowsUpdatesTable = TableRegistry::getTableLocator()->get('WindowsUpdates');
         $GenericFilter = new GenericFilter($this->request);
         $GenericFilter->setFilters([
-            'like'   => [
+            'like'           => [
                 'WindowsUpdates.name',
                 'WindowsUpdates.description',
                 'WindowsUpdates.kbarticle_ids'
             ],
-            'equals' => [
+            'greater_equals' => [
+                'available_updates',
+                'available_security_updates',
+            ],
+            'equals'         => [
                 'WindowsUpdates.update_id',
-                'WindowsUpdates.is_security_update'
+                'WindowsUpdatesHosts.is_security_update'
             ],
         ]);
 
@@ -313,25 +318,79 @@ class PackagesController extends AppController {
             $MY_RIGHTS = [];
         }
 
-        $MY_RIGHTS = $this->MY_RIGHTS;
-
 
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
         $all_windows_updates = $WindowsUpdatesTable->getWindowsUpdatesIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
-        debug($all_windows_updates);
 
-
-        foreach ($all_windows_updates as $index => $app) {
+        foreach ($all_windows_updates as $index => $windows_update) {
+            $hostsWithUpdates = [];
+            $hostsWithSecurityUpdates = [];
             $allHosts = [];
-            foreach ($app['windows_apps_hosts'] as $packages_host) {
-                $allHosts[$packages_host['host_id']] = $packages_host['host_id'];
+            foreach ($windows_update['windows_updates_hosts'] as $update_host) {
+                $all_windows_updates[$index]['kbarticle_ids'] = !empty($windows_update['kbarticle_ids']) ? explode(',', $windows_update['kbarticle_ids']) : [];
+                $allHosts[$update_host['host_id']] = $update_host['host_id'];
+                $hostsWithUpdates[$update_host['host_id']] = $update_host['host_id'];
+                if ($update_host['is_security_update']) {
+                    $hostsWithSecurityUpdates[$update_host['host_id']] = $update_host['host_id'];
+                }
             }
-            unset($all_windows_updates[$index]['windows_apps_hosts']);
+
+            unset($all_windows_updates[$index]['windows_updates_hosts']);
             $all_windows_updates[$index]['all_hosts'] = array_values($allHosts);
+            $all_windows_updates[$index]['hosts_needs_update'] = array_values($hostsWithUpdates);
+            $all_windows_updates[$index]['hosts_needs_security_update'] = array_values($hostsWithSecurityUpdates);
         }
 
         $this->set('all_windows_updates', $all_windows_updates);
         $this->viewBuilder()->setOption('serialize', ['all_windows_updates']);
+    }
+
+    public function view_windows_update($id = null) {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $id = (int)$id;
+
+
+        /** @var WindowsUpdatesTable $WindowsUpdatesTable */
+        $WindowsUpdatesTable = TableRegistry::getTableLocator()->get('WindowsUpdates');
+        /** @var WindowsUpdatesHostsTable $WindowsUpdatesHostsTable */
+        $WindowsUpdatesHostsTable = TableRegistry::getTableLocator()->get('WindowsUpdatesHosts');
+
+        if (!$WindowsUpdatesTable->existsById($id)) {
+            throw new NotFoundException(__('Invalid update'));
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $update = $WindowsUpdatesTable->getUpdateById($id);
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Hosts.name',
+            ],
+            'bool' => [
+                'WindowsUpdatesHosts.is_security_update',
+                'WindowsUpdatesHosts.reboot_required',
+            ]
+        ]);
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_host_updates = $WindowsUpdatesHostsTable->getUpdateWithHost($id, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+        foreach ($all_host_updates as $index => $hostUpdate) {
+            $all_host_updates[$index]['kbarticle_ids'] = !empty($update['kbarticle_ids']) ? explode(',', $update['kbarticle_ids']) : [];
+        }
+
+        $update['kbarticle_ids'] = !empty($update['kbarticle_ids']) ? explode(',', $update['kbarticle_ids']) : [];
+
+
+        $this->set('update', $update);
+        $this->set('all_host_updates', $all_host_updates);
+        $this->viewBuilder()->setOption('serialize', ['update', 'all_host_updates']);
     }
 
     public function macos(): void {
@@ -394,7 +453,7 @@ class PackagesController extends AppController {
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];
         }
-        
+
         $app = $MacosAppsTable->getAppById($id);
 
         $GenericFilter = new GenericFilter($this->request);
@@ -415,5 +474,9 @@ class PackagesController extends AppController {
     }
 
     public function macos_updates(): void {
+    }
+
+    public function view_macos_update() {
+
     }
 }

@@ -27,12 +27,15 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Log\Log;
 use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * WindowsUpdates Model
@@ -56,6 +59,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class WindowsUpdatesTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -400,5 +406,109 @@ class WindowsUpdatesTable extends Table {
         $all_windows_updates['hostsWithSecurityUpdates'] = array_values($all_windows_updates['hostsWithSecurityUpdates']);
 
         return $all_windows_updates;
+    }
+
+    /**
+     * @param GenericFilter $GenericFilter
+     * @param $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getWindowsUpdatesIndex(GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        /** @var WindowsUpdatesHostsTable $WindowsUpdatesHostsTable */
+        $WindowsUpdatesHostsTable = TableRegistry::getTableLocator()->get('WindowsUpdatesHosts');
+        $subQueryForUpdates = $WindowsUpdatesHostsTable->find();
+        $subQueryForUpdates->select(
+            [$subQueryForUpdates->func()->count('windows_update_id')])
+            ->where(['`WindowsUpdates`.`id` =`WindowsUpdatesHosts`.`windows_update_id`']);
+
+        $subQueryForSecurityUpdates = $WindowsUpdatesHostsTable->find();
+        $subQueryForSecurityUpdates->select(
+            [$subQueryForSecurityUpdates->func()->count('windows_update_id')])
+            ->where(['`WindowsUpdates`.`id` =`WindowsUpdatesHosts`.`windows_update_id`'])
+            ->andWhere([
+                'is_security_update' => 1,
+            ]);
+
+        $query = $this->find()
+            ->select([
+                'WindowsUpdates.id',
+                'WindowsUpdates.name',
+                'WindowsUpdates.description',
+                'WindowsUpdates.kbarticle_ids',
+                'WindowsUpdates.update_id',
+                'WindowsUpdates.created',
+                'WindowsUpdates.modified',
+                'available_updates'          => $subQueryForUpdates,
+                'available_security_updates' => $subQueryForSecurityUpdates,
+            ])
+            ->contain([
+                'WindowsUpdatesHosts' => function (Query $query) use ($MY_RIGHTS) {
+                    $query->select([
+                        'WindowsUpdatesHosts.windows_update_id',
+                        'WindowsUpdatesHosts.reboot_required',
+                        'WindowsUpdatesHosts.is_security_update',
+                        'WindowsUpdatesHosts.is_optional',
+                        'WindowsUpdatesHosts.host_id'
+
+                    ])->innerJoin(
+                        ['Hosts' => 'hosts'],
+                        ['Hosts.id = WindowsUpdatesHosts.host_id']
+                    );
+
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ])->disableAutoFields();
+
+                    return $query;
+                }
+            ]);
+
+        $where = $GenericFilter->genericFilters();
+        if (isset($where['available_security_updates >=']) && $where['available_security_updates >='] > 0) {
+            $query->having(['available_security_updates >' => 0]);
+            unset($where['available_security_updates >=']);
+        }
+
+        if (isset($where['available_updates >=']) && $where['available_updates >='] > 0) {
+            $query->having(['available_updates >' => 0]);
+            unset($where['available_updates >=']);
+        }
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('WindowsUpdates.name', 'asc'),
+                ['WindowsUpdates.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
     }
 }
