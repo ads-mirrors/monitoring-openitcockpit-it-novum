@@ -375,6 +375,7 @@ class AclDependencies {
             ->dependency('Hosts', 'browser', 'Hosts', 'loadAdditionalInformation')
             ->dependency('Hosts', 'browser', 'Hosts', 'loadSlaInformation')
             ->dependency('Hosts', 'browser', 'Hosts', 'loadIsarFlowInformation')
+            ->dependency('Hosts', 'browser', 'Hosts', 'loadSoftwareInformation')
             ->dependency('Hosts', 'add', 'Hosts', 'loadContainers')
             ->dependency('Hosts', 'add', 'Hosts', 'loadCommands')
             ->dependency('Hosts', 'add', 'Hosts', 'loadElementsByContainerId')

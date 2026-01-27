@@ -52,12 +52,17 @@ use App\Model\Table\HostgroupsTable;
 use App\Model\Table\HostsTable;
 use App\Model\Table\HosttemplatesTable;
 use App\Model\Table\InstantreportsTable;
+use App\Model\Table\MacosAppsHostsTable;
+use App\Model\Table\MacosUpdatesHostsTable;
 use App\Model\Table\MacrosTable;
+use App\Model\Table\PackagesLinuxHostsTable;
 use App\Model\Table\ServicesTable;
 use App\Model\Table\ServicetemplategroupsTable;
 use App\Model\Table\ServicetemplatesTable;
 use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\TimeperiodsTable;
+use App\Model\Table\WindowsAppsHostsTable;
+use App\Model\Table\WindowsUpdatesHostsTable;
 use AutoreportModule\Model\Table\AutoreportsTable;
 use Cake\Core\Plugin;
 use Cake\Datasource\Exception\RecordNotFoundException;
@@ -3706,5 +3711,89 @@ class HostsController extends AppController {
 
         $this->set('isarFlowInformationExists', $isarFlowInformationExists);
         $this->viewBuilder()->setOption('serialize', ['isarFlowInformationExists']);
+    }
+
+    public function loadSoftwareInformation() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $id = $this->request->getQuery('id');
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+
+        if (!$HostsTable->exists($id)) {
+            throw new NotFoundException(__('Invalid host'));
+        }
+
+        /** @var \App\Model\Entity\Host $host */
+        $host = $HostsTable->getHostById($id);
+
+        if (!$this->allowedByContainerId($host->getContainerIds())) {
+            $this->render403();
+            return;
+        }
+
+        $softwareInformationExists = false;
+        $apps = [];
+        $updated = [];
+
+        /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
+        $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
+        $linuxPackagesCount = $PackagesLinuxHostsTable->countByHostId($id);
+
+        /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
+        $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
+        $windowsAppsCount = $WindowsAppsHostsTable->countByHostId($id);
+
+        /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+        $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
+        $macOSAppsCount = $MacosAppsHostsTable->countByHostId($id);
+
+        $updatesCounter = [];
+
+        if (array_sum([$linuxPackagesCount, $windowsAppsCount, $macOSAppsCount]) > 0) {
+            $softwareInformationExists = true;
+            $osFamily = '';
+            if ($linuxPackagesCount > 0) {
+                $updates = $PackagesLinuxHostsTable->getUpdatesByHostId($id);
+                $osFamily = 'linux';
+                $updatesCounter = [
+                    'total'            => $linuxPackagesCount,
+                    'updates'          => sizeof($updates),
+                    'security_updates' => sizeof(Hash::extract($updates, '{n}[is_security_update=1]'))
+                ];
+            }
+            if ($windowsAppsCount > 0) {
+                /** @var WindowsUpdatesHostsTable $WindowsUpdatesHostsTable */
+                $WindowsUpdatesHostsTable = TableRegistry::getTableLocator()->get('WindowsUpdatesHosts');
+                $updates = $WindowsUpdatesHostsTable->getUpdatesByHostId($id);
+                $osFamily = 'windows';
+                $updatesCounter = [
+                    'total'            => $windowsAppsCount,
+                    'updates'          => sizeof($updates),
+                    'security_updates' => sizeof(Hash::extract($updates, '{n}[is_security_update=1]'))
+                ];
+
+            }
+            if ($macOSAppsCount > 0) {
+                /** @var MacosUpdatesHostsTable $MacosUpdatesHostsTable */
+                $MacosUpdatesHostsTable = TableRegistry::getTableLocator()->get('MacosUpdatesHosts');
+                $updates = $MacosUpdatesHostsTable->getUpdatesByHostId($id);
+                $sizeofUpdates = sizeof($updates); //macOS updates are all security updates
+                $osFamily = 'macos';
+                $updatesCounter = [
+                    'total'            => $macOSAppsCount,
+                    'updates'          => $sizeofUpdates,
+                    'security_updates' => $sizeofUpdates
+                ];
+            }
+        }
+
+        $this->set('SoftwareInformationExists', $softwareInformationExists);
+        $this->set('osFamily', $osFamily);
+        $this->set('updatesCounter', $updatesCounter);
+        $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists', 'osFamily', 'updatesCounter']);
     }
 }

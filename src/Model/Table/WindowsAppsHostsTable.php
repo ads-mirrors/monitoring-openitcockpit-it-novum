@@ -186,4 +186,12 @@ class WindowsAppsHostsTable extends Table {
 
         return $result;
     }
+
+    /**
+     * @param $hostId
+     * @return int
+     */
+    public function countByHostId($hostId): int {
+        return $this->find()->where(['host_id' => $hostId])->count();
+    }
 }

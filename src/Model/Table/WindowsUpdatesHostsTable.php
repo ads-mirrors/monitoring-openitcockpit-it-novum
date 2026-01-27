@@ -234,4 +234,18 @@ class WindowsUpdatesHostsTable extends Table {
         return $result;
 
     }
+
+
+    /**
+     * @param $hostId
+     * @return array
+     */
+    public function getUpdatesByHostId($hostId): array {
+        return $this->find()
+            ->where([
+                'host_id' => $hostId
+            ])
+            ->disableHydration()
+            ->toArray();
+    }
 }
