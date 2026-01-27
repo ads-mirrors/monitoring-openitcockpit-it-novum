@@ -148,7 +148,7 @@ class PackagesLinuxHostsTable extends Table {
      * @param GenericFilter $GenericFilter
      * @param PaginateOMat|null $PaginateOMat
      * @param array $MY_RIGHTS
-     * @return \Cake\Datasource\ResultSetInterface
+     * @return array
      */
     public function getHostsWithPackage(int $packageId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []) {
         $query = $this->find()
@@ -203,5 +203,27 @@ class PackagesLinuxHostsTable extends Table {
         }
 
         return $result;
+    }
+
+    /**
+     * @param $hostId
+     * @return int
+     */
+    public function countByHostId($hostId): int {
+        return $this->find()->where(['host_id' => $hostId])->count();
+    }
+
+    /**
+     * @param $hostId
+     * @return array
+     */
+    public function getUpdatesByHostId($hostId): array {
+        return $this->find()
+            ->where([
+                'host_id'      => $hostId,
+                'needs_update' => 1
+            ])
+            ->disableHydration()
+            ->toArray();
     }
 }
