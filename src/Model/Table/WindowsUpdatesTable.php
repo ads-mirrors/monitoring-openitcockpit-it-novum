@@ -391,9 +391,9 @@ class WindowsUpdatesTable extends Table {
             return $all_windows_updates;
         }
         foreach ($result as $windows_update) {
+            $all_windows_updates['updatesAvailable']++;
             foreach ($windows_update['windows_updates_hosts'] as $windows_update_host) {
                 if ($windows_update_host['is_security_update'] === false) {
-                    $all_windows_updates['updatesAvailable']++;
                     $all_windows_updates['hostsWithUpdates'][$windows_update_host['host_id']] = $windows_update_host['host_id'];
                 }
                 if ($windows_update_host['is_security_update'] === true) {

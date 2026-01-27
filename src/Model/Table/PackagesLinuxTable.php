@@ -573,7 +573,7 @@ class PackagesLinuxTable extends Table {
         if (!empty($where)) {
             $query->where($where);
         }
-        
+
 
         $query->orderBy(
             array_merge(
@@ -666,10 +666,8 @@ class PackagesLinuxTable extends Table {
                     $all_packages_linux_summary['hostsUpToDate'][$hostPackage['host_id']] = $hostPackage['host_id'];
 
                 } else {
-                    if ($hostPackage['is_patch'] === true) {
-                        $all_packages_linux_summary['updatesAvailable']++;
-                        $all_packages_linux_summary['hostsWithUpdates'][$hostPackage['host_id']] = $hostPackage['host_id'];
-                    }
+                    $all_packages_linux_summary['updatesAvailable']++;
+                    $all_packages_linux_summary['hostsWithUpdates'][$hostPackage['host_id']] = $hostPackage['host_id'];
                     if ($hostPackage['is_security_update'] === true) {
                         $all_packages_linux_summary['securityUpdates']++;
                         $all_packages_linux_summary['hostsWithSecurityUpdates'][$hostPackage['host_id']] = $hostPackage['host_id'];
