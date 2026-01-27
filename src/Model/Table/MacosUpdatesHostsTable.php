@@ -27,11 +27,14 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use App\Model\Entity\MacosUpdatesHost;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * MacosUpdatesHosts Model
@@ -56,6 +59,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class MacosUpdatesHostsTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -137,5 +143,79 @@ class MacosUpdatesHostsTable extends Table {
 
 
         return $result;
+    }
+
+    public function getUpdateWithHost(int $updateId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        $query = $this->find()
+            ->select([
+                'MacosUpdatesHosts.id',
+                'MacosUpdatesHosts.macos_update_id',
+                'MacosUpdatesHosts.host_id',
+                'MacosUpdatesHosts.created',
+                'MacosUpdatesHosts.modified',
+                'Hosts.id',
+                'Hosts.name',
+            ])
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = MacosUpdatesHosts.host_id']
+            );
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->where([
+            'Hosts.disabled' => 0
+        ])->contain([
+            'MacosUpdates' => function (Query $query) {
+                $query->select([
+                    'MacosUpdates.name',
+                    'MacosUpdates.description',
+                    'MacosUpdates.version'
+                ])->disableAutoFields();
+
+                return $query;
+            }
+        ]);
+
+        $where = $GenericFilter->genericFilters();
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+        $query->where([
+            'MacosUpdatesHosts.macos_update_id' => $updateId
+        ]);
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('Hosts.name', 'asc'),
+                ['MacosUpdatesHosts.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
     }
 }

@@ -29,6 +29,7 @@ namespace App\Controller;
 
 use App\Model\Table\MacosAppsHostsTable;
 use App\Model\Table\MacosAppsTable;
+use App\Model\Table\MacosUpdatesHostsTable;
 use App\Model\Table\MacosUpdatesTable;
 use App\Model\Table\PackagesLinuxHostsTable;
 use App\Model\Table\PackagesLinuxTable;
@@ -474,9 +475,84 @@ class PackagesController extends AppController {
     }
 
     public function macos_updates(): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var MacosUpdatesTable $MacosUpdatesTable */
+        $MacosUpdatesTable = TableRegistry::getTableLocator()->get('MacosUpdates');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'   => [
+                'MacosUpdates.name',
+                'MacosUpdates.description',
+            ],
+            'equals' => [
+                'MacosUpdates.id',
+            ],
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_macos_updates = $MacosUpdatesTable->getMacosUpdatesIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+        foreach ($all_macos_updates as $index => $macos_update) {
+            $hostsWithUpdates = [];
+            $allHosts = [];
+            foreach ($macos_update['macos_updates_hosts'] as $update_host) {
+                $allHosts[$update_host['host_id']] = $update_host['host_id'];
+                $hostsWithUpdates[$update_host['host_id']] = $update_host['host_id'];
+            }
+
+            unset($all_macos_updates[$index]['macos_updates_hosts']);
+            $all_macos_updates[$index]['all_hosts'] = array_values($allHosts);
+            $all_macos_updates[$index]['hosts_needs_update'] = array_values($hostsWithUpdates);
+        }
+
+        $this->set('all_macos_updates', $all_macos_updates);
+        $this->viewBuilder()->setOption('serialize', ['all_macos_updates']);
     }
 
-    public function view_macos_update() {
+    public function view_macos_update($id = null) {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $id = (int)$id;
 
+
+        /** @var MacosUpdatesTable $MacosUpdatesTable */
+        $MacosUpdatesTable = TableRegistry::getTableLocator()->get('MacosUpdates');
+        /** @var MacosUpdatesHostsTable $MacosUpdatesHostsTable */
+        $MacosUpdatesHostsTable = TableRegistry::getTableLocator()->get('MacosUpdatesHosts');
+
+        if (!$MacosUpdatesTable->existsById($id)) {
+            throw new NotFoundException(__('Invalid update'));
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $update = $MacosUpdatesTable->getUpdateById($id);
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Hosts.name',
+            ],
+        ]);
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_host_updates = $MacosUpdatesHostsTable->getUpdateWithHost($id, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+        $this->set('update', $update);
+        $this->set('all_host_updates', $all_host_updates);
+        $this->viewBuilder()->setOption('serialize', ['update', 'all_host_updates']);
     }
 }
