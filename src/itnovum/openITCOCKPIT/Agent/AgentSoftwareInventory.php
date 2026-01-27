@@ -108,7 +108,7 @@ class AgentSoftwareInventory {
                 break;
 
             case 'macos':
-                $apps = $result['MacOSApps'] ?? [];
+                $apps = $result['MacosApps'] ?? [];
                 $availableUpdates = $result['MacosUpdates'] ?? [];
 
                 $this->MacosAppsTable->saveAppsForHost($hostId, $apps);

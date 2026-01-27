@@ -35,6 +35,7 @@ namespace App\Controller;
 
 use App\Form\AgentConfigurationForm;
 use App\itnovum\openITCOCKPIT\Agent\AgentSatelliteTasks;
+use App\itnovum\openITCOCKPIT\Agent\AgentSoftwareInventory;
 use App\Model\Entity\Changelog;
 use App\Model\Entity\Host;
 use App\Model\Table\AgentconfigsTable;
@@ -1471,6 +1472,7 @@ class AgentconnectorController extends AppController {
         $agentUuid = $this->request->getData('agentuuid', '');
         $agentPassword = $this->request->getData('password', '');
         $checkdata = $this->request->getData('checkdata', []);
+        $type = $this->request->getQuery('type', 'checkresults');
 
         /** @var PushAgentsTable $PushAgentsTable */
         $PushAgentsTable = TableRegistry::getTableLocator()->get('PushAgents');
@@ -1482,7 +1484,19 @@ class AgentconnectorController extends AppController {
                 $agentPassword
             );
 
+            if ($type === 'packagemanager') {
+                // Only process package manager info and return
+                $hostId = $pushAgent->get('agentconfig')->get('host')->get('id');
+                $hostId = (int)$hostId;
 
+                if (!empty($hostId) && !empty($checkdata)) {
+                    $AgentSoftwareInventory = new AgentSoftwareInventory();
+                    $AgentSoftwareInventory->processAgentInventoryResponse($hostId, $checkdata);
+                }
+                return;
+            }
+
+            // Normale check results processing
             $hostUuid = $pushAgent->get('agentconfig')->get('host')->get('uuid');
             $GearmanClient = new Gearman();
 
