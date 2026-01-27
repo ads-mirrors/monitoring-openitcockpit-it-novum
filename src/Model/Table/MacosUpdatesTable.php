@@ -27,12 +27,15 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Log\Log;
 use Cake\ORM\Query;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * MacosUpdates Model
@@ -56,6 +59,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class MacosUpdatesTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -357,5 +363,94 @@ class MacosUpdatesTable extends Table {
         $all_macos_updates['hostsWithSecurityUpdates'] = array_values($all_macos_updates['hostsWithSecurityUpdates']);
 
         return $all_macos_updates;
+    }
+
+    /**
+     * @param GenericFilter $GenericFilter
+     * @param $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMacosUpdatesIndex(GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        /** @var MacosUpdatesHostsTable $MacosUpdatesHostsTable */
+        $MacosUpdatesHostsTable = TableRegistry::getTableLocator()->get('MacosUpdatesHosts');
+        $subQueryForUpdates = $MacosUpdatesHostsTable->find();
+        $subQueryForUpdates->select(
+            [$subQueryForUpdates->func()->count('macos_update_id')])
+            ->where(['`MacosUpdates`.`id` =`MacosUpdatesHosts`.`macos_update_id`']);
+
+        $subQueryForSecurityUpdates = $MacosUpdatesHostsTable->find();
+
+        $query = $this->find()
+            ->select([
+                'MacosUpdates.id',
+                'MacosUpdates.name',
+                'MacosUpdates.description',
+                'MacosUpdates.version',
+                'MacosUpdates.created',
+                'MacosUpdates.modified',
+                'available_updates' => $subQueryForUpdates,
+            ])
+            ->contain([
+                'MacosUpdatesHosts' => function (Query $query) use ($MY_RIGHTS) {
+                    $query->select([
+                        'MacosUpdatesHosts.host_id',
+                        'MacosUpdatesHosts.macos_update_id'
+
+                    ])->innerJoin(
+                        ['Hosts' => 'hosts'],
+                        ['Hosts.id = MacosUpdatesHosts.host_id']
+                    );
+
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ])->disableAutoFields();
+
+                    return $query;
+                }
+            ]);
+
+        $where = $GenericFilter->genericFilters();
+
+        if (isset($where['available_updates >=']) && $where['available_updates >='] > 0) {
+            $query->having(['available_updates >' => 0]);
+            unset($where['available_updates >=']);
+        }
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('MacosUpdates.name', 'asc'),
+                ['MacosUpdates.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
     }
 }
