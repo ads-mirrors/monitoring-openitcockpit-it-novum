@@ -309,6 +309,7 @@ class PackagesController extends AppController {
                 'available_security_updates',
             ],
             'equals'         => [
+                'WindowsUpdates.id',
                 'WindowsUpdates.update_id',
                 'WindowsUpdatesHosts.is_security_update'
             ],
