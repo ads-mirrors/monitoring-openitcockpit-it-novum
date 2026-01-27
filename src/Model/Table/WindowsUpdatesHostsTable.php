@@ -27,11 +27,14 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use App\Model\Entity\WindowsUpdatesHost;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * WindowsUpdatesHosts Model
@@ -56,6 +59,9 @@ use Cake\Validation\Validator;
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
 class WindowsUpdatesHostsTable extends Table {
+
+    use PaginationAndScrollIndexTrait;
+
     /**
      * Initialize method
      *
@@ -150,5 +156,82 @@ class WindowsUpdatesHostsTable extends Table {
 
 
         return $result;
+    }
+
+
+    public function getUpdateWithHost(int $updateId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        $query = $this->find()
+            ->select([
+                'WindowsUpdatesHosts.id',
+                'WindowsUpdatesHosts.windows_update_id',
+                'WindowsUpdatesHosts.host_id',
+                'WindowsUpdatesHosts.reboot_required',
+                'WindowsUpdatesHosts.is_security_update',
+                'WindowsUpdatesHosts.created',
+                'WindowsUpdatesHosts.modified',
+                'Hosts.id',
+                'Hosts.name',
+            ])
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = WindowsUpdatesHosts.host_id']
+            );
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->where([
+            'Hosts.disabled' => 0
+        ])->contain([
+            'WindowsUpdates' => function (Query $query) {
+                $query->select([
+                    'WindowsUpdates.name',
+                    'WindowsUpdates.description',
+                    'WindowsUpdates.kbarticle_ids'
+                ])->disableAutoFields();
+
+                return $query;
+            }
+        ]);
+
+        $where = $GenericFilter->genericFilters();
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+        $query->where([
+            'WindowsUpdatesHosts.windows_update_id' => $updateId
+        ]);
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('Hosts.name', 'asc'),
+                ['WindowsUpdatesHosts.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
     }
 }
