@@ -290,7 +290,8 @@ class WindowsUpdatesHostsTable extends Table {
                 $query->select([
                     'WindowsUpdates.name',
                     'WindowsUpdates.description',
-                    'WindowsUpdates.kbarticle_ids'
+                    'WindowsUpdates.kbarticle_ids',
+                    'WindowsUpdates.update_id'
                 ])->disableAutoFields();
 
                 return $query;

@@ -619,7 +619,8 @@ class PackagesController extends AppController {
             'like'   => [
                 'WindowsUpdates.name',
                 'WindowsUpdates.description',
-                'WindowsUpdates.kbarticle_ids'
+                'WindowsUpdates.kbarticle_ids',
+                'WindowsUpdates.update_id'
             ],
             'equals' => [
                 'WindowsUpdatesHosts.is_security_update'
@@ -634,7 +635,7 @@ class PackagesController extends AppController {
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
         $all_updates = $WindowsUpdatesHostsTable->getUpdatesOfHost($hostId, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
         foreach ($all_updates as $index => $update) {
-            $all_updates[$index]['kbarticle_ids'] = !empty($update['windows_update']['kbarticle_ids']) ? explode(',', $update['windows_update']['kbarticle_ids']) : [];
+            $all_updates[$index]['windows_update']['kbarticle_ids'] = !empty($update['windows_update']['kbarticle_ids']) ? explode(',', $update['windows_update']['kbarticle_ids']) : [];
         }
 
         $this->set('all_windows_updates', $all_updates);
