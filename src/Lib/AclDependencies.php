@@ -98,7 +98,8 @@ class AclDependencies {
 
         $this
             ->allow('Agentconnector', 'register_agent')
-            ->allow('Agentconnector', 'submit_checkdata');
+            ->allow('Agentconnector', 'submit_checkdata')
+            ->allow('Agentconnector', 'submit_package_info');
 
         $this
             ->allow('Automaps', 'loadContainers')
