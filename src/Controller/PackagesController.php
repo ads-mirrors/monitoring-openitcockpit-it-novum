@@ -575,13 +575,15 @@ class PackagesController extends AppController {
         $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
         $GenericFilter = new GenericFilter($this->request);
         $GenericFilter->setFilters([
-            'like'           => [
+            'like'   => [
                 'PackagesLinux.name',
-                'PackagesLinux.description'
+                'PackagesLinux.description',
+                'PackagesLinuxHosts.current_version',
+                'PackagesLinuxHosts.available_version',
             ],
-            'greater_equals' => [
-                'available_updates',
-                'available_security_updates',
+            'equals' => [
+                'PackagesLinuxHosts.needs_update',
+                'PackagesLinuxHosts.is_security_update'
             ],
         ]);
 
