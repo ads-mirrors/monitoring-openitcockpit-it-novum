@@ -662,7 +662,17 @@ class AclDependencies {
             ->dependency('Packages', 'index', 'Agentconnector', 'linux')
             ->dependency('Packages', 'index', 'Agentconnector', 'windows')
             ->dependency('Packages', 'index', 'Agentconnector', 'macos')
-            ->dependency('Packages', 'index', 'Packages', 'summary');
+            ->dependency('Packages', 'index', 'Packages', 'summary')
+            ->dependency('Packages', 'index', 'Packages', 'linux')
+            ->dependency('Packages', 'index', 'Packages', 'view_linux')
+            ->dependency('Packages', 'index', 'Packages', 'windows')
+            ->dependency('Packages', 'index', 'Packages', 'view_windows')
+            ->dependency('Packages', 'index', 'Packages', 'windows_updates')
+            ->dependency('Packages', 'index', 'Packages', 'view_windows_update')
+            ->dependency('Packages', 'index', 'Packages', 'macos')
+            ->dependency('Packages', 'index', 'Packages', 'view_macos')
+            ->dependency('Packages', 'index', 'Packages', 'macos_updates')
+            ->dependency('Packages', 'index', 'Packages', 'view_macos_update');
 
 
         //Load Plugin ALC Dependencies

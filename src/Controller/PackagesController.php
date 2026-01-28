@@ -51,7 +51,7 @@ use itnovum\openITCOCKPIT\Filter\GenericFilter;
 class PackagesController extends AppController {
 
     //Only for ACLs
-    public function overview() {
+    public function index() {
     }
 
     public function linux(): void {
