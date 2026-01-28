@@ -203,18 +203,24 @@ class MacosUpdatesTable extends Table {
      * @throws \Exception
      */
     public function saveUpdatesForHost(int $hostId, array $availableUpdates) {
-        if (empty($availableUpdates)) {
-            return true;
-        }
-
         /** @var MacosUpdatesHostsTable $MacosUpdatesHostsTable */
         $MacosUpdatesHostsTable = TableRegistry::getTableLocator()->get('MacosUpdatesHosts');
 
-        // key = name, value = id
-        $existingUpdates = $this->getAllMacosUpdatesAsMap();
-
         // key = macos_update_id, value = MacosUpdatesHost entity
         $existingUpdatesOfHost = $MacosUpdatesHostsTable->getAllUpdatesOfHost($hostId);
+
+        if (empty($availableUpdates)) {
+            if (!empty($existingUpdatesOfHost)) {
+                $MacosUpdatesHostsTable->deleteAll(conditions: [
+                    'host_id' => $hostId
+                ]);
+            }
+
+            return true;
+        }
+
+        // key = name, value = id
+        $existingUpdates = $this->getAllMacosUpdatesAsMap();
 
         // Fake update for testing
         /*$availableUpdates[] = [

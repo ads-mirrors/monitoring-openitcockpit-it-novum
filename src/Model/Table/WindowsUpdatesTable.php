@@ -208,18 +208,25 @@ class WindowsUpdatesTable extends Table {
      * @throws \Exception
      */
     public function saveUpdatesForHost(int $hostId, array $availableUpdates) {
-        if (empty($availableUpdates)) {
-            return true;
-        }
-
         /** @var WindowsUpdatesHostsTable $WindowsUpdatesHostsTable */
         $WindowsUpdatesHostsTable = TableRegistry::getTableLocator()->get('WindowsUpdatesHosts');
 
-        // key = update_id(uuid), value = id
-        $existingUpdates = $this->getAllWindowsUpdatesAsMap();
-
         // key = windows_update_id, value = WindowsUpdatesHost entity
         $existingUpdatesOfHost = $WindowsUpdatesHostsTable->getAllUpdatesOfHost($hostId);
+
+        if (empty($availableUpdates)) {
+            if (!empty($existingUpdatesOfHost)) {
+                $WindowsUpdatesHostsTable->deleteAll(conditions: [
+                    'host_id' => $hostId
+                ]);
+            }
+
+            return true;
+        }
+
+
+        // key = update_id(uuid), value = id
+        $existingUpdates = $this->getAllWindowsUpdatesAsMap();
 
         $newUpdates = [];
         $updatesForDiff = [];
