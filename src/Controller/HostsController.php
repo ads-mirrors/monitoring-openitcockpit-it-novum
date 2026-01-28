@@ -3736,8 +3736,6 @@ class HostsController extends AppController {
         }
 
         $softwareInformationExists = false;
-        $apps = [];
-        $updated = [];
 
         /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
         $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
