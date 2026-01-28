@@ -673,7 +673,8 @@ class AclDependencies {
             ->dependency('Packages', 'index', 'Packages', 'macos')
             ->dependency('Packages', 'index', 'Packages', 'view_macos')
             ->dependency('Packages', 'index', 'Packages', 'macos_updates')
-            ->dependency('Packages', 'index', 'Packages', 'view_macos_update');
+            ->dependency('Packages', 'index', 'Packages', 'view_macos_update')
+            ->dependency('Packages', 'index', 'Packages', 'host_linux_packages');
 
 
         //Load Plugin ALC Dependencies
