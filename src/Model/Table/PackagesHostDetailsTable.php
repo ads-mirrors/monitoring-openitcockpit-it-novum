@@ -377,11 +377,15 @@ class PackagesHostDetailsTable extends Table {
      * @return mixed
      */
     public function getPackagesHostDetailsByHostId($hostId) {
-        return $this->find()
+        $query = $this->find()
             ->where([
                 'host_id' => $hostId
-            ])->first()
-            ->toArray();
+            ])->first();
+
+        if (is_null($query)) {
+            return [];
+        }
+        return $query->toArray();
 
     }
 }
