@@ -691,6 +691,28 @@ class PackagesController extends AppController {
         if (!$HostsTable->existsById($hostId)) {
             throw new NotFoundException(__('Host not found'));
         }
+
+        /** @var MacosUpdatesHostsTable $MacosUpdatesHostsTable */
+        $MacosUpdatesHostsTable = TableRegistry::getTableLocator()->get('MacosUpdatesHosts');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'MacosUpdates.name',
+                'MacosUpdates.description',
+                'MacosUpdates.version',
+            ]
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_updates = $MacosUpdatesHostsTable->getUpdatesOfHost($hostId, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+        $this->set('all_macos_updates', $all_updates);
+        $this->viewBuilder()->setOption('serialize', ['all_macos_updates']);
     }
 
     public function host_macos_apps($hostId = null) {

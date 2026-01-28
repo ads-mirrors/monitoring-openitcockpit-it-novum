@@ -220,6 +220,87 @@ class MacosUpdatesHostsTable extends Table {
     }
 
     /**
+     * @param int $hostId
+     * @param GenericFilter $GenericFilter
+     * @param PaginateOMat|null $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getUpdatesOfHost(int $hostId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        $query = $this->find()
+            ->select([
+                'MacosUpdatesHosts.id',
+                'MacosUpdatesHosts.macos_update_id',
+                'MacosUpdatesHosts.host_id',
+                'MacosUpdatesHosts.created',
+                'MacosUpdatesHosts.modified',
+                'Hosts.id',
+                'Hosts.name',
+            ])
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = MacosUpdatesHosts.host_id']
+            );
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->where([
+            'Hosts.disabled' => 0
+        ])->contain([
+            'MacosUpdates' => function (Query $query) {
+                $query->select([
+                    'MacosUpdates.name',
+                    'MacosUpdates.description',
+                    'MacosUpdates.version'
+                ])->disableAutoFields();
+
+                return $query;
+            }
+        ]);
+
+        $where = $GenericFilter->genericFilters();
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+        $query->where([
+            'MacosUpdatesHosts.host_id' => $hostId
+        ]);
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('MacosUpdates.name', 'asc'),
+                ['MacosUpdatesHosts.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
+    }
+
+    /**
      * @param $hostId
      * @return array
      */
