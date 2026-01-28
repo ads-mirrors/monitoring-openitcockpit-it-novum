@@ -3744,11 +3744,11 @@ class HostsController extends AppController {
         $packagesHostDetails = $PackagesHostDetailsTable->getPackagesHostDetailsByHostId($id);
         if (empty($packagesHostDetails)) {
             $this->set('SoftwareInformationExists', $softwareInformationExists);
-            $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists', 'osFamily', 'updatesCounter']);
+            $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists']);
             return;
         }
         $softwareInformationExists = true;
-        switch ($packagesHostDetails['os_family']) {
+        switch ($packagesHostDetails['os_type']) {
             case 'linux':
                 /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
                 $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
