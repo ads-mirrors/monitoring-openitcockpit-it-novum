@@ -654,6 +654,29 @@ class PackagesController extends AppController {
         if (!$HostsTable->existsById($hostId)) {
             throw new NotFoundException(__('Host not found'));
         }
+
+        /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
+        $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'WindowsApps.name',
+                'WindowsApps.publisher',
+                'WindowsAppsHosts.version'
+            ]
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_windows_apps = $WindowsAppsHostsTable->getWindowsAppsByHost($hostId, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+
+        $this->set('all_windows_apps', $all_windows_apps);
+        $this->viewBuilder()->setOption('serialize', ['all_windows_apps']);
     }
 
     public function host_macos_updates($hostId = null) {

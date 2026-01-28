@@ -194,4 +194,62 @@ class WindowsAppsHostsTable extends Table {
     public function countByHostId($hostId): int {
         return $this->find()->where(['host_id' => $hostId])->count();
     }
+
+
+    public function getWindowsAppsByHost(int $hostId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        $query = $this->find()
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = WindowsAppsHosts.host_id']
+            )
+            ->contain([
+                'Hosts' => function (Query $query) {
+                    return $query->select([
+                        'Hosts.id',
+                        'Hosts.name',
+                        'Hosts.uuid',
+                        'Hosts.container_id',
+                    ]);
+                },
+                'WindowsApps'
+            ])
+            ->where([
+                'Hosts.disabled'           => 0,
+                'WindowsAppsHosts.host_id' => $hostId
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        if (!empty($GenericFilter->genericFilters())) {
+            $query->where($GenericFilter->genericFilters());
+        }
+
+        $query->orderBy(
+            $GenericFilter->getOrderForPaginator('WindowsApps.name', 'asc')
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+    }
+
 }
