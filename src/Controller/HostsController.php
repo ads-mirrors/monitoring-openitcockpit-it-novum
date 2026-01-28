@@ -53,8 +53,8 @@ use App\Model\Table\HostsTable;
 use App\Model\Table\HosttemplatesTable;
 use App\Model\Table\InstantreportsTable;
 use App\Model\Table\MacosAppsHostsTable;
-use App\Model\Table\MacosUpdatesHostsTable;
 use App\Model\Table\MacrosTable;
+use App\Model\Table\PackagesHostDetailsTable;
 use App\Model\Table\PackagesLinuxHostsTable;
 use App\Model\Table\ServicesTable;
 use App\Model\Table\ServicetemplategroupsTable;
@@ -62,7 +62,6 @@ use App\Model\Table\ServicetemplatesTable;
 use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\TimeperiodsTable;
 use App\Model\Table\WindowsAppsHostsTable;
-use App\Model\Table\WindowsUpdatesHostsTable;
 use AutoreportModule\Model\Table\AutoreportsTable;
 use Cake\Core\Plugin;
 use Cake\Datasource\Exception\RecordNotFoundException;
@@ -3722,8 +3721,7 @@ class HostsController extends AppController {
 
         /** @var $HostsTable HostsTable */
         $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
-
-        if (!$HostsTable->exists($id)) {
+        if (!$HostsTable->existsById($id)) {
             throw new NotFoundException(__('Invalid host'));
         }
 
@@ -3737,61 +3735,43 @@ class HostsController extends AppController {
 
         $softwareInformationExists = false;
 
-        /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
-        $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
-        $linuxPackagesCount = $PackagesLinuxHostsTable->countByHostId($id);
-
-        /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
-        $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
-        $windowsAppsCount = $WindowsAppsHostsTable->countByHostId($id);
-
-        /** @var MacosAppsHostsTable $MacosAppsHostsTable */
-        $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
-        $macOSAppsCount = $MacosAppsHostsTable->countByHostId($id);
-
         $updatesCounter = [];
+        /** @var PackagesHostDetailsTable $PackagesHostDetailsTable */
+        $PackagesHostDetailsTable = TableRegistry::getTableLocator()->get('PackagesHostDetails');
 
-        if (array_sum([$linuxPackagesCount, $windowsAppsCount, $macOSAppsCount]) > 0) {
-            $softwareInformationExists = true;
-            $osFamily = '';
-            if ($linuxPackagesCount > 0) {
-                $updates = $PackagesLinuxHostsTable->getUpdatesByHostId($id);
-                $osFamily = 'linux';
-                $updatesCounter = [
-                    'total'            => $linuxPackagesCount,
-                    'updates'          => sizeof($updates),
-                    'security_updates' => sizeof(Hash::extract($updates, '{n}[is_security_update=1]'))
-                ];
-            }
-            if ($windowsAppsCount > 0) {
-                /** @var WindowsUpdatesHostsTable $WindowsUpdatesHostsTable */
-                $WindowsUpdatesHostsTable = TableRegistry::getTableLocator()->get('WindowsUpdatesHosts');
-                $updates = $WindowsUpdatesHostsTable->getUpdatesByHostId($id);
-                $osFamily = 'windows';
-                $updatesCounter = [
-                    'total'            => $windowsAppsCount,
-                    'updates'          => sizeof($updates),
-                    'security_updates' => sizeof(Hash::extract($updates, '{n}[is_security_update=1]'))
-                ];
-
-            }
-            if ($macOSAppsCount > 0) {
-                /** @var MacosUpdatesHostsTable $MacosUpdatesHostsTable */
-                $MacosUpdatesHostsTable = TableRegistry::getTableLocator()->get('MacosUpdatesHosts');
-                $updates = $MacosUpdatesHostsTable->getUpdatesByHostId($id);
-                $sizeofUpdates = sizeof($updates); //macOS updates are all security updates
-                $osFamily = 'macos';
-                $updatesCounter = [
-                    'total'            => $macOSAppsCount,
-                    'updates'          => $sizeofUpdates,
-                    'security_updates' => $sizeofUpdates
-                ];
-            }
+        $User = new User($this->getUser());
+        $UserTime = $User->getUserTime();
+        $packagesHostDetails = $PackagesHostDetailsTable->getPackagesHostDetailsByHostId($id);
+        if (empty($packagesHostDetails)) {
+            $this->set('SoftwareInformationExists', $softwareInformationExists);
+            $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists', 'osFamily', 'updatesCounter']);
+            return;
         }
+        $softwareInformationExists = true;
+        switch ($packagesHostDetails['os_family']) {
+            case 'linux':
+                /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
+                $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
+                $packagesHostDetails['total'] = $PackagesLinuxHostsTable->countByHostId($id);
+                break;
+            case 'windows':
+                /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
+                $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
+                $packagesHostDetails['total'] = $WindowsAppsHostsTable->countByHostId($id);
+                break;
+            case 'macos':
+
+                /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+                $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
+                $packagesHostDetails['total'] = $MacosAppsHostsTable->countByHostId($id);
+
+                break;
+        }
+        $packagesHostDetails['last_update_user'] = $UserTime->format($packagesHostDetails['last_update']);
+        $packagesHostDetails['uptime_in_words'] = $UserTime->secondsInHumanShort($packagesHostDetails['system_uptime']);
 
         $this->set('SoftwareInformationExists', $softwareInformationExists);
-        $this->set('osFamily', $osFamily);
-        $this->set('updatesCounter', $updatesCounter);
-        $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists', 'osFamily', 'updatesCounter']);
+        $this->set('packagesHostDetails', $packagesHostDetails);
+        $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists', 'packagesHostDetails']);
     }
 }
