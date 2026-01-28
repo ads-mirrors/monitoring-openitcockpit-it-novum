@@ -206,6 +206,75 @@ class PackagesLinuxHostsTable extends Table {
     }
 
     /**
+     * @param int $hostId
+     * @param GenericFilter $GenericFilter
+     * @param PaginateOMat|null $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getPackagesOfHost(int $hostId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []) {
+        $query = $this->find()
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = PackagesLinuxHosts.host_id']
+            )
+            ->contain([
+                'Hosts'         => function (Query $query) {
+                    return $query->select([
+                        'Hosts.id',
+                        'Hosts.name',
+                        'Hosts.uuid',
+                        'Hosts.container_id',
+                    ]);
+                },
+                'PackagesLinux' => function (Query $query) {
+                    return $query->select([
+                        'PackagesLinux.id',
+                        'PackagesLinux.name',
+                        'PackagesLinux.description',
+                    ]);
+                }
+            ])
+            ->where([
+                'Hosts.disabled'             => 0,
+                'PackagesLinuxHosts.host_id' => $hostId
+            ]);
+
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        if (!empty($GenericFilter->genericFilters())) {
+            $query->where($GenericFilter->genericFilters());
+        }
+
+        $query->orderBy(
+            $GenericFilter->getOrderForPaginator('PackagesLinux.name', 'asc')
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+    }
+
+    /**
      * @param $hostId
      * @return int
      */

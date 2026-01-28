@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Model\Table\HostsTable;
 use App\Model\Table\MacosAppsHostsTable;
 use App\Model\Table\MacosAppsTable;
 use App\Model\Table\MacosUpdatesHostsTable;
@@ -555,5 +556,44 @@ class PackagesController extends AppController {
         $this->set('update', $update);
         $this->set('all_host_updates', $all_host_updates);
         $this->viewBuilder()->setOption('serialize', ['update', 'all_host_updates']);
+    }
+
+    public function host_linux_packages($hostId = null) {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $hostId = (int)$hostId;
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+
+        if (!$HostsTable->existsById($hostId)) {
+            throw new NotFoundException(__('Host not found'));
+        }
+
+        /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
+        $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'           => [
+                'PackagesLinux.name',
+                'PackagesLinux.description'
+            ],
+            'greater_equals' => [
+                'available_updates',
+                'available_security_updates',
+            ],
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_packages = $PackagesLinuxHostsTable->getPackagesOfHost($hostId, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+        $this->set('all_packages_linux', $all_packages);
+        $this->viewBuilder()->setOption('serialize', ['all_packages_linux']);
     }
 }
