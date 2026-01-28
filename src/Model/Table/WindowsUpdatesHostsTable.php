@@ -248,4 +248,87 @@ class WindowsUpdatesHostsTable extends Table {
             ->disableHydration()
             ->toArray();
     }
+
+    /**
+     * @param int $hostId
+     * @param GenericFilter $GenericFilter
+     * @param PaginateOMat|null $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getUpdatesOfHost(int $hostId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        $query = $this->find()
+            ->select([
+                'WindowsUpdatesHosts.id',
+                'WindowsUpdatesHosts.windows_update_id',
+                'WindowsUpdatesHosts.host_id',
+                'WindowsUpdatesHosts.reboot_required',
+                'WindowsUpdatesHosts.is_security_update',
+                'WindowsUpdatesHosts.created',
+                'WindowsUpdatesHosts.modified',
+                'Hosts.id',
+                'Hosts.name',
+            ])
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = WindowsUpdatesHosts.host_id']
+            );
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->where([
+            'Hosts.disabled' => 0
+        ])->contain([
+            'WindowsUpdates' => function (Query $query) {
+                $query->select([
+                    'WindowsUpdates.name',
+                    'WindowsUpdates.description',
+                    'WindowsUpdates.kbarticle_ids'
+                ])->disableAutoFields();
+
+                return $query;
+            }
+        ]);
+
+        $where = $GenericFilter->genericFilters();
+
+        if (!empty($where)) {
+            $query->where($where);
+        }
+
+        $query->where([
+            'WindowsUpdatesHosts.host_id' => $hostId
+        ]);
+
+
+        $query->orderBy(
+            array_merge(
+                $GenericFilter->getOrderForPaginator('WindowsUpdates.name', 'asc'),
+                ['WindowsUpdatesHosts.id' => 'asc']
+            )
+        );
+
+        $query->disableHydration();
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+
+    }
 }

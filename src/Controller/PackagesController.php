@@ -598,4 +598,88 @@ class PackagesController extends AppController {
         $this->set('all_packages_linux', $all_packages);
         $this->viewBuilder()->setOption('serialize', ['all_packages_linux']);
     }
+
+    public function host_windows_updates($hostId = null) {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $hostId = (int)$hostId;
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+
+        if (!$HostsTable->existsById($hostId)) {
+            throw new NotFoundException(__('Host not found'));
+        }
+
+        /** @var WindowsUpdatesHostsTable $WindowsUpdatesHostsTable */
+        $WindowsUpdatesHostsTable = TableRegistry::getTableLocator()->get('WindowsUpdatesHosts');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'   => [
+                'WindowsUpdates.name',
+                'WindowsUpdates.description',
+                'WindowsUpdates.kbarticle_ids'
+            ],
+            'equals' => [
+                'WindowsUpdatesHosts.is_security_update'
+            ],
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_updates = $WindowsUpdatesHostsTable->getUpdatesOfHost($hostId, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+        foreach ($all_updates as $index => $update) {
+            $all_updates[$index]['kbarticle_ids'] = !empty($update['windows_update']['kbarticle_ids']) ? explode(',', $update['windows_update']['kbarticle_ids']) : [];
+        }
+
+        $this->set('all_windows_updates', $all_updates);
+        $this->viewBuilder()->setOption('serialize', ['all_windows_updates']);
+    }
+
+    public function host_windows_apps($hostId = null) {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $hostId = (int)$hostId;
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+
+        if (!$HostsTable->existsById($hostId)) {
+            throw new NotFoundException(__('Host not found'));
+        }
+    }
+
+    public function host_macos_updates($hostId = null) {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $hostId = (int)$hostId;
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+
+        if (!$HostsTable->existsById($hostId)) {
+            throw new NotFoundException(__('Host not found'));
+        }
+    }
+
+    public function host_macos_apps($hostId = null) {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        $hostId = (int)$hostId;
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+
+        if (!$HostsTable->existsById($hostId)) {
+            throw new NotFoundException(__('Host not found'));
+        }
+    }
 }
