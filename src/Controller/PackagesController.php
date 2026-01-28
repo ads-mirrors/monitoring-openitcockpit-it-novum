@@ -727,5 +727,28 @@ class PackagesController extends AppController {
         if (!$HostsTable->existsById($hostId)) {
             throw new NotFoundException(__('Host not found'));
         }
+
+        /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+        $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'MacosApps.name',
+                'MacosApps.description',
+                'MacosAppsHosts.version'
+            ]
+        ]);
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_macos_apps = $MacosAppsHostsTable->getMacosAppsByHost($hostId, $GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+
+        $this->set('all_macos_apps', $all_macos_apps);
+        $this->viewBuilder()->setOption('serialize', ['all_macos_apps']);
     }
 }

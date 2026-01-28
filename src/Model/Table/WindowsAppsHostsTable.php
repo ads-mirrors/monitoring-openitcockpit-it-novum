@@ -196,6 +196,13 @@ class WindowsAppsHostsTable extends Table {
     }
 
 
+    /**
+     * @param int $hostId
+     * @param GenericFilter $GenericFilter
+     * @param PaginateOMat|null $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
     public function getWindowsAppsByHost(int $hostId, GenericFilter $GenericFilter, ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
         $query = $this->find()
             ->innerJoin(
