@@ -518,17 +518,24 @@ class PackagesLinuxTable extends Table {
                 'is_security_update' => 1,
             ]);
 
-        $query = $this->find()
-            ->select([
-                'PackagesLinux.id',
-                'PackagesLinux.name',
-                'PackagesLinux.description',
-                'PackagesLinux.is_patch',
-                'PackagesLinux.created',
-                'PackagesLinux.modified',
-                'available_updates'          => $subQueryForUpdates,
-                'available_security_updates' => $subQueryForSecurityUpdates,
+        $query = $this->find();
+        $query->select([
+            'PackagesLinux.id',
+            'PackagesLinux.name',
+            'PackagesLinux.description',
+            'PackagesLinux.is_patch',
+            'PackagesLinux.created',
+            'PackagesLinux.modified',
+            'available_updates'          => $subQueryForUpdates,
+            'available_security_updates' => $subQueryForSecurityUpdates,
+            'packageStatus'              => $query->newExpr()->add([
+                'CASE
+            WHEN (' . $subQueryForSecurityUpdates . ') > 0 THEN 2
+            WHEN (' . $subQueryForUpdates . ') > 0 THEN 1
+            ELSE 0
+        END'
             ])
+        ])
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) use ($MY_RIGHTS) {
                     $query->select([
@@ -558,7 +565,6 @@ class PackagesLinuxTable extends Table {
                     return $query;
                 }
             ]);
-
         $where = $GenericFilter->genericFilters();
         if (isset($where['available_security_updates >=']) && $where['available_security_updates >='] > 0) {
             $query->having(['available_security_updates >' => 0]);
