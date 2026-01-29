@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use ApacheModule\itnovum\openITCOCKPIT\TomcatMemoryPool\TomcatMemoryPoolScan;
 use App\itnovum\openITCOCKPIT\Database\Backup;
 use App\itnovum\openITCOCKPIT\Monitoring\Naemon\ExternalCommands;
 use App\itnovum\openITCOCKPIT\Supervisor\Binarydctl;
@@ -1088,6 +1089,23 @@ class GearmanWorkerCommand extends Command {
                 }
                 break;
 
+            case 'WizardTomcatMemoryPoolDiscovery':
+                $MemoryPoolScan = new TomcatMemoryPoolScan($payload['data']);
+                try {
+                    $services = $MemoryPoolScan->executeMemoryPoolDiscovery();
+                    $return = [
+                        'success'  => $services['success'],
+                        'error'    => $services['errormsg'],
+                        'services' => $services
+                    ];
+                } catch (\RuntimeException $e) {
+                    $return = [
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
+                        'exception' => 'ProcessFailedException'
+                    ];
+                }
+                break;
             case 'WizardNetworkInterfaceList':
                 $DatastoreScan = new NetworkInterfacesScan($payload['data']);
                 try {
