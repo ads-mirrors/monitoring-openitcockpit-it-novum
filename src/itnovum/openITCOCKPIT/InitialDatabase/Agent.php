@@ -1295,7 +1295,8 @@ class Agent extends Importer {
                 'description'      => "Checks if any operating system updates are available.\n" .
                     "If supported, the agent will list optional and security related updates separately.\n" .
                     "Number of available updates: Minimum number ofavailable updates to return a WARNING state.\n" .
-                    "Only Security Updates: Only consider security updates and never return a WARNING state (1/0).\n",
+                    "Only Security Updates: Only consider security updates and never return a WARNING state (1/0).\n" .
+                    "Information only: Only track update information but never switch into a WARNING or CRITICAL state.\n",
                 'commandarguments' => [
                     [
                         'name'       => '$ARG1$',
@@ -1304,6 +1305,10 @@ class Agent extends Importer {
                     [
                         'name'       => '$ARG2$',
                         'human_name' => 'Only Security Updates (1/0)'
+                    ],
+                    [
+                        'name'       => '$ARG3$',
+                        'human_name' => 'Information only (1/0)'
                     ]
                 ]
             ],
@@ -3658,6 +3663,10 @@ class Agent extends Importer {
                     ],
                     [
                         'commandargument_id' => '$ARG2$',
+                        'value'              => '0',
+                    ],
+                    [
+                        'commandargument_id' => '$ARG3$',
                         'value'              => '0',
                     ]
                 ],
