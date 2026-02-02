@@ -142,12 +142,18 @@ final class UsersXlsxExport {
         /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $all_tmp_users = $UsersTable->getUsersExport($this->MY_RIGHTS);
-        $LdapClient = $this->getLdapClient();
+
+        // Initialized later, so it only connects on demand, but ONCE.
+        $LdapClient = null;
         foreach ($all_tmp_users as $_user) {
             /** @var User $_user */
             $user = $_user->toArray();
 
-            if ($LdapClient && !empty($user['samaccountname'])) {
+            if (!empty($user['samaccountname'])) {
+                // If not already done, get LdapClient, we need it now.
+                if (!$LdapClient) {
+                    $LdapClient = $this->getLdapClient();
+                }
                 $ldapUser = $LdapClient->getUser($user['samaccountname'], true);
                 if (!$ldapUser) {
                     continue;
