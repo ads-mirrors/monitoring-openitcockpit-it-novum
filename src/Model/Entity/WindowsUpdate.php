@@ -23,33 +23,26 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
+declare(strict_types=1);
+
 namespace App\Model\Entity;
 
 use Cake\ORM\Entity;
 
 /**
- * Agentconfig Entity
+ * WindowsUpdate Entity
  *
  * @property int $id
- * @property int|null $host_id
- * @property bool $use_https
- * @property bool $insecure
- * @property bool $use_autossl
- * @property bool $autossl_successful
- * @property bool $use_push_mode
- * @property bool $basic_auth
- * @property string $password
- * @property bool $proxy
- * @property bool $push_noticed
- * @property bool $enable_packagemanager
- * @property string config
- * @property PushAgent $push_agent
+ * @property string $name
+ * @property string|null $description
+ * @property string|null $kbarticle_ids
+ * @property string|null $update_id
  * @property \Cake\I18n\DateTime $created
  * @property \Cake\I18n\DateTime $modified
  *
- * @property \App\Model\Entity\Host $host
+ * @property WindowsUpdatesHost[] $windows_updates_hosts
  */
-class Agentconfig extends Entity {
+class WindowsUpdate extends Entity {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -57,27 +50,15 @@ class Agentconfig extends Entity {
      * be mass assigned. For security purposes, it is advised to set '*' to false
      * (or remove it), and explicitly make individual fields accessible as needed.
      *
-     * @var array
+     * @var array<string, bool>
      */
     protected array $_accessible = [
-        'port'                  => true,
-        'host_id'               => true,
-        'use_https'             => true,
-        'insecure'              => true,
-        'use_autossl'           => true,
-        'autossl_successful'    => true,
-        'use_push_mode'         => true,
-        'basic_auth'            => true,
-        'username'              => true,
-        'password'              => true,
-        'proxy'                 => true,
-        'push_noticed'          => true,
-        'enable_packagemanager' => true,
-        'config'                => true,
-        'push_agent'            => true,
+        'name'                  => true,
+        'description'           => true,
+        'kbarticle_ids'         => true,
+        'update_id'             => true,
         'created'               => true,
         'modified'              => true,
-        'host'                  => true
+        'windows_updates_hosts' => true,
     ];
-
 }

@@ -52,12 +52,16 @@ use App\Model\Table\HostgroupsTable;
 use App\Model\Table\HostsTable;
 use App\Model\Table\HosttemplatesTable;
 use App\Model\Table\InstantreportsTable;
+use App\Model\Table\MacosAppsHostsTable;
 use App\Model\Table\MacrosTable;
+use App\Model\Table\PackagesHostDetailsTable;
+use App\Model\Table\PackagesLinuxHostsTable;
 use App\Model\Table\ServicesTable;
 use App\Model\Table\ServicetemplategroupsTable;
 use App\Model\Table\ServicetemplatesTable;
 use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\TimeperiodsTable;
+use App\Model\Table\WindowsAppsHostsTable;
 use AutoreportModule\Model\Table\AutoreportsTable;
 use Cake\Core\Plugin;
 use Cake\Datasource\Exception\RecordNotFoundException;
@@ -3706,5 +3710,68 @@ class HostsController extends AppController {
 
         $this->set('isarFlowInformationExists', $isarFlowInformationExists);
         $this->viewBuilder()->setOption('serialize', ['isarFlowInformationExists']);
+    }
+
+    public function loadSoftwareInformation() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $id = $this->request->getQuery('id');
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+        if (!$HostsTable->existsById($id)) {
+            throw new NotFoundException(__('Invalid host'));
+        }
+
+        /** @var \App\Model\Entity\Host $host */
+        $host = $HostsTable->getHostById($id);
+
+        if (!$this->allowedByContainerId($host->getContainerIds())) {
+            $this->render403();
+            return;
+        }
+
+        $softwareInformationExists = false;
+
+        $updatesCounter = [];
+        /** @var PackagesHostDetailsTable $PackagesHostDetailsTable */
+        $PackagesHostDetailsTable = TableRegistry::getTableLocator()->get('PackagesHostDetails');
+
+        $User = new User($this->getUser());
+        $UserTime = $User->getUserTime();
+        $packagesHostDetails = $PackagesHostDetailsTable->getPackagesHostDetailsByHostId($id);
+        if (empty($packagesHostDetails)) {
+            $this->set('SoftwareInformationExists', $softwareInformationExists);
+            $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists']);
+            return;
+        }
+        $softwareInformationExists = true;
+        switch ($packagesHostDetails['os_type']) {
+            case 'linux':
+                /** @var PackagesLinuxHostsTable $PackagesLinuxHostsTable */
+                $PackagesLinuxHostsTable = TableRegistry::getTableLocator()->get('PackagesLinuxHosts');
+                $packagesHostDetails['total'] = $PackagesLinuxHostsTable->countByHostId($id);
+                break;
+            case 'windows':
+                /** @var WindowsAppsHostsTable $WindowsAppsHostsTable */
+                $WindowsAppsHostsTable = TableRegistry::getTableLocator()->get('WindowsAppsHosts');
+                $packagesHostDetails['total'] = $WindowsAppsHostsTable->countByHostId($id);
+                break;
+            case 'macos':
+
+                /** @var MacosAppsHostsTable $MacosAppsHostsTable */
+                $MacosAppsHostsTable = TableRegistry::getTableLocator()->get('MacosAppsHosts');
+                $packagesHostDetails['total'] = $MacosAppsHostsTable->countByHostId($id);
+
+                break;
+        }
+        $packagesHostDetails['last_update_user'] = $UserTime->format($packagesHostDetails['last_update']);
+        $packagesHostDetails['uptime_in_words'] = $UserTime->secondsInHumanShort($packagesHostDetails['system_uptime']);
+
+        $this->set('SoftwareInformationExists', $softwareInformationExists);
+        $this->set('packagesHostDetails', $packagesHostDetails);
+        $this->viewBuilder()->setOption('serialize', ['SoftwareInformationExists', 'packagesHostDetails']);
     }
 }
