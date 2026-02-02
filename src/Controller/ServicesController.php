@@ -79,6 +79,7 @@ use itnovum\openITCOCKPIT\Core\CommandArgReplacer;
 use itnovum\openITCOCKPIT\Core\Comparison\ServiceComparisonForSave;
 use itnovum\openITCOCKPIT\Core\CustomMacroReplacer;
 use itnovum\openITCOCKPIT\Core\DowntimeServiceConditions;
+use itnovum\openITCOCKPIT\Core\FileDebugger;
 use itnovum\openITCOCKPIT\Core\HostMacroReplacer;
 use itnovum\openITCOCKPIT\Core\Hoststatus;
 use itnovum\openITCOCKPIT\Core\HoststatusFields;
@@ -779,6 +780,7 @@ class ServicesController extends AppController {
                 $HosttemplatesTable->getContactsAndContactgroupsById($host['Host']['hosttemplate_id'])
             );
             $dataForSave = $ServiceComparisonForSave->getDataForSaveForAllFields();
+            FileDebugger::dump($dataForSave);
 
             //Add required fields for validation
             $dataForSave['servicetemplate_flap_detection_enabled'] = $servicetemplate['Servicetemplate']['flap_detection_enabled'];

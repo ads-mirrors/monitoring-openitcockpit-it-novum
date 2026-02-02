@@ -1,0 +1,114 @@
+<?php
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today Allgeier IT Services GmbH
+//
+// This file is dual licensed
+//
+// 1.
+//     This program is free software: you can redistribute it and/or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation, version 3 of the License.
+//
+//     This program is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//     GNU General Public License for more details.
+//
+//     You should have received a copy of the GNU General Public License
+//     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// 2.
+//     If you purchased an openITCOCKPIT Enterprise Edition you can use this file
+//     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
+//     License agreement and license key will be shipped with the order
+//     confirmation.
+
+declare(strict_types=1);
+
+namespace App\Controller;
+
+use App\Model\Table\PackagesHostDetailsTable;
+use Cake\Http\Exception\MethodNotAllowedException;
+use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
+use itnovum\openITCOCKPIT\Core\ValueObjects\User;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
+
+/**
+ * Patchstatus Controller
+ *
+ * @property \Authorization\Controller\Component\AuthorizationComponent $Authorization
+ */
+class PatchstatusController extends AppController {
+
+    /**
+     * Index method
+     *
+     * @return \Cake\Http\Response|null|void Renders view
+     */
+    public function index() {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var PackagesHostDetailsTable $PackagesHostDetailsTable */
+        $PackagesHostDetailsTable = TableRegistry::getTableLocator()->get('PackagesHostDetails');
+
+        $User = new User($this->getUser());
+        $UserTime = $User->getUserTime();
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+        
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'           => [
+                'Hosts.name',
+                'PackagesHostDetails.os_name',
+                'PackagesHostDetails.os_version',
+            ],
+            'equals'         => [
+                'PackagesHostDetails.os_type',
+                'Hosts.id'
+            ],
+            'greater_equals' => [
+                'PackagesHostDetails.available_updates',
+                'PackagesHostDetails.available_security_updates',
+            ],
+            'bool'           => [
+                'PackagesHostDetails.reboot_required'
+            ]
+        ]);
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+        $all_patchstatus = $PackagesHostDetailsTable->getPatchstatusIndex($GenericFilter, $PaginateOMat, $MY_RIGHTS);
+
+        foreach ($all_patchstatus as $index => $patchstatus) {
+            $all_patchstatus[$index]['last_update_user'] = $UserTime->format($patchstatus['last_update']);
+            $all_patchstatus[$index]['uptime_in_words'] = $UserTime->secondsInHumanShort($patchstatus['system_uptime']);
+
+            $all_patchstatus[$index]['linux_update_ids'] = Hash::extract($patchstatus['packages_linux_hosts'], '{n}.package_linux_id');
+            $all_patchstatus[$index]['linux_security_update_ids'] = Hash::extract($patchstatus['packages_linux_hosts'], '{n}[is_security_update=1].package_linux_id');
+            $all_patchstatus[$index]['macos_update_ids'] = Hash::extract($patchstatus['macos_updates_hosts'], '{n}.macos_update_id');
+            $all_patchstatus[$index]['windows_update_ids'] = Hash::extract($patchstatus['windows_updates_hosts'], '{n}.windows_update_id');
+            $all_patchstatus[$index]['windows_security_update_ids'] = Hash::extract($patchstatus['windows_updates_hosts'], '{n}[is_security_update=1].windows_update_id');
+
+            unset($all_patchstatus[$index]['packages_linux_hosts']);
+            unset($all_patchstatus[$index]['packages_linux_hosts']);
+            unset($all_patchstatus[$index]['windows_updates_hosts']);
+
+        }
+
+        $summary = $PackagesHostDetailsTable->getSummary($GenericFilter, $MY_RIGHTS);
+
+        $this->set('all_patchstatus', $all_patchstatus);
+        $this->set('summary', $summary);
+        $this->viewBuilder()->setOption('serialize', ['all_patchstatus', 'summary']);
+
+    }
+
+
+}
