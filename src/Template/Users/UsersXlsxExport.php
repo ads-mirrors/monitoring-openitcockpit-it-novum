@@ -125,7 +125,7 @@ final class UsersXlsxExport {
             $row++;
             $col = 0;
 
-            $sheet->setCellValue(self::getCellPosition($col++, $row), h($UserId));
+            $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['id']));
             $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['firstname']));
             $sheet->setCellValue(self::getCellPosition($col++, $row), h($User['lastname']));
             $sheet->setCellValue(self::getCellPosition($col, $row), h($User['email']));
