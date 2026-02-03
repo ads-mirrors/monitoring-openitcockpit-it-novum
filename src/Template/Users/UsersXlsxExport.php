@@ -28,6 +28,7 @@ namespace App\Template\Users;
 use Acl\Model\Table\AcosTable;
 use App\Lib\AclDependencies;
 use App\Model\Entity\User;
+use App\Model\Entity\Usergroup;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\UsercontainerrolesTable;
@@ -35,6 +36,7 @@ use App\Model\Table\UsergroupsTable;
 use App\Model\Table\UsersTable;
 use Cake\ORM\Exception\MissingEntityException;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Ldap\LdapClient;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
@@ -49,7 +51,10 @@ final class UsersXlsxExport {
     private array $Users = [];
     private array $Containers = [];
     private array $ContainerRoles = [];
+    /** @var Usergroup[] */
     private array $UserRoles = [];
+    /** @var int[][] */
+    private array $UserRoleAcos = [];
     private array $Permissions = [];
     private array $Modules = [];
     private array $ContainerTree = [];
@@ -232,7 +237,7 @@ final class UsersXlsxExport {
             foreach ($this->UserRoles as $UserRole) {
                 $colour = 'FFFF0000';
                 $cellValue = 'NO';
-                if ($this->userRoleHasPermission($UserRole, $Permission)) {
+                if ($this->userRoleHasPermission($UserRole, $Permission['id'])) {
                     $colour = 'FF00CC00';
                     $cellValue = 'YES';
                 }
@@ -261,6 +266,9 @@ final class UsersXlsxExport {
                 ]
             ])
             ->all()->toArray();
+        foreach ($this->UserRoles as $UserRole) {
+            $this->UserRoleAcos[$UserRole['id']] = Hash::extract($UserRole, 'aro.acos.{n}.id');
+        }
 
         /** @var AcosTable $AcosTable */
         $AcosTable = TableRegistry::getTableLocator()->get('Acl.Acos');
@@ -467,17 +475,12 @@ final class UsersXlsxExport {
 
     /**
      * I will check, if the given UserRole has the given Permission.
-     * @param $UserRole
-     * @param $Permission
+     * @param Usergroup $UserRole
+     * @param int $permissionId
      * @return bool
      */
-    private function userRoleHasPermission($UserRole, $Permission): bool {
-        foreach ($UserRole['aro']['acos'] as $Aco) {
-            if ($Aco['id'] === $Permission['id']) {
-                return true;
-            }
-        }
-        return false;
+    private function userRoleHasPermission(Usergroup $UserRole, int $permissionId): bool {
+        return in_array($permissionId, $this->UserRoleAcos[$UserRole->id], true);
     }
 
     /**
