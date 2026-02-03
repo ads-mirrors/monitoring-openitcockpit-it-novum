@@ -267,7 +267,7 @@ final class UsersXlsxExport {
             ])
             ->all()->toArray();
         foreach ($this->UserRoles as $UserRole) {
-            $this->UserRoleAcos[$UserRole['id']] = Hash::extract($UserRole, 'aro.acos.{n}.id');
+            $this->UserRoleAcos[$UserRole['id']] = array_unique(Hash::extract($UserRole, 'aro.acos.{n}.id'));
         }
 
         /** @var AcosTable $AcosTable */
