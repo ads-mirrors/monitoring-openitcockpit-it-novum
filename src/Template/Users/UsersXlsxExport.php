@@ -121,7 +121,7 @@ final class UsersXlsxExport {
         $sheet->setCellValue(self::getCellPosition($col++, $row), 'User role through LDAP');
 
         // Body Rows
-        foreach ($this->Users as $UserId => $User) {
+        foreach ($this->Users as $User) {
             $row++;
             $col = 0;
 
