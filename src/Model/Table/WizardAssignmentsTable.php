@@ -608,7 +608,15 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'network.png',
                 'category'    => ['hardware', 'network'],
                 'active'      => true
-            ]
+            ],
+            'checkpoint-firewall'          => [
+                'type_id'     => 'checkpoint-firewall',
+                'title'       => __('Checkpoint Firewall'),
+                'description' => __('Monitor your Checkpoint Firewall.'),
+                'image'       => 'checkpoint.png',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];
