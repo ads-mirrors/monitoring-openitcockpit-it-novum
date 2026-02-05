@@ -5385,6 +5385,11 @@ class ServicesTable extends Table {
             ->select([
                 'Services.id',
                 'Services.host_id',
+                'Services.name',
+                'Services.description',
+                'Services.tags',
+                'Services.check_interval',
+                'Services.freshness_threshold',
                 'Services.disabled',
                 'Services.servicetemplate_id'
             ])
