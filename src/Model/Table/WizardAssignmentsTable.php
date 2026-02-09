@@ -613,7 +613,7 @@ class WizardAssignmentsTable extends Table {
                 'type_id'     => 'kubernetes',
                 'title'       => __('Kubernetes'),
                 'description' => __('Used to monitor Kubernetes clusters and their components'),
-                'image'       => 'kubernetes.svg',
+                'image'       => 'Kubernetes.svg',
                 'category'    => ['virtualization', 'cloud'],
                 'active'      => true
             ]
