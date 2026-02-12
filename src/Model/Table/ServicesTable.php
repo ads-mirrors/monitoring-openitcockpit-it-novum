@@ -1611,6 +1611,56 @@ class ServicesTable extends Table {
     }
 
     /**
+     * Disable / deactivate a given Service and log this action in the changelog.
+     * This function does NOT DO any permission checks, you have to make
+     * sure beforehand that the User has the permission to do this action
+     *
+     * @param Service $Service
+     * @param User $User
+     * @param array $host
+     * @return void
+     */
+    public function __deactivate(Service $Service, User $User, array $host = []) {
+        /** @var $ChangelogsTable ChangelogsTable */
+        $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
+
+        if (empty($host)) {
+            /** @var $HostsTable HostsTable */
+            $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+            $host = $HostsTable->find()
+                ->select([
+                    'Hosts.id',
+                    'Hosts.name',
+                    'Hosts.container_id'
+                ])->where([
+                    'Hosts.id' => $Service->get('host_id')
+                ])
+                ->firstOrFail()
+                ->toArray();
+        }
+
+        $Service->set('disabled', 1);
+        $this->save($Service);
+        $serviceName = !empty($Service->get('name')) ? $Service->get('name') : $Service->get('servicetemplate')->get('name');
+
+        $changelog_data = $ChangelogsTable->parseDataForChangelog(
+            'deactivate',
+            'services',
+            $Service->id,
+            OBJECT_SERVICE,
+            $host['container_id'],
+            $User->getId(),
+            $host['name'] . '/' . $serviceName,
+            []
+        );
+        if ($changelog_data) {
+            /** @var Changelog $changelogEntry */
+            $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
+            $ChangelogsTable->save($changelogEntry);
+        }
+    }
+
+    /**
      * @param string $uuid
      * @param bool $enableHydration
      * @return array|\Cake\Datasource\EntityInterface
