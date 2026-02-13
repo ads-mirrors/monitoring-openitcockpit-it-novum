@@ -1332,7 +1332,18 @@ class UsersController extends AppController {
     }
 
     public function listToXlsx() {
-        $UXE = new UsersXlsxExport($this->MY_RIGHTS, $this->hasRootPrivileges);
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            // root users can see all users
+            $MY_RIGHTS = [];
+        }
+        /** @var UsersTable $UsersTable */
+        $UsersTable = TableRegistry::getTableLocator()->get('Users');
+
+        $UsersFilter = new UsersFilter($this->request);
+        $all_users = $UsersTable->getUsersIndex($UsersFilter, null, $MY_RIGHTS);
+
+        $UXE = new UsersXlsxExport($all_users, $this->MY_RIGHTS);
 
         $filePath = TMP . 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx';
 

@@ -579,7 +579,6 @@ class UsersTable extends Table {
         foreach ($intCasts as $intCast) {
             $user[$intCast] = (int)$user[$intCast];
         }
-
         $user['containers'] = [
             '_ids' => Hash::extract($query, 'containers.{n}.id')
         ];
@@ -1913,7 +1912,12 @@ class UsersTable extends Table {
 
     }
 
-    public function getUsersAsList($ids = []) {
+    /**
+     * @param $ids
+     * @return array
+     */
+    public function getUsersAsList($ids = []): array {
+        $return = [];
         if (empty($ids)) {
             return [];
         }
@@ -1938,94 +1942,5 @@ class UsersTable extends Table {
             $return[$user['id']] = $user['lastname'] . ', ' . $user['firstname'];
         }
         return $return;
-    }
-
-    /**
-     * @param $MY_RIGHTS
-     * @return array
-     */
-    public function getUsersExport($MY_RIGHTS = []) {
-        //Get all user ids where container assigned are made directly at the user
-        $query = $this->find()
-            ->select([
-                'Users.id'
-            ])
-            ->matching('Containers')
-            ->groupBy([
-                'Users.id'
-            ])
-            ->disableHydration();
-
-        if (!empty($MY_RIGHTS)) {
-            $query->where([
-                'ContainersUsersMemberships.container_id IN' => $MY_RIGHTS
-            ]);
-        }
-        $userIds = Hash::extract($query->toArray(), '{n}.id');
-
-        //Get all user ids where container assigned are made through an user container role
-        $query = $this->find()
-            ->select([
-                'Users.id'
-            ])
-            ->matching('Usercontainerroles.Containers')
-            ->groupBy([
-                'Users.id'
-            ])
-            ->disableHydration();
-
-        if (!empty($MY_RIGHTS)) {
-            $query->where([
-                'Containers.id IN' => $MY_RIGHTS
-            ]);
-        }
-
-        $userIdsThroughContainerRoles = Hash::extract($query->toArray(), '{n}.id');
-
-        $userIds = array_unique(array_merge($userIds, $userIdsThroughContainerRoles));
-
-
-        $query = $this->find();
-        $query->select([
-            'Users.id',
-            'Users.email',
-            'Users.company',
-            'Users.phone',
-            'Users.firstname',
-            'Users.lastname',
-            'Users.is_active',
-            'Users.samaccountname',
-            'Users.is_oauth',
-            'Users.last_login',
-            'Usergroups.id',
-            'Usergroups.name',
-            'full_name' => $query->func()->concat([
-                'Users.firstname' => 'literal',
-                ' ',
-                'Users.lastname'  => 'literal'
-            ])
-        ])
-            ->contain([
-                'Usergroups',
-                'Containers',
-                'Usercontainerroles' => [
-                    'Containers'
-                ]
-            ]);
-
-
-        if (!empty($userIds)) {
-            $query->where([
-                'Users.id IN' => $userIds
-            ]);
-        }
-        $query->orderBy(
-            ['Users.id' => 'asc']
-        );
-        $query->groupBy([
-            'Users.id'
-        ]);
-
-        return $query->toArray();
     }
 }
