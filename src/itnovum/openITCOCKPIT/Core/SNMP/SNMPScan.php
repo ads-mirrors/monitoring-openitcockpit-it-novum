@@ -85,28 +85,28 @@ class SNMPScan {
     public function __construct($snmpOptions) {
         $this->snmpOptions = $snmpOptions;
         if (isset($snmpOptions['snmpVersion'])) {
-            $this->snmpVersion = $snmpOptions['snmpVersion'];
+            $this->snmpVersion = trim($snmpOptions['snmpVersion']);
         }
         if (isset($snmpOptions['snmpCommunity'])) {
-            $this->snmpCommunity = $snmpOptions['snmpCommunity'];
+            $this->snmpCommunity = trim($snmpOptions['snmpCommunity']);
         }
         if (isset($snmpOptions['securityLevel'])) {
-            $this->securityLevel = $snmpOptions['securityLevel'];
+            $this->securityLevel = trim($snmpOptions['securityLevel']);
         }
         if (isset($snmpOptions['authProtocol'])) {
-            $this->authProtocol = $snmpOptions['authProtocol'];
+            $this->authProtocol = trim($snmpOptions['authProtocol']);
         }
         if (isset($snmpOptions['securityName'])) {
-            $this->securityName = $snmpOptions['securityName'];
+            $this->securityName = trim($snmpOptions['securityName']);
         }
         if (isset($snmpOptions['authPassword'])) {
-            $this->authPassword = $snmpOptions['authPassword'];
+            $this->authPassword = trim($snmpOptions['authPassword']);
         }
         if (isset($snmpOptions['privacyProtocol'])) {
-            $this->privacyProtocol = $snmpOptions['privacyProtocol'];
+            $this->privacyProtocol = trim($snmpOptions['privacyProtocol']);
         }
         if (isset($snmpOptions['privacyPassword'])) {
-            $this->privacyPassword = $snmpOptions['privacyPassword'];
+            $this->privacyPassword = trim($snmpOptions['privacyPassword']);
         }
     }
 
