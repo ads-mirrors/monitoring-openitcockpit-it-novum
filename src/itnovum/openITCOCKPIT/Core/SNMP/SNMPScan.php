@@ -165,7 +165,7 @@ class SNMPScan {
             $snmpV3Credentials[] = escapeshellarg($this->privacyProtocol);
         }
 
-        if (sizeof($snmpV3Credentials) === 1) {
+        if (count($snmpV3Credentials) === 1) {
             throw new \InvalidArgumentException('SNMP credentials are empty');
         }
         return $snmpV3Credentials;
