@@ -94,7 +94,6 @@ class UsersXlsxExport {
 
         /** @var UsergroupsTable $UsergroupsTable */
         $UsergroupsTable = TableRegistry::getTableLocator()->get('Usergroups');
-
         try {
             $Ldap = LdapClient::fromSystemsettings($SystemsettingsTable->findAsArraySection('FRONTEND'));
             $ldapConnectionSuccessful = true;
@@ -139,30 +138,29 @@ class UsersXlsxExport {
                 $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
                 $allUsersContainerIds[$container['id']] = $container['id'];
             }
-            //
-            if (empty($user['samaccountname']) && $ldapConnectionSuccessful) {
+
+            if (!empty($user['samaccountname']) && $ldapConnectionSuccessful) {
                 $ldapUser = $Ldap->getUser($user['samaccountname'], true);
                 $ldapUser['userContainerRoleContainerPermissionsLdap'] = $UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
                     $ldapUser['memberof']
                 );
-
                 foreach ($ldapUser['userContainerRoleContainerPermissionsLdap'] as $userContainerRole) {
                     foreach ($userContainerRole['containers'] as $container) {
                         if (isset($userContainerIds[$container['id']])) {
                             //Container permission is already set.
                             //Only overwrite it, if it is a WRITE_RIGHT
                             if ($container['_joinData']['permission_level'] === WRITE_RIGHT) {
-                                $userContainerIds[$container['id']] = $container;
+                                $userContainerIds[$container['id']] = $container['id'];
+
                                 $allUsersContainerIds[$container['id']] = $container['id'];
                             }
                         } else {
                             //Container is not yet in permissions - add it
-                            $userContainerIds[$container['id']] = $container;
+                            $userContainerIds[$container['id']] = $container['id'];
                             $allUsersContainerIds[$container['id']] = $container['id'];
                         }
                     }
                 }
-
                 // Load matching user role (Administrator, Viewer, etc...)
                 $usergroupLdap = $UsergroupsTable->getUsergroupByLdapUserMemberOf($ldapUser['memberof']);
                 if (!empty($usergroupLdap)) {
