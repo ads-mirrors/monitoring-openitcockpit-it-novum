@@ -127,7 +127,7 @@ class SNMPScan {
         if (empty($this->snmpCommunity)) {
             throw new \InvalidArgumentException('Community name is missing');
         }
-        return ['--community', "'" . trim($this->snmpCommunity) . "'"];
+        return ['--community', escapeshellarg($this->snmpCommunity)];
     }
 
     /**
@@ -146,23 +146,23 @@ class SNMPScan {
         $snmpV3Credentials = ['--protocol 3'];
         if (!empty($this->securityName)) {
             $snmpV3Credentials[] = '--username';
-            $snmpV3Credentials[] = "'" . trim($this->securityName) . "'";
+            $snmpV3Credentials[] = escapeshellarg($this->securityName);
         }
         if (!empty($this->authPassword)) {
             $snmpV3Credentials[] = '--authpassword';
-            $snmpV3Credentials[] = "'" . trim($this->authPassword) . "'";
+            $snmpV3Credentials[] = escapeshellarg($this->authPassword);
         }
         if (!empty($this->authProtocol)) {
             $snmpV3Credentials[] = '--authprotocol';
-            $snmpV3Credentials[] = "'" . trim($this->authProtocol) . "'";
+            $snmpV3Credentials[] = escapeshellarg($this->authProtocol);
         }
         if (!empty($this->privacyPassword)) {
             $snmpV3Credentials[] = '--privpassword';
-            $snmpV3Credentials[] = "'" . trim($this->privacyPassword) . "'";
+            $snmpV3Credentials[] = escapeshellarg($this->privacyPassword);
         }
         if (!empty($this->privacyProtocol)) {
             $snmpV3Credentials[] = '--privprotocol';
-            $snmpV3Credentials[] = "'" . trim($this->privacyProtocol) . "'";
+            $snmpV3Credentials[] = escapeshellarg($this->privacyProtocol);
         }
 
         if (sizeof($snmpV3Credentials) === 1) {
