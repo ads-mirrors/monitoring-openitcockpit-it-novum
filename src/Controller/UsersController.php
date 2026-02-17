@@ -1346,7 +1346,7 @@ class UsersController extends AppController {
 
         $UsersFilter = new UsersFilter($this->request);
         $all_users = $UsersTable->getUsersIndex($UsersFilter, null, $MY_RIGHTS);
-        $UXE = new UsersXlsxExport($all_users, $this->MY_RIGHTS);
+        $UXE = new UsersXlsxExport($all_users, $this->MY_RIGHTS, $this->hasRootPrivileges);
 
         $filePath = TMP . 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx';
 
