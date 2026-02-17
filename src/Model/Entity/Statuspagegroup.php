@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace App\Model\Entity;
 
+use Cake\I18n\DateTime;
 use Cake\ORM\Entity;
 
 /**
@@ -37,14 +38,15 @@ use Cake\ORM\Entity;
  * @property string $name
  * @property string|null $description
  * @property string $additional_information
+ * @property string $further_information
  * @property bool $show_ticker
- * @property \Cake\I18n\DateTime $modified
- * @property \Cake\I18n\DateTime $created
+ * @property DateTime $modified
+ * @property DateTime $created
  *
- * @property \App\Model\Entity\Container $container
- * @property \App\Model\Entity\StatuspagegroupCategory[] $statuspagegroup_categories
- * @property \App\Model\Entity\StatuspagegroupCollection[] $statuspagegroup_collections
- * @property \App\Model\Entity\StatuspagesMembership[] $statuspages_memberships
+ * @property Container $container
+ * @property StatuspagegroupCategory[] $statuspagegroup_categories
+ * @property StatuspagegroupCollection[] $statuspagegroup_collections
+ * @property StatuspagesMembership[] $statuspages_memberships
  */
 class Statuspagegroup extends Entity {
 
@@ -68,6 +70,7 @@ class Statuspagegroup extends Entity {
         'name'                        => true,
         'description'                 => true,
         'additional_information'      => true,
+        'further_information'         => true,
         'show_ticker'                 => true,
         'modified'                    => true,
         'created'                     => true,
