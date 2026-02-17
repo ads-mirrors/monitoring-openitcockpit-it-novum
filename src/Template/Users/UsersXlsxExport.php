@@ -141,6 +141,9 @@ class UsersXlsxExport {
 
             if (!empty($user['samaccountname']) && $ldapConnectionSuccessful) {
                 $ldapUser = $Ldap->getUser($user['samaccountname'], true);
+                if(!$ldapUser){
+                    continue;
+                }
                 $ldapUser['userContainerRoleContainerPermissionsLdap'] = $UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
                     $ldapUser['memberof']
                 );
@@ -150,13 +153,12 @@ class UsersXlsxExport {
                             //Container permission is already set.
                             //Only overwrite it, if it is a WRITE_RIGHT
                             if ($container['_joinData']['permission_level'] === WRITE_RIGHT) {
-                                $userContainerIds[$container['id']] = $container['id'];
-
+                                $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
                                 $allUsersContainerIds[$container['id']] = $container['id'];
                             }
                         } else {
                             //Container is not yet in permissions - add it
-                            $userContainerIds[$container['id']] = $container['id'];
+                            $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
                             $allUsersContainerIds[$container['id']] = $container['id'];
                         }
                     }
@@ -167,6 +169,7 @@ class UsersXlsxExport {
                     $userGroupsIds[$usergroupLdap['id']] = $usergroupLdap['id'];
                 }
             }
+
 
             $userContainerArray[$user['id']] = array_intersect(
                 $userContainerIds,

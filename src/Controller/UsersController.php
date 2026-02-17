@@ -55,6 +55,7 @@ use Cake\Http\Exception\NotFoundException;
 use Cake\Mailer\Mailer;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
+use FreeDSx\Ldap\Exception\BindException;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Core\Locales;
 use itnovum\openITCOCKPIT\Core\LoginBackgrounds;
@@ -1331,6 +1332,9 @@ class UsersController extends AppController {
         $this->viewBuilder()->setOption('serialize', ['permissions', 'modules']);
     }
 
+    /**
+     * @throws BindException
+     */
     public function listToXlsx() {
         $MY_RIGHTS = $this->MY_RIGHTS;
         if ($this->hasRootPrivileges) {
@@ -1342,7 +1346,6 @@ class UsersController extends AppController {
 
         $UsersFilter = new UsersFilter($this->request);
         $all_users = $UsersTable->getUsersIndex($UsersFilter, null, $MY_RIGHTS);
-
         $UXE = new UsersXlsxExport($all_users, $this->MY_RIGHTS);
 
         $filePath = TMP . 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx';
