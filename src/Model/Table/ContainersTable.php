@@ -1720,4 +1720,53 @@ class ContainersTable extends Table {
         return $containers;
     }
 
+    public function getResolvedContainersWithFullPathAndChildred($ids) {
+        $resolvedContainers = [];
+        $userParentAndChildrenContainers = [];
+
+        $nodes = $this->find()
+            ->where([
+                'id IN '               => $ids,
+                'containertype_id IN ' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE]
+            ])
+            ->disableHydration()
+            ->all()
+            ->toArray();
+        $delimiter = '/';
+
+        foreach ($nodes as $container) {
+            $containerTypeId = (int)$container['containertype_id'];
+            $path = $this->treePath($container['id'], $delimiter);
+            $tree = $this->find()
+                ->where([
+                    'Containers.lft > '    => $container['lft'],
+                    'Containers.rght < '   => $container['rght'],
+                    'containertype_id IN ' => [CT_GLOBAL, CT_TENANT, CT_LOCATION, CT_NODE]
+                ])
+                ->orderBy('Containers.lft')
+                ->disableHydration()
+                ->toArray();
+            $subContainers = Hash::extract($tree, '{n}.id');
+            foreach ($subContainers as $subContainerId) {
+                $userParentAndChildrenContainers[$container['id']][$subContainerId] = $subContainerId;
+            }
+            //$userParentAndChildrenContainers[$container['id']] = Hash::extract($tree, '{n}.id');
+            if (isset($resolvedContainers[$container['id']])) {
+                //already resolved this container in a previous loop, so we can skip it and its children
+                //debug('Already resolved. Nothing to do ' . $container['id'] . ' - ' . $resolvedContainers[$container['id']]);
+                continue;
+            }
+            $resolvedContainers[$container['id']] = $path;
+            foreach ($tree as $node) {
+                $userParentAndChildrenContainers[$container['id']][$node['id']] = $node['id'];
+                $path = $this->treePath($node['id'], $delimiter);
+                $resolvedContainers[$node['id']] = $path;
+            }
+        }
+        asort($resolvedContainers, SORT_NATURAL);
+        return [
+            'userParentAndChildrenContainers' => $userParentAndChildrenContainers,
+            'resolvedContainers'              => $resolvedContainers
+        ];
+    }
 }
