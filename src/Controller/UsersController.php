@@ -43,6 +43,7 @@ use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\UsercontainerrolesTable;
 use App\Model\Table\UsergroupsTable;
 use App\Model\Table\UsersTable;
+use App\Template\Users\UsersXlsxExport;
 use Authentication\Authenticator\ResultInterface;
 use Authentication\Controller\Component\AuthenticationComponent;
 use Cake\Cache\Cache;
@@ -54,6 +55,7 @@ use Cake\Http\Exception\NotFoundException;
 use Cake\Mailer\Mailer;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
+use FreeDSx\Ldap\Exception\BindException;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Core\Locales;
 use itnovum\openITCOCKPIT\Core\LoginBackgrounds;
@@ -1328,5 +1330,32 @@ class UsersController extends AppController {
         $this->set('permissions', $this->PERMISSIONS);
         $this->set('modules', $modules);
         $this->viewBuilder()->setOption('serialize', ['permissions', 'modules']);
+    }
+
+    /**
+     * @throws BindException
+     */
+    public function listToXlsx() {
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            // root users can see all users
+            $MY_RIGHTS = [];
+        }
+        /** @var UsersTable $UsersTable */
+        $UsersTable = TableRegistry::getTableLocator()->get('Users');
+        $User = new \itnovum\openITCOCKPIT\Core\ValueObjects\User($this->getUser());
+
+        $UsersFilter = new UsersFilter($this->request);
+        $all_users = $UsersTable->getUsersIndex($UsersFilter, null, $MY_RIGHTS);
+        $UXE = new UsersXlsxExport((int)$User->getId(), $all_users, $this->MY_RIGHTS, $this->hasRootPrivileges);
+
+        $filePath = TMP . 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx';
+
+        $UXE->export($filePath);
+        // Download
+        return $this->response->withFile($filePath, [
+            'download' => true,
+            'name'     => 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx',
+        ]);
     }
 }
