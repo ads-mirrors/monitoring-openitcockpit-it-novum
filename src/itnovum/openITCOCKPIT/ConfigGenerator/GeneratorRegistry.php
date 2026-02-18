@@ -88,9 +88,7 @@ class GeneratorRegistry {
         ];
 
         if (Plugin::isLoaded('PrometheusModule')) {
-            $configFiles[__('PrometheusModule')] = [
-                new PrometheusCfgs_prometheus()
-            ];
+            $configFiles[] = new PrometheusCfgs_prometheus();
         }
 
         return $configFiles;
