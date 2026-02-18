@@ -50,6 +50,7 @@ class UsersXlsxExport {
     private array $ContainersArray;
     private array $MY_RIGHTS;
     private bool $hasRootPrivileges;
+    private bool $canBeExported = false;
 
 
     public function __construct(int $loggedInUserID, array $users, array $MY_RIGHTS, bool $hasRootPrivileges = false) {
@@ -74,12 +75,14 @@ class UsersXlsxExport {
      */
     public function export(string $fileName): void {
         $this->parseDataForExport();
-
         $this->UsersSheet();
-        $this->UserRolesSheet();
-        $this->ContainersSheet();
 
-        $this->setAutoSizeForAllColumns();
+        if ($this->canBeExported) {
+            $this->UserRolesSheet();
+            $this->ContainersSheet();
+
+            $this->setAutoSizeForAllColumns();
+        }
 
         $writer = new Xlsx($this->Spreadsheet);
         $writer->save($fileName);
@@ -129,102 +132,104 @@ class UsersXlsxExport {
         $userContainerArray = [];
         $rightsForIntersect = array_flip($this->MY_RIGHTS);
 
-
-        foreach ($this->users as $user) {
-            $userDetails = $UsersTable->getUserForEdit($user['id']);
-            $userNamesArray[] = sprintf('%s [%s]', $user['full_name'], $user['id']);
-            $userContainerIds = [];
-            $userGroupsIds[$userDetails['User']['usergroup_id']] = $userDetails['User']['usergroup_id'];
-            $usergroupLdap = null;
-            foreach ($user['usercontainerroles'] as $containerRole) {
-                foreach ($containerRole['containers'] as $container) {
+        if (!empty($this->users)) {
+            $this->canBeExported = true;
+            foreach ($this->users as $user) {
+                $userDetails = $UsersTable->getUserForEdit($user['id']);
+                $userNamesArray[] = sprintf('%s [%s]', $user['full_name'], $user['id']);
+                $userContainerIds = [];
+                $userGroupsIds[$userDetails['User']['usergroup_id']] = $userDetails['User']['usergroup_id'];
+                $usergroupLdap = null;
+                foreach ($user['usercontainerroles'] as $containerRole) {
+                    foreach ($containerRole['containers'] as $container) {
+                        $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
+                        $allUsersContainerIds[$container['id']] = $container['id'];
+                    }
+                }
+                foreach ($user['containers'] as $container) {
                     $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
                     $allUsersContainerIds[$container['id']] = $container['id'];
                 }
-            }
-            foreach ($user['containers'] as $container) {
-                $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
-                $allUsersContainerIds[$container['id']] = $container['id'];
-            }
 
-            if (!empty($user['samaccountname']) && $ldapConnectionSuccessful) {
-                $ldapUser = $Ldap->getUser($user['samaccountname'], true);
-                if ($ldapUser) {
-                    $ldapUser['userContainerRoleContainerPermissionsLdap'] = $UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
-                        $ldapUser['memberof']
-                    );
-                    foreach ($ldapUser['userContainerRoleContainerPermissionsLdap'] as $userContainerRole) {
-                        foreach ($userContainerRole['containers'] as $container) {
-                            if (isset($userContainerIds[$container['id']])) {
-                                //Container permission is already set.
-                                //Only overwrite it, if it is a WRITE_RIGHT
-                                if ($container['_joinData']['permission_level'] === WRITE_RIGHT) {
+                if (!empty($user['samaccountname']) && $ldapConnectionSuccessful) {
+                    $ldapUser = $Ldap->getUser($user['samaccountname'], true);
+                    if ($ldapUser) {
+                        $ldapUser['userContainerRoleContainerPermissionsLdap'] = $UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
+                            $ldapUser['memberof']
+                        );
+                        foreach ($ldapUser['userContainerRoleContainerPermissionsLdap'] as $userContainerRole) {
+                            foreach ($userContainerRole['containers'] as $container) {
+                                if (isset($userContainerIds[$container['id']])) {
+                                    //Container permission is already set.
+                                    //Only overwrite it, if it is a WRITE_RIGHT
+                                    if ($container['_joinData']['permission_level'] === WRITE_RIGHT) {
+                                        $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
+                                        $allUsersContainerIds[$container['id']] = $container['id'];
+                                    }
+                                } else {
+                                    //Container is not yet in permissions - add it
                                     $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
                                     $allUsersContainerIds[$container['id']] = $container['id'];
                                 }
-                            } else {
-                                //Container is not yet in permissions - add it
-                                $userContainerIds[$container['id']] = $container['_joinData']['permission_level'];
-                                $allUsersContainerIds[$container['id']] = $container['id'];
+                            }
+                        }
+                        // Load matching user role (Administrator, Viewer, etc...)
+                        $usergroupLdap = $UsergroupsTable->getUsergroupByLdapUserMemberOf($ldapUser['memberof']);
+                    }
+                    if (!empty($usergroupLdap)) {
+                        $userGroupsIds[$usergroupLdap['id']] = $usergroupLdap['id'];
+                    }
+                }
+                $userContainerArray[$user['id']] = $userContainerIds;
+
+                if (!$this->hasRootPrivileges) {
+                    $userContainerArray[$user['id']] = array_intersect(
+                        $userContainerIds,
+                        $rightsForIntersect
+                    );
+                }
+                $this->UsersArray[] = [
+                    $user['id'],
+                    $user['full_name'],
+                    $userDetails['User']['firstname'],
+                    $userDetails['User']['lastname'],
+                    $user['email'],
+                    $user['company'],
+                    $user['usergroup']['id'],
+                    $user['usergroup']['name'],
+                    !empty($user['samaccountname']) ? __('Yes') : __('No'),
+                    $user['is_oauth'] ? __('Yes') : __('No'),
+                    $usergroupLdap['id'] ?? null, //LDAP CHECK
+                    $usergroupLdap['name'] ?? null //LDAP CHECK
+                ];
+            }
+
+            if (!$this->hasRootPrivileges) {
+                $allUsersContainerIds = array_intersect(
+                    $allUsersContainerIds,
+                    $this->MY_RIGHTS
+                );
+                // set R+W Rights for visible containers, if exported users has root privileges, root user has rights for all containers
+                foreach ($userContainerArray as $userId => $containers) {
+                    if ((int)$userId !== $this->loggedInUserID) {
+                        if (isset($containers[ROOT_CONTAINER]) && $containers[ROOT_CONTAINER] === WRITE_RIGHT) {
+                            foreach ($userContainerArray[$this->loggedInUserID] as $containerId => $permissionLevel) {
+                                $userContainerArray[$userId][$containerId] = WRITE_RIGHT;
                             }
                         }
                     }
-                    // Load matching user role (Administrator, Viewer, etc...)
-                    $usergroupLdap = $UsergroupsTable->getUsergroupByLdapUserMemberOf($ldapUser['memberof']);
-                }
-                if (!empty($usergroupLdap)) {
-                    $userGroupsIds[$usergroupLdap['id']] = $usergroupLdap['id'];
                 }
             }
-            $userContainerArray[$user['id']] = $userContainerIds;
+            /***  Containers Section ***/
+            $this->buildContainerData($userNamesArray, $allUsersContainerIds, $userContainerArray);
 
-            if (!$this->hasRootPrivileges) {
-                $userContainerArray[$user['id']] = array_intersect(
-                    $userContainerIds,
-                    $rightsForIntersect
-                );
-            }
-            $this->UsersArray[] = [
-                $user['id'],
-                $user['full_name'],
-                $userDetails['User']['firstname'],
-                $userDetails['User']['lastname'],
-                $user['email'],
-                $user['company'],
-                $user['usergroup']['id'],
-                $user['usergroup']['name'],
-                !empty($user['samaccountname']) ? __('Yes') : __('No'),
-                $user['is_oauth'] ? __('Yes') : __('No'),
-                $usergroupLdap['id'] ?? null, //LDAP CHECK
-                $usergroupLdap['name'] ?? null //LDAP CHECK
-            ];
+            /***  User groups Section ***/
+            $this->buildUsergroupData($userGroupsIds);
         }
-
-        if (!$this->hasRootPrivileges) {
-            $allUsersContainerIds = array_intersect(
-                $allUsersContainerIds,
-                $this->MY_RIGHTS
-            );
-            // set R+W Rights for visible containers, if exported users has root privileges, root user has rights for all containers
-            foreach ($userContainerArray as $userId => $containers) {
-                if ((int)$userId !== $this->loggedInUserID) {
-                    if (isset($containers[ROOT_CONTAINER]) && $containers[ROOT_CONTAINER] === WRITE_RIGHT) {
-                        foreach ($userContainerArray[$this->loggedInUserID] as $containerId => $permissionLevel) {
-                            $userContainerArray[$userId][$containerId] = WRITE_RIGHT;
-                        }
-                    }
-                }
-            }
-        }
-
-        /***  Containers Section ***/
-        $this->buildContainerData($userNamesArray, $allUsersContainerIds, $userContainerArray);
-
-        /***  User groups Section ***/
-        $this->buildUsergroupData($userGroupsIds);
     }
 
     private function buildContainerData(array $userNamesArray, array $allUsersContainerIds, array $userContainerArray): void {
+
         /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
         $this->ContainersArray[] = array_merge([__('Container ID'), __('Container')], $userNamesArray);
