@@ -381,6 +381,7 @@ fi
 
 echo "Restart monitoring engine"
 oitc supervisor restart naemon
+oitc supervisor restart prometheus
 
 echo "Enabling webserver configuration"
 if [[ ! -f "/etc/nginx/sites-enabled/openitc" ]]; then
