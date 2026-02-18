@@ -102,8 +102,8 @@ if [[ "$MYSQL_ONLINE" == 0 ]]; then
 fi
 set -e
 
-#mkdir -p /opt/openitc/var/prometheus
-#chown nagios:nagios /opt/openitc/var/prometheus
+mkdir -p /opt/openitc/var/prometheus
+chown nagios:nagios /opt/openitc/var/prometheus
 #mkdir -p /opt/openitc/var/prometheus/victoria-metrics
 
 echo "---------------------------------------------------------------"
