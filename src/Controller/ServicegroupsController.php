@@ -1052,6 +1052,7 @@ class ServicegroupsController extends AppController {
         $serviceIds = $ServicegroupsTable->getServiceIdsByServicegroupId($id);
         $ServiceFilter = new ServiceFilter($this->request);
         $ServiceConditions = new ServiceConditions($ServiceFilter->indexFilter());
+        $ServiceConditions->setOrder($ServiceFilter->getOrderForPaginator());
 
         $ServiceConditions->setIncludeDisabled(false);
         $ServiceConditions->setServiceIds($serviceIds);
