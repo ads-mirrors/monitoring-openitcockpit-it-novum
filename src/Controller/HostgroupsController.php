@@ -367,16 +367,16 @@ class HostgroupsController extends AppController {
         if (!$HostgroupsTable->existsById($id)) {
             throw new NotFoundException(__('Invalid Hostgroup'));
         }
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
 
         $hostgroup = $HostgroupsTable->getHostgroupById($id);
         $hasSLAHosts = false;
         if (Plugin::isLoaded('SLAModule')) {
             /** @var $HostsTable HostsTable */
             $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
-            $MY_RIGHTS = $this->MY_RIGHTS;
-            if ($this->hasRootPrivileges) {
-                $MY_RIGHTS = [];
-            }
             $hostIds = $HostgroupsTable->getHostIdsByHostgroupId($hostgroup->get('id'));
             if (!empty($hostIds)) {
                 $hasSLAHosts = $HostsTable->hasSLAHosts($hostIds) > 0;
@@ -394,7 +394,7 @@ class HostgroupsController extends AppController {
 
         $HostConditions->setIncludeDisabled(false);
         $HostConditions->setHostIds($hostIds);
-        $HostConditions->setContainerIds($this->MY_RIGHTS);
+        $HostConditions->setContainerIds($MY_RIGHTS);
 
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $HostFilter->getPage());
 
@@ -417,7 +417,7 @@ class HostgroupsController extends AppController {
             if ($this->DbBackend->isStatusengine3()) {
                 /** @var $HostsTable HostsTable */
                 $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
-                $hosts = $HostsTable->getHostsIndexStatusengine3($HostFilter, $HostConditions, $PaginateOMat);
+                $hosts = $HostsTable->getHostsIndexForExtendedHostgroupsStatusengine3($HostFilter, $HostConditions, $PaginateOMat);
                 $hostgroupServicestatusAllHosts = $HostsTable->getHostStatusGlobalOverview($HostFilter, $HostConditions);
                 foreach ($hostgroupServicestatusAllHosts as $hoststatusGroupByState) {
                     $state = (int)$hoststatusGroupByState['Hoststatus']['current_state'];
@@ -1206,7 +1206,7 @@ class HostgroupsController extends AppController {
             }
         }
         $containerIds = array_unique($containerIds);
-        
+
         $HostgroupCondition = new HostgroupConditions($HostgroupFilter->indexFilter());
         $HostgroupCondition->setContainerIds($containerIds);
 
