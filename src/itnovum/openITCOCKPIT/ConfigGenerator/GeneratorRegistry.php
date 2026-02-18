@@ -87,6 +87,10 @@ class GeneratorRegistry {
             new PhpFpmOitc()
         ];
 
+        if (Plugin::isLoaded('PrometheusModule')) {
+            $configFiles[] = new PrometheusCfgs_prometheus();
+        }
+
         return $configFiles;
     }
 

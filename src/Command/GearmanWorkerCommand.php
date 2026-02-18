@@ -832,12 +832,34 @@ class GearmanWorkerCommand extends Command {
                     $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
                     $systemsettings = $SystemsettingsTable->findAsArray();
 
-                    $cmd = sprintf(
-                        'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
-                        escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
-                    );
+                    $output = '';
+                    $returncode = 1;
+                    if (IS_CONTAINER) {
+                        // Prometheus is running inside a container - query remote binaryd to run "promtool check config prometheus.yml"
+                        // openITCOCKPIT is running in a container like docker
+                        $Binarydctl = new Binarydctl();
+                        // Prometheus is running in a remote container, so we can only communicate through the XML RCP API of Supervisor
+                        $BinarydEndpoint = $Binarydctl->getBinarydApiEndpointByServiceName('prometheus-verify');
 
-                    exec($cmd, $output, $returncode);
+                        //Run prometheus-verify
+                        try {
+                            $result = $BinarydEndpoint->executeJson('prometheus-verify');
+                            $returncode = $result['rc'] ?? 1;
+                            $output = [
+                                $result['stdout'] ?? null
+                            ];
+                        } catch (\Exception $e) {
+                            Log::error($e->getMessage());
+                        }
+                    } else {
+                        // Local running Prometheus
+                        $cmd = sprintf(
+                            'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
+                            escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
+                        );
+
+                        exec($cmd, $output, $returncode);
+                    }
                     $return = [
                         'output'     => $output,
                         'returncode' => $returncode,
@@ -1707,7 +1729,7 @@ class GearmanWorkerCommand extends Command {
                 // Prometheus is running inside a container - query remote binaryd to run "promtool check config prometheus.yml"
                 // openITCOCKPIT is running in a container like docker
                 $Binarydctl = new Binarydctl();
-                // Naemon is running in a remote container, so we can only communicate through the XML RCP API of Supervisor
+                // Prometheus is running in a remote container, so we can only communicate through the XML RCP API of Supervisor
                 $BinarydEndpoint = $Binarydctl->getBinarydApiEndpointByServiceName('prometheus-verify');
 
                 //Run prometheus-verify
@@ -1719,6 +1741,8 @@ class GearmanWorkerCommand extends Command {
                     ];
                 } catch (\Exception $e) {
                     Log::error($e->getMessage());
+                    $output = '';
+                    $returncode = 1;
                 }
             } else {
                 // Local running Prometheus
