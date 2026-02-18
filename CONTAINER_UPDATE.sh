@@ -355,6 +355,9 @@ if [[ -d /opt/openitc/frontend/plugins/MapModule/webroot/img/ ]]; then
     chown -R www-data:www-data /opt/openitc/frontend/plugins/MapModule/webroot/img/
 fi
 
+mkdir -p /opt/openitc/var/prometheus
+chown nagios:nagios /opt/openitc/var/prometheus
+
 if getent group ssl-cert &>/dev/null; then
     if [ -z "$(groups nagios | grep ssl-cert)" ]; then
         usermod -aG ssl-cert nagios
