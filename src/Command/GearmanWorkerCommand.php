@@ -1701,12 +1701,34 @@ class GearmanWorkerCommand extends Command {
             ]);
             $ExportsTable->save($verifyEntity);
 
-            $cmd = sprintf(
-                'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
-                escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
-            );
-            $output = null;
-            exec($cmd, $output, $returncode);
+            $Supervisorctl = new Supervisorctl();
+
+            if (IS_CONTAINER) {
+                // Prometheus is running inside a container - query remote binaryd to run "promtool check config prometheus.yml"
+                // openITCOCKPIT is running in a container like docker
+                $Binarydctl = new Binarydctl();
+                // Naemon is running in a remote container, so we can only communicate through the XML RCP API of Supervisor
+                $BinarydEndpoint = $Binarydctl->getBinarydApiEndpointByServiceName('prometheus-verify');
+
+                //Run prometheus-verify
+                try {
+                    $result = $BinarydEndpoint->executeJson('prometheus-verify');
+                    $returncode = $result['rc'] ?? 1;
+                    $output = [
+                        $result['stdout'] ?? null
+                    ];
+                } catch (\Exception $e) {
+                    Log::error($e->getMessage());
+                }
+            } else {
+                // Local running Prometheus
+                $cmd = sprintf(
+                    'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
+                    escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
+                );
+                $output = null;
+                exec($cmd, $output, $returncode);
+            }
             $verifyEntity->set('finished', 1);
             if ($returncode === 0) {
                 //New configuration is valid :-)
@@ -1715,19 +1737,39 @@ class GearmanWorkerCommand extends Command {
                 $ExportsTable->save($verifyEntity);
 
                 //Restart Prometheus
-                $entity = $ExportsTable->newEntity([
-                    'task' => 'export_restart_prometheus',
-                    'text' => __('Restarting Prometheus monitoring engine')
-                ]);
-                $ExportsTable->save($entity);
-                exec('systemctl restart prometheus.service', $restartOutput, $restartRc);
-                $entity->set('finished', 1);
-                $entity->set('successfully', 0);
-                if ($restartRc === 0) {
-                    $entity->set('successfully', 1);
+                if (IS_CONTAINER === false) {
+                    // Local running Prometheus
+                    $entity = $ExportsTable->newEntity([
+                        'task' => 'export_restart_prometheus',
+                        'text' => __('Restarting Prometheus monitoring engine')
+                    ]);
+                    $ExportsTable->save($entity);
+                    exec('systemctl restart prometheus.service', $restartOutput, $restartRc);
+                    $entity->set('finished', 1);
+                    $entity->set('successfully', 0);
+                    if ($restartRc === 0) {
+                        $entity->set('successfully', 1);
+                    }
+                    $ExportsTable->save($entity);
+                    unset($entity);
+                } else {
+                    // Containerized openITCOCKPIT
+                    // Restart remote Prometheus
+                    $entity = $ExportsTable->newEntity([
+                        'task' => 'export_restart_prometheus',
+                        'text' => __('Restarting containerized Prometheus monitoring engine')
+                    ]);
+                    $ExportsTable->save($entity);
+                    $result = $Supervisorctl->restart('prometheus');
+                    $entity->set('finished', 1);
+                    $entity->set('successfully', 0);
+                    if ($result === true) {
+                        $entity->set('successfully', 1);
+                        $isMonitoringRunning = true;
+                    }
+                    $ExportsTable->save($entity);
+                    unset($entity);
                 }
-                $ExportsTable->save($entity);
-                unset($entity);
             } else {
                 //Error with new configuration :-(
                 $successfully = 0;

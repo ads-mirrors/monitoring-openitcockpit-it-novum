@@ -72,7 +72,7 @@ class SupervisorCommand extends Command {
                 'gearman_worker',
                 'event-collectd',     //todo
                 'push_notification',
-                'prometheus_bridge',  //todo
+                'prometheus_bridge',
                 'customalert_worker', //todo
 
                 // Monitoring Engines
