@@ -1343,10 +1343,11 @@ class UsersController extends AppController {
         }
         /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
+        $User = new \itnovum\openITCOCKPIT\Core\ValueObjects\User($this->getUser());
 
         $UsersFilter = new UsersFilter($this->request);
         $all_users = $UsersTable->getUsersIndex($UsersFilter, null, $MY_RIGHTS);
-        $UXE = new UsersXlsxExport($all_users, $this->MY_RIGHTS, $this->hasRootPrivileges);
+        $UXE = new UsersXlsxExport((int)$User->getId(), $all_users, $this->MY_RIGHTS, $this->hasRootPrivileges);
 
         $filePath = TMP . 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx';
 

@@ -43,6 +43,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class UsersXlsxExport {
 
     private Spreadsheet $Spreadsheet;
+    private int $loggedInUserID;
     private array $users;
     private array $UsersArray;
     private array $UserGroupsArray;
@@ -50,7 +51,9 @@ class UsersXlsxExport {
     private array $MY_RIGHTS;
     private bool $hasRootPrivileges;
 
-    public function __construct(array $users, array $MY_RIGHTS, bool $hasRootPrivileges = false) {
+
+    public function __construct(int $loggedInUserID, array $users, array $MY_RIGHTS, bool $hasRootPrivileges = false) {
+        $this->loggedInUserID = $loggedInUserID;
         $this->users = $users;
         $this->MY_RIGHTS = $MY_RIGHTS;
         $this->hasRootPrivileges = $hasRootPrivileges;
@@ -173,10 +176,14 @@ class UsersXlsxExport {
                     $userGroupsIds[$usergroupLdap['id']] = $usergroupLdap['id'];
                 }
             }
-            $userContainerArray[$user['id']] = array_intersect(
-                $userContainerIds,
-                $rightsForIntersect
-            );
+            $userContainerArray[$user['id']] = $userContainerIds;
+
+            if (!$this->hasRootPrivileges) {
+                $userContainerArray[$user['id']] = array_intersect(
+                    $userContainerIds,
+                    $rightsForIntersect
+                );
+            }
             $this->UsersArray[] = [
                 $user['id'],
                 $user['full_name'],
@@ -192,10 +199,25 @@ class UsersXlsxExport {
                 $usergroupLdap['name'] ?? null //LDAP CHECK
             ];
         }
-        $allUsersContainerIds = array_intersect(
-            $allUsersContainerIds,
-            $this->MY_RIGHTS
-        );
+        if (!$this->hasRootPrivileges) {
+            $allUsersContainerIds = array_intersect(
+                $allUsersContainerIds,
+                $this->MY_RIGHTS
+            );
+            // set R+W Rights for visible containers, if exported users has root privileges, root user has rights for all containers
+            foreach ($userContainerArray as $userId => $containers) {
+                if ((int)$userId !== $this->loggedInUserID) {
+                    if (isset($containers[ROOT_CONTAINER]) && $containers[ROOT_CONTAINER] === WRITE_RIGHT) {
+                        foreach ($userContainerArray[$this->loggedInUserID] as $containerId => $permissionLevel) {
+                            if ($permissionLevel === WRITE_RIGHT) {
+                                $userContainerArray[$userId][$containerId] = WRITE_RIGHT;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         /***  Containers Section ***/
         $this->buildContainerData($userNamesArray, $allUsersContainerIds, $userContainerArray);
