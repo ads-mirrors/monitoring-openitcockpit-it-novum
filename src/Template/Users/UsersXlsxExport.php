@@ -199,6 +199,7 @@ class UsersXlsxExport {
                 $usergroupLdap['name'] ?? null //LDAP CHECK
             ];
         }
+
         if (!$this->hasRootPrivileges) {
             $allUsersContainerIds = array_intersect(
                 $allUsersContainerIds,
@@ -209,15 +210,12 @@ class UsersXlsxExport {
                 if ((int)$userId !== $this->loggedInUserID) {
                     if (isset($containers[ROOT_CONTAINER]) && $containers[ROOT_CONTAINER] === WRITE_RIGHT) {
                         foreach ($userContainerArray[$this->loggedInUserID] as $containerId => $permissionLevel) {
-                            if ($permissionLevel === WRITE_RIGHT) {
-                                $userContainerArray[$userId][$containerId] = WRITE_RIGHT;
-                            }
+                            $userContainerArray[$userId][$containerId] = WRITE_RIGHT;
                         }
                     }
                 }
             }
         }
-
 
         /***  Containers Section ***/
         $this->buildContainerData($userNamesArray, $allUsersContainerIds, $userContainerArray);
