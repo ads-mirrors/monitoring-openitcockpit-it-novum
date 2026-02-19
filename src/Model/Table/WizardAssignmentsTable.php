@@ -605,7 +605,7 @@ class WizardAssignmentsTable extends Table {
                 'type_id'     => 'gude-sensors',
                 'title'       => __('Gude Sensors'),
                 'description' => __('Used to check GUDE Sensors'),
-                'image'       => 'network.png',
+                'image'       => 'gude.png',
                 'category'    => ['hardware', 'network'],
                 'active'      => true
             ]
