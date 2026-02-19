@@ -49,6 +49,15 @@ class Binarydctl {
                 $Binaryd = new BinarydAPI($url);
                 break;
 
+            case 'prometheus-verify':
+                // Tell the Prometheus Container run promtool check config via the binaryd HTTP API
+                $url = sprintf(
+                    'http://%s:%s/RPC2',
+                    env('PROMETHEUS_HOST', 'prometheus'),
+                    9099
+                );
+                $Binaryd = new BinarydAPI($url);
+                break;
 
             default:
                 throw new \RuntimeException("Unknown command");

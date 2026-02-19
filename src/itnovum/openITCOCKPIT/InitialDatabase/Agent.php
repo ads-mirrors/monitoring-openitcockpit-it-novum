@@ -26,12 +26,10 @@
 namespace itnovum\openITCOCKPIT\InitialDatabase;
 
 use App\Model\Entity\Commandargument;
-use App\Model\Entity\Servicetemplatecommandargumentvalue;
 use App\Model\Table\AgentchecksTable;
 use App\Model\Table\CommandsTable;
 use App\Model\Table\HosttemplatesTable;
 use App\Model\Table\ServicetemplatesTable;
-use Cake\Datasource\Exception\RecordNotFoundException;
 
 /**
  * Class Cronjob
@@ -378,6 +376,11 @@ class Agent extends Importer {
                 'name'               => 'ntp',
                 'plugin_name'        => 'Ntp',
                 'servicetemplate_id' => 'f3aadc86-fcc6-4d36-abce-50d0af593e44'
+            ],
+            [
+                'name'               => 'packagemanager',
+                'plugin_name'        => 'Packagemanager',
+                'servicetemplate_id' => 'eef93b44-1ffa-4b8b-a8c3-e1a1258bf68c'
             ],
         ];
         return $data;
@@ -1278,6 +1281,34 @@ class Agent extends Importer {
                     [
                         'name'       => '$ARG2$',
                         'human_name' => 'Critical'
+                    ]
+                ]
+            ],
+
+            // Agent 3.x
+            [
+                'name'             => 'check_oitc_check_updates',
+                'command_line'     => '$USER1$/check_dummy 3 "No data received from agent"',
+                'command_type'     => CHECK_COMMAND,
+                'human_args'       => null,
+                'uuid'             => 'fc502c30-8629-453a-a481-382d66cefa8c',
+                'description'      => "Checks if any operating system updates are available.\n" .
+                    "If supported, the agent will list optional and security related updates separately.\n" .
+                    "Number of available updates: Minimum number ofavailable updates to return a WARNING state.\n" .
+                    "Only Security Updates: Only consider security updates and never return a WARNING state (1/0).\n" .
+                    "Information only: Only track update information but never switch into a WARNING or CRITICAL state.\n",
+                'commandarguments' => [
+                    [
+                        'name'       => '$ARG1$',
+                        'human_name' => 'Number of available updates'
+                    ],
+                    [
+                        'name'       => '$ARG2$',
+                        'human_name' => 'Only Security Updates (1/0)'
+                    ],
+                    [
+                        'name'       => '$ARG3$',
+                        'human_name' => 'Information only (1/0)'
                     ]
                 ]
             ],
@@ -3569,6 +3600,74 @@ class Agent extends Importer {
                     [
                         'commandargument_id' => '$ARG2$',
                         'value'              => '-90:90',
+                    ]
+                ],
+                'customvariables'                           => [],
+                'servicegroups'                             => [],
+                'contactgroups'                             => [],
+                'contacts'                                  => []
+            ],
+
+            [
+                'uuid'                                      => 'eef93b44-1ffa-4b8b-a8c3-e1a1258bf68c',
+                'template_name'                             => 'OITC_AGENT_SYSTEM_UPDATES',
+                'name'                                      => 'System Updates',
+                'container_id'                              => ROOT_CONTAINER,
+                'servicetemplatetype_id'                    => OITC_AGENT_SERVICE,
+                'check_period_id'                           => '1',
+                'notify_period_id'                          => '1',
+                'description'                               => '',
+                'command_id'                                => 'fc502c30-8629-453a-a481-382d66cefa8c',
+                'check_command_args'                        => '',
+                'checkcommand_info'                         => '',
+                'eventhandler_command_id'                   => '0',
+                'timeperiod_id'                             => '0',
+                'check_interval'                            => '300',
+                'retry_interval'                            => '60',
+                'max_check_attempts'                        => '3',
+                'first_notification_delay'                  => '0',
+                'notification_interval'                     => '7200',
+                'notify_on_warning'                         => '1',
+                'notify_on_unknown'                         => '1',
+                'notify_on_critical'                        => '1',
+                'notify_on_recovery'                        => '1',
+                'notify_on_flapping'                        => '0',
+                'notify_on_downtime'                        => '0',
+                'flap_detection_enabled'                    => '0',
+                'flap_detection_on_ok'                      => '0',
+                'flap_detection_on_warning'                 => '0',
+                'flap_detection_on_unknown'                 => '0',
+                'flap_detection_on_critical'                => '0',
+                'low_flap_threshold'                        => '0',
+                'high_flap_threshold'                       => '0',
+                'process_performance_data'                  => '1',
+                'freshness_checks_enabled'                  => '1',
+                'freshness_threshold'                       => '300',
+                'passive_checks_enabled'                    => '1',
+                'event_handler_enabled'                     => '0',
+                'active_checks_enabled'                     => '0',
+                'retain_status_information'                 => '0',
+                'retain_nonstatus_information'              => '0',
+                'notifications_enabled'                     => '1',
+                'notes'                                     => '',
+                'priority'                                  => '1',
+                'tags'                                      => '',
+                'service_url'                               => '',
+                'is_volatile'                               => '0',
+                'check_freshness'                           => '0',
+                'servicetemplateeventcommandargumentvalues' => [],
+                'servicetemplatecommandargumentvalues'      => [
+                    [
+                        'commandargument_id' => '$ARG1$',
+                        'value'              => '1',
+                    ],
+                    [
+                        'commandargument_id' => '$ARG2$',
+                        'value'              => '0',
+                    ],
+                    [
+                        'commandargument_id' => '$ARG3$',
+                        'value'              => '0',
                     ]
                 ],
                 'customvariables'                           => [],

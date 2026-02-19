@@ -98,7 +98,8 @@ class AclDependencies {
 
         $this
             ->allow('Agentconnector', 'register_agent')
-            ->allow('Agentconnector', 'submit_checkdata');
+            ->allow('Agentconnector', 'submit_checkdata')
+            ->allow('Agentconnector', 'submit_package_info');
 
         $this
             ->allow('Automaps', 'loadContainers')
@@ -277,7 +278,9 @@ class AclDependencies {
 
         $this
             ->dependency('Timeperiods', 'index', 'Timeperiods', 'view')
-            ->dependency('Timeperiods', 'index', 'Timeperiods', 'loadTimeperiodsByContainerId');
+            ->dependency('Timeperiods', 'index', 'Timeperiods', 'loadTimeperiodsByContainerId')
+            ->dependency('Timeperiods', 'add', 'Timeperiods', 'loadTimeperiodsByContainerIdAndExludeItself')
+            ->dependency('Timeperiods', 'edit', 'Timeperiods', 'loadTimeperiodsByContainerIdAndExludeItself');
 
 
         $this
@@ -373,6 +376,7 @@ class AclDependencies {
             ->dependency('Hosts', 'browser', 'Hosts', 'loadAdditionalInformation')
             ->dependency('Hosts', 'browser', 'Hosts', 'loadSlaInformation')
             ->dependency('Hosts', 'browser', 'Hosts', 'loadIsarFlowInformation')
+            ->dependency('Hosts', 'browser', 'Hosts', 'loadSoftwareInformation')
             ->dependency('Hosts', 'add', 'Hosts', 'loadContainers')
             ->dependency('Hosts', 'add', 'Hosts', 'loadCommands')
             ->dependency('Hosts', 'add', 'Hosts', 'loadElementsByContainerId')
@@ -654,6 +658,27 @@ class AclDependencies {
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartsByContainerId')
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartById')
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartsByString');
+
+        $this
+            ->dependency('Packages', 'index', 'Agentconnector', 'linux')
+            ->dependency('Packages', 'index', 'Agentconnector', 'windows')
+            ->dependency('Packages', 'index', 'Agentconnector', 'macos')
+            ->dependency('Packages', 'index', 'Packages', 'summary')
+            ->dependency('Packages', 'index', 'Packages', 'linux')
+            ->dependency('Packages', 'index', 'Packages', 'view_linux')
+            ->dependency('Packages', 'index', 'Packages', 'windows')
+            ->dependency('Packages', 'index', 'Packages', 'view_windows')
+            ->dependency('Packages', 'index', 'Packages', 'windows_updates')
+            ->dependency('Packages', 'index', 'Packages', 'view_windows_update')
+            ->dependency('Packages', 'index', 'Packages', 'macos')
+            ->dependency('Packages', 'index', 'Packages', 'view_macos')
+            ->dependency('Packages', 'index', 'Packages', 'macos_updates')
+            ->dependency('Packages', 'index', 'Packages', 'view_macos_update')
+            ->dependency('Packages', 'index', 'Packages', 'host_linux_packages')
+            ->dependency('Packages', 'index', 'Packages', 'host_windows_updates')
+            ->dependency('Packages', 'index', 'Packages', 'host_windows_apps')
+            ->dependency('Packages', 'index', 'Packages', 'host_macos_updates')
+            ->dependency('Packages', 'index', 'Packages', 'host_macos_apps');
 
 
         //Load Plugin ALC Dependencies

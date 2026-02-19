@@ -454,7 +454,7 @@ class WizardAssignmentsTable extends Table {
                 'title'       => __('Microsoft 365 (OneDrive)'),
                 'description' => __('Microsoft 365 (OneDrive)'),
                 'image'       => 'Windows.svg',
-                'category'    => ['virtualization', 'cloud'],
+                'category'    => ['windows', 'cloud'],
                 'active'      => true
             ],
             'microsoft-m365-Mailbox'       => [
@@ -462,7 +462,7 @@ class WizardAssignmentsTable extends Table {
                 'title'       => __('Microsoft 365 (Mailbox)'),
                 'description' => __('Microsoft 365 (Mailbox)'),
                 'image'       => 'Windows.svg',
-                'category'    => ['virtualization', 'cloud', 'mail'],
+                'category'    => ['windows', 'cloud', 'mail'],
                 'active'      => true
             ],
             'microsoft-m365-SharePoint'    => [
@@ -470,7 +470,23 @@ class WizardAssignmentsTable extends Table {
                 'title'       => __('Microsoft 365 (SharePoint)'),
                 'description' => __('Microsoft 365 (SharePoint)'),
                 'image'       => 'Windows.svg',
-                'category'    => ['virtualization', 'cloud'],
+                'category'    => ['windows', 'cloud'],
+                'active'      => true
+            ],
+            'apache-http'                  => [
+                'type_id'     => 'apache-http',
+                'title'       => __('Apache HTTP Status'),
+                'description' => __('Monitor the status of your Apache web server'),
+                'image'       => 'apache_http.svg',
+                'category'    => ['webserver'],
+                'active'      => true
+            ],
+            'apache-tomcat'                => [
+                'type_id'     => 'apache-tomcat',
+                'title'       => __('Apache Tomcat'),
+                'description' => __('Monitor the status of your Apache Tomcat web server'),
+                'image'       => 'apache-tomcat.svg',
+                'category'    => ['webserver'],
                 'active'      => true
             ],
             'mshyperv'                     => [
@@ -519,6 +535,78 @@ class WizardAssignmentsTable extends Table {
                 'description' => __('Used to check any kind of network devices and interfaces like: Switch, Router, Firewall, Access Point, ...'),
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
+            'nginx'                        => [
+                'type_id'     => 'nginx',
+                'title'       => __('nginx Status'),
+                'description' => __('Monitor your nginx web server status'),
+                'image'       => 'nginx_logo.svg',
+                'category'    => ['webserver', 'cloud'],
+                'active'      => true
+            ],
+            'citrix-netscaler'             => [
+                'type_id'     => 'citrix-netscaler',
+                'title'       => __('Citrix Netscaler'),
+                'description' => __('Used to check Citrix Netscaler devices'),
+                'image'       => 'citrix.svg',
+                'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
+            'aruba-network'                => [
+                'type_id'     => 'aruba-network',
+                'title'       => __('Aruba Network'),
+                'description' => __('Used to check Aruba Network devices'),
+                'image'       => 'aruba_networks.png',
+                'category'    => ['linux', 'network'],
+                'active'      => true
+            ],
+            'fortigate-firewall'           => [
+                'type_id'     => 'fortigate-firewall',
+                'title'       => __('Fortigate Firewall'),
+                'description' => __('Monitor your Fortigate Firewall.'),
+                'image'       => 'fortinet.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
+            'fujitsu-eternus-tape-library' => [
+                'type_id'     => 'fujitsu-eternus-tape-library',
+                'title'       => __('Fujitsu Eternus Tape Library'),
+                'description' => __('Used to check Fujitsu Eternus Tape Library devices'),
+                'image'       => 'fujitsu.svg',
+                'category'    => ['hardware'],
+                'active'      => true
+            ],
+            'netapp'                       => [
+                'type_id'     => 'netapp',
+                'title'       => __('NetApp'),
+                'description' => __('Used to check NetApp devices.'),
+                'image'       => 'netapp.svg',
+                'category'    => ['linux', 'network', 'hardware'],
+                'active'      => true
+            ],
+            'nextcloud'                    => [
+                'type_id'     => 'nextcloud',
+                'title'       => __('NextCloud'),
+                'description' => __('Monitor your NextCloud instance.'),
+                'image'       => 'nextcloud.svg',
+                'category'    => ['network'],
+                'active'      => true
+            ],
+            'palo-alto-firewall'           => [
+                'type_id'     => 'palo-alto-firewall',
+                'title'       => __('Palo Alto Firewall'),
+                'description' => __('Used to check Palo Alto Firewall devices'),
+                'image'       => 'palo_alto.png',
+                'category'    => ['cloud', 'network', 'hardware'],
+                'active'      => true
+            ],
+            'gude-sensors'                 => [
+                'type_id'     => 'gude-sensors',
+                'title'       => __('Gude Sensors'),
+                'description' => __('Used to check GUDE Sensors'),
+                'image'       => 'gude.png',
+                'category'    => ['hardware', 'network'],
                 'active'      => true
             ]
         ];

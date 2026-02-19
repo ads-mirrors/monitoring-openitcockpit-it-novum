@@ -35,6 +35,7 @@ namespace App\Controller;
 
 use App\Form\AgentConfigurationForm;
 use App\itnovum\openITCOCKPIT\Agent\AgentSatelliteTasks;
+use App\itnovum\openITCOCKPIT\Agent\AgentSoftwareInventory;
 use App\Model\Entity\Changelog;
 use App\Model\Entity\Host;
 use App\Model\Table\AgentconfigsTable;
@@ -50,6 +51,7 @@ use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
+use Cake\Log\Log;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use DistributeModule\Model\Table\SatellitesTable;
@@ -646,17 +648,18 @@ class AgentconnectorController extends AppController {
 
             // Legacy configuration for Agent version < 3.x
             $data = [
-                'host_id'       => $hostId,
-                'port'          => $dataWithDatatypes['int']['bind_port'],
-                'basic_auth'    => $dataWithDatatypes['bool']['use_http_basic_auth'],
-                'username'      => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['username'] : '',
-                'password'      => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['password'] : '',
-                'proxy'         => $dataWithDatatypes['bool']['use_proxy'],
-                'insecure'      => !$dataWithDatatypes['bool']['use_https_verify'], // Validate TLS certificate in PULL mode
-                'use_https'     => $dataWithDatatypes['bool']['use_https'], // Use own TLS certificate for the agent like Let's Encrypt
-                'use_autossl'   => $dataWithDatatypes['bool']['use_autossl'], // New field with agent 3.x
-                'use_push_mode' => $dataWithDatatypes['bool']['enable_push_mode'], // New field with agent 3.x
-                'config'        => $AgentConfiguration->marshal(), // New field with agent 3.x
+                'host_id'               => $hostId,
+                'port'                  => $dataWithDatatypes['int']['bind_port'],
+                'basic_auth'            => $dataWithDatatypes['bool']['use_http_basic_auth'],
+                'username'              => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['username'] : '',
+                'password'              => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['password'] : '',
+                'proxy'                 => $dataWithDatatypes['bool']['use_proxy'],
+                'insecure'              => !$dataWithDatatypes['bool']['use_https_verify'], // Validate TLS certificate in PULL mode
+                'use_https'             => $dataWithDatatypes['bool']['use_https'], // Use own TLS certificate for the agent like Let's Encrypt
+                'use_autossl'           => $dataWithDatatypes['bool']['use_autossl'], // New field with agent 3.x
+                'use_push_mode'         => $dataWithDatatypes['bool']['enable_push_mode'], // New field with agent 3.x
+                'enable_packagemanager' => $dataWithDatatypes['bool']['enable_packagemanager'], // New field with agent 3.x - Not in JSON for fast access but in the config for the agent
+                'config'                => $AgentConfiguration->marshal(), // New field with agent 3.x
             ];
             $entity = $AgentconfigsTable->patchEntity($entity, $data);
             $AgentconfigsTable->save($entity);
@@ -1482,7 +1485,7 @@ class AgentconnectorController extends AppController {
                 $agentPassword
             );
 
-
+            // Normale check results processing
             $hostUuid = $pushAgent->get('agentconfig')->get('host')->get('uuid');
             $GearmanClient = new Gearman();
 
@@ -1568,4 +1571,54 @@ class AgentconnectorController extends AppController {
         $this->set('error', 'Invalid credentials or host not found');
         $this->viewBuilder()->setOption('serialize', ['error']);
     }
+
+    /**
+     * Receiver function called by Agents running in PUSH mode to submit package information and software inventory
+     */
+    public function submit_package_info() {
+        if (!$this->isJsonRequest() || !$this->request->is('post')) {
+            throw new MethodNotAllowedException();
+        }
+
+        $agentUuid = $this->request->getData('agentuuid', '');
+        $agentPassword = $this->request->getData('password', '');
+        $pkgInfo = $this->request->getData('checkdata', []);
+
+        /** @var PushAgentsTable $PushAgentsTable */
+        $PushAgentsTable = TableRegistry::getTableLocator()->get('PushAgents');
+
+        try {
+            $pushAgent = $PushAgentsTable->getConfigWithHostForSubmitCheckdata(
+                $agentUuid,
+                $agentPassword
+            );
+
+            // Only process package manager info and return
+            $hostId = $pushAgent->get('agentconfig')->get('host')->get('id');
+            $hostId = (int)$hostId;
+
+            if (!empty($hostId) && !empty($pkgInfo)) {
+                $AgentSoftwareInventory = new AgentSoftwareInventory();
+                $AgentSoftwareInventory->processAgentInventoryResponse($hostId, $pkgInfo);
+            }
+
+            $this->set('success', true);
+            $this->set('error', '');
+            $this->viewBuilder()->setOption('serialize', ['success', 'error']);
+
+            return;
+        } catch (\Exception $e) {
+            Log::error(sprintf(
+                'Error while processing package information from PUSH Agent (UUID: %s): %s',
+                $agentUuid,
+                $e->getMessage()
+            ));
+        }
+
+        $this->response = $this->response->withStatus(400);
+        $this->set('success', false);
+        $this->set('error', 'Error while processing package information');
+        $this->viewBuilder()->setOption('serialize', ['success', 'error']);
+    }
+
 }

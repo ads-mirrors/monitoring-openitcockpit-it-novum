@@ -237,6 +237,15 @@ class AgentResponseToServices {
                         $services['ntp'] = $ntp;
                     }
                     break;
+
+                case 'packagemanager':
+                    if (!empty($this->agentResponse['packagemanager']['Enabled'])) {
+                        $packagemanager = $this->getServiceStructByName('packagemanager', 'System Updates');
+                        if ($packagemanager) {
+                            $services['packagemanager'] = $packagemanager;
+                        }
+                    }
+                    break;
             }
         }
         return $services;

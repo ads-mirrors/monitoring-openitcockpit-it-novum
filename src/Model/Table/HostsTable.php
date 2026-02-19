@@ -1084,6 +1084,43 @@ class HostsTable extends Table {
         ]);
 
         $where = $HostFilter->indexFilter();
+        if (!empty($where['Hostgroups.id IN']) && is_array($where['Hostgroups.id IN'])) {
+            $query->select([
+                'hostgroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                    GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                    GROUP_CONCAT(HostToHostgroups.hostgroup_id))'),
+                'count'         => $query->newExpr(
+                    'SELECT COUNT(hostgroups.id)
+                                FROM hostgroups
+                                WHERE FIND_IN_SET (hostgroups.id,IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                                GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                                GROUP_CONCAT(HostToHostgroups.hostgroup_id)))
+                                AND hostgroups.id IN (' . implode(', ', $where['Hostgroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'hosts_to_hostgroups'         => [
+                    'table'      => 'hosts_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HostToHostgroups',
+                    'conditions' => 'HostToHostgroups.host_id = Hosts.id',
+                ],
+                'hosttemplates_to_hostgroups' => [
+                    'table'      => 'hosttemplates_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HosttemplatesToHostgroups',
+                    'conditions' => 'HosttemplatesToHostgroups.hosttemplate_id = Hosts.hosttemplate_id',
+                ]
+            ]);
+            $query->having([
+                'hostgroup_ids IS NOT NULL',
+                'count > 0'
+            ]);
+
+            unset($where['Hostgroups.id IN']);
+        }
+
+
         $where['Hosts.disabled'] = (int)$HostConditions->includeDisabled();
         if ($HostConditions->getHostIds()) {
             $hostIds = $HostConditions->getHostIds();
@@ -1131,6 +1168,114 @@ class HostsTable extends Table {
             );
             unset($where['hostdescription LIKE']);
         }
+
+        $query->where($where);
+        $query->disableHydration();
+        $query->groupBy(['Hosts.id']);
+        $query->orderBy(
+            array_merge(
+                $HostFilter->getOrderForPaginator('Hoststatus.current_state', 'desc'),
+                ['Hosts.id' => 'asc']
+            )
+        );
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $this->formatResultAsCake2($query->toArray(), false);
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scroll($query, $PaginateOMat->getHandler(), false);
+            } else {
+                $result = $this->paginate($query, $PaginateOMat->getHandler(), false);
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * @param HostFilter $HostFilter
+     * @param HostConditions $HostConditions
+     * @param null|PaginateOMat $PaginateOMat
+     * @return array
+     */
+    public function getHostsIndexForExtendedHostgroupsStatusengine3(HostFilter $HostFilter, HostConditions $HostConditions, $PaginateOMat = null) {
+        $MY_RIGHTS = $HostConditions->getContainerIds();
+        $query = $this->find('all');
+        $query->select([
+            'Hosts.id',
+            'Hosts.uuid',
+            'Hosts.name',
+            'Hosts.description',
+            'Hosts.active_checks_enabled',
+            'Hosts.address',
+            'Hosts.satellite_id',
+            'Hosts.container_id',
+            'Hosts.hosttemplate_id',
+            'Hosts.tags',
+            'Hosts.priority',
+            //'keywords'     => 'IF((Hosts.tags IS NULL OR Hosts.tags=""), Hosttemplates.tags, Hosts.tags)',
+            //'not_keywords' => 'IF((Hosts.tags IS NULL OR Hosts.tags=""), Hosttemplates.tags, Hosts.tags)',
+            'Hosts.notes',
+            'Hosts.host_type',
+            'Hoststatus.current_state',
+            'Hoststatus.last_check',
+            'Hoststatus.next_check',
+            'Hoststatus.last_hard_state_change',
+            'Hoststatus.last_state_change',
+            'Hoststatus.output',
+            'Hoststatus.scheduled_downtime_depth',
+            'Hoststatus.active_checks_enabled',
+            'Hoststatus.is_hardstate',
+            'Hoststatus.is_flapping',
+            'Hoststatus.problem_has_been_acknowledged',
+            'Hoststatus.acknowledgement_type',
+            'Hoststatus.notifications_enabled',
+            'cumulated_service_status' => $query->newExpr('MAX(Servicestatus.current_state)')
+        ]);
+
+        $query->join([
+            'b' => [
+                'table'      => 'statusengine_hoststatus',
+                'type'       => 'INNER',
+                'alias'      => 'Hoststatus',
+                'conditions' => 'Hoststatus.hostname = Hosts.uuid',
+            ]
+        ]);
+        $query->join([
+            'c' => [
+                'table'      => 'statusengine_servicestatus',
+                'type'       => 'LEFT',
+                'alias'      => 'Servicestatus',
+                'conditions' => 'Servicestatus.hostname = Hosts.uuid',
+            ]
+        ]);
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->contain([
+            'HostsToContainersSharing'
+        ]);
+
+        $where = $HostFilter->indexFilter();
+
+
+        $where['Hosts.disabled'] = (int)$HostConditions->includeDisabled();
+        if ($HostConditions->getHostIds()) {
+            $hostIds = $HostConditions->getHostIds();
+            if (!is_array($hostIds)) {
+                $hostIds = [$hostIds];
+            }
+
+            $where['Hosts.id IN'] = $hostIds;
+        }
+
 
         $query->where($where);
         $query->disableHydration();

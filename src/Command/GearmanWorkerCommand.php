@@ -34,6 +34,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use ApacheModule\itnovum\openITCOCKPIT\TomcatMemoryPool\TomcatMemoryPoolScan;
 use App\itnovum\openITCOCKPIT\Database\Backup;
 use App\itnovum\openITCOCKPIT\Monitoring\Naemon\ExternalCommands;
 use App\itnovum\openITCOCKPIT\Supervisor\Binarydctl;
@@ -59,6 +60,7 @@ use CheckmkModule\Model\Table\MkSatTasksTable;
 use DistributeModule\Model\Entity\Satellite;
 use DistributeModule\Model\Entity\SatelliteTask;
 use DistributeModule\Model\Table\SatelliteTasksTable;
+use GudeModule\itnovum\openITCOCKPIT\GudeSensors\GudeSensorsScan;
 use ImportModule\Model\Table\SatellitePushAgentsTable;
 use itnovum\openITCOCKPIT\CakePHP\Folder;
 use itnovum\openITCOCKPIT\Core\MonitoringEngine\NagiosConfigDefaults;
@@ -236,7 +238,7 @@ class GearmanWorkerCommand extends Command {
         } catch (\Exception $e) {
             $payloadFromJSON = '';
         }
-        $payload = @unserialize($payload);
+        $payload = @unserialize($payload, ['allowed_classes' => false]);
 
         if (!is_array($payload)) {
             if (!is_array($payloadFromJSON)) {
@@ -830,12 +832,34 @@ class GearmanWorkerCommand extends Command {
                     $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
                     $systemsettings = $SystemsettingsTable->findAsArray();
 
-                    $cmd = sprintf(
-                        'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
-                        escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
-                    );
+                    $output = '';
+                    $returncode = 1;
+                    if (IS_CONTAINER) {
+                        // Prometheus is running inside a container - query remote binaryd to run "promtool check config prometheus.yml"
+                        // openITCOCKPIT is running in a container like docker
+                        $Binarydctl = new Binarydctl();
+                        // Prometheus is running in a remote container, so we can only communicate through the XML RCP API of Supervisor
+                        $BinarydEndpoint = $Binarydctl->getBinarydApiEndpointByServiceName('prometheus-verify');
 
-                    exec($cmd, $output, $returncode);
+                        //Run prometheus-verify
+                        try {
+                            $result = $BinarydEndpoint->executeJson('prometheus-verify');
+                            $returncode = $result['rc'] ?? 1;
+                            $output = [
+                                $result['stdout'] ?? null
+                            ];
+                        } catch (\Exception $e) {
+                            Log::error($e->getMessage());
+                        }
+                    } else {
+                        // Local running Prometheus
+                        $cmd = sprintf(
+                            'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
+                            escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
+                        );
+
+                        exec($cmd, $output, $returncode);
+                    }
                     $return = [
                         'output'     => $output,
                         'returncode' => $returncode,
@@ -1087,6 +1111,23 @@ class GearmanWorkerCommand extends Command {
                 }
                 break;
 
+            case 'WizardTomcatMemoryPoolDiscovery':
+                $MemoryPoolScan = new TomcatMemoryPoolScan($payload['data']);
+                try {
+                    $services = $MemoryPoolScan->executeMemoryPoolDiscovery();
+                    $return = [
+                        'success'  => $services['success'],
+                        'error'    => $services['errormsg'],
+                        'services' => $services
+                    ];
+                } catch (\RuntimeException $e) {
+                    $return = [
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
+                        'exception' => 'ProcessFailedException'
+                    ];
+                }
+                break;
             case 'WizardNetworkInterfaceList':
                 $DatastoreScan = new NetworkInterfacesScan($payload['data']);
                 try {
@@ -1095,6 +1136,24 @@ class GearmanWorkerCommand extends Command {
                         'success'    => $interfaces['success'],
                         'error'      => $interfaces['errormsg'],
                         'interfaces' => $interfaces
+                    ];
+                } catch (\RuntimeException $e) {
+                    $return = [
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
+                        'exception' => 'ProcessFailedException'
+                    ];
+                }
+                break;
+
+            case 'WizardGudeSensorsList':
+                $GudeSensorsScan = new GudeSensorsScan($payload['data']);
+                try {
+                    $sensors = $GudeSensorsScan->executeSensorsDiscovery($payload['host_address']);
+                    $return = [
+                        'success' => $sensors['success'],
+                        'error'   => $sensors['errormsg'],
+                        'sensors' => $sensors
                     ];
                 } catch (\RuntimeException $e) {
                     $return = [
@@ -1664,12 +1723,36 @@ class GearmanWorkerCommand extends Command {
             ]);
             $ExportsTable->save($verifyEntity);
 
-            $cmd = sprintf(
-                'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
-                escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
-            );
-            $output = null;
-            exec($cmd, $output, $returncode);
+            $Supervisorctl = new Supervisorctl();
+
+            if (IS_CONTAINER) {
+                // Prometheus is running inside a container - query remote binaryd to run "promtool check config prometheus.yml"
+                // openITCOCKPIT is running in a container like docker
+                $Binarydctl = new Binarydctl();
+                // Prometheus is running in a remote container, so we can only communicate through the XML RCP API of Supervisor
+                $BinarydEndpoint = $Binarydctl->getBinarydApiEndpointByServiceName('prometheus-verify');
+
+                //Run prometheus-verify
+                try {
+                    $result = $BinarydEndpoint->executeJson('prometheus-verify');
+                    $returncode = $result['rc'] ?? 1;
+                    $output = [
+                        $result['stdout'] ?? null
+                    ];
+                } catch (\Exception $e) {
+                    Log::error($e->getMessage());
+                    $output = '';
+                    $returncode = 1;
+                }
+            } else {
+                // Local running Prometheus
+                $cmd = sprintf(
+                    'sudo -u %s /opt/openitc/prometheus/promtool check config /opt/openitc/prometheus/prometheus.yml 2>&1',
+                    escapeshellarg($systemsettings['MONITORING']['MONITORING.USER'])
+                );
+                $output = null;
+                exec($cmd, $output, $returncode);
+            }
             $verifyEntity->set('finished', 1);
             if ($returncode === 0) {
                 //New configuration is valid :-)
@@ -1678,19 +1761,39 @@ class GearmanWorkerCommand extends Command {
                 $ExportsTable->save($verifyEntity);
 
                 //Restart Prometheus
-                $entity = $ExportsTable->newEntity([
-                    'task' => 'export_restart_prometheus',
-                    'text' => __('Restarting Prometheus monitoring engine')
-                ]);
-                $ExportsTable->save($entity);
-                exec('systemctl restart prometheus.service', $restartOutput, $restartRc);
-                $entity->set('finished', 1);
-                $entity->set('successfully', 0);
-                if ($restartRc === 0) {
-                    $entity->set('successfully', 1);
+                if (IS_CONTAINER === false) {
+                    // Local running Prometheus
+                    $entity = $ExportsTable->newEntity([
+                        'task' => 'export_restart_prometheus',
+                        'text' => __('Restarting Prometheus monitoring engine')
+                    ]);
+                    $ExportsTable->save($entity);
+                    exec('systemctl restart prometheus.service', $restartOutput, $restartRc);
+                    $entity->set('finished', 1);
+                    $entity->set('successfully', 0);
+                    if ($restartRc === 0) {
+                        $entity->set('successfully', 1);
+                    }
+                    $ExportsTable->save($entity);
+                    unset($entity);
+                } else {
+                    // Containerized openITCOCKPIT
+                    // Restart remote Prometheus
+                    $entity = $ExportsTable->newEntity([
+                        'task' => 'export_restart_prometheus',
+                        'text' => __('Restarting containerized Prometheus monitoring engine')
+                    ]);
+                    $ExportsTable->save($entity);
+                    $result = $Supervisorctl->restart('prometheus');
+                    $entity->set('finished', 1);
+                    $entity->set('successfully', 0);
+                    if ($result === true) {
+                        $entity->set('successfully', 1);
+                        $isMonitoringRunning = true;
+                    }
+                    $ExportsTable->save($entity);
+                    unset($entity);
                 }
-                $ExportsTable->save($entity);
-                unset($entity);
             } else {
                 //Error with new configuration :-(
                 $successfully = 0;
@@ -1761,7 +1864,7 @@ class GearmanWorkerCommand extends Command {
      * @param \GearmanTask $task
      */
     public function exportCallback($task) {
-        $result = unserialize($task->data());
+        $result = unserialize($task->data(), ['allowed_classes' => false]);
         if (!isset($result['task'])) {
             Log::error('Export result has no "task" key ' . serialize($result));
             return;

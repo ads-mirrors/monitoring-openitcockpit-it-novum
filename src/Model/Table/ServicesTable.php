@@ -1611,6 +1611,56 @@ class ServicesTable extends Table {
     }
 
     /**
+     * Disable / deactivate a given Service and log this action in the changelog.
+     * This function does NOT DO any permission checks, you have to make
+     * sure beforehand that the User has the permission to do this action
+     *
+     * @param Service $Service
+     * @param User $User
+     * @param array $host
+     * @return void
+     */
+    public function __deactivate(Service $Service, User $User, array $host = []) {
+        /** @var $ChangelogsTable ChangelogsTable */
+        $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
+
+        if (empty($host)) {
+            /** @var $HostsTable HostsTable */
+            $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+            $host = $HostsTable->find()
+                ->select([
+                    'Hosts.id',
+                    'Hosts.name',
+                    'Hosts.container_id'
+                ])->where([
+                    'Hosts.id' => $Service->get('host_id')
+                ])
+                ->firstOrFail()
+                ->toArray();
+        }
+
+        $Service->set('disabled', 1);
+        $this->save($Service);
+        $serviceName = !empty($Service->get('name')) ? $Service->get('name') : $Service->get('servicetemplate')->get('name');
+
+        $changelog_data = $ChangelogsTable->parseDataForChangelog(
+            'deactivate',
+            'services',
+            $Service->id,
+            OBJECT_SERVICE,
+            $host['container_id'],
+            $User->getId(),
+            $host['name'] . '/' . $serviceName,
+            []
+        );
+        if ($changelog_data) {
+            /** @var Changelog $changelogEntry */
+            $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
+            $ChangelogsTable->save($changelogEntry);
+        }
+    }
+
+    /**
      * @param string $uuid
      * @param bool $enableHydration
      * @return array|\Cake\Datasource\EntityInterface
@@ -2307,6 +2357,78 @@ class ServicesTable extends Table {
                 'like'
             );
             unset($where['servicedescription LIKE']);
+        }
+
+        if (!empty($where['Hostgroups.id IN']) && is_array($where['Hostgroups.id IN'])) {
+            $query->select([
+                'hostgroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                    GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                    GROUP_CONCAT(HostToHostgroups.hostgroup_id))'),
+                'hostCount'     => $query->newExpr(
+                    'SELECT COUNT(hostgroups.id)
+                                FROM hostgroups
+                                WHERE FIND_IN_SET (hostgroups.id,IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                                GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                                GROUP_CONCAT(HostToHostgroups.hostgroup_id)))
+                                AND hostgroups.id IN (' . implode(', ', $where['Hostgroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'hosts_to_hostgroups'         => [
+                    'table'      => 'hosts_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HostToHostgroups',
+                    'conditions' => 'HostToHostgroups.host_id = Hosts.id',
+                ],
+                'hosttemplates_to_hostgroups' => [
+                    'table'      => 'hosttemplates_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HosttemplatesToHostgroups',
+                    'conditions' => 'HosttemplatesToHostgroups.hosttemplate_id = Hosts.hosttemplate_id',
+                ]
+            ]);
+            $query->having([
+                'hostgroup_ids IS NOT NULL',
+                'hostCount > 0'
+            ]);
+
+            unset($where['Hostgroups.id IN']);
+        }
+
+        if (!empty($where['Servicegroups.id IN']) && is_array($where['Servicegroups.id IN'])) {
+            $query->select([
+                'servicegroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(ServiceToServicegroups.servicegroup_id) IS NULL,
+                    GROUP_CONCAT(ServicetemplatesToServicegroups.servicegroup_id),
+                    GROUP_CONCAT(ServiceToServicegroups.servicegroup_id))'),
+                'serviceCount'     => $query->newExpr(
+                    'SELECT COUNT(servicegroups.id)
+                                FROM servicegroups
+                                WHERE FIND_IN_SET (servicegroups.id,IF(GROUP_CONCAT(ServiceToServicegroups.servicegroup_id) IS NULL,
+                                GROUP_CONCAT(ServicetemplatesToServicegroups.servicegroup_id),
+                                GROUP_CONCAT(ServiceToServicegroups.servicegroup_id)))
+                                AND servicegroups.id IN (' . implode(', ', $where['Servicegroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'services_to_servicegroups'         => [
+                    'table'      => 'services_to_servicegroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'ServiceToServicegroups',
+                    'conditions' => 'ServiceToServicegroups.service_id = Services.id',
+                ],
+                'servicetemplates_to_servicegroups' => [
+                    'table'      => 'servicetemplates_to_servicegroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'ServicetemplatesToServicegroups',
+                    'conditions' => 'ServicetemplatesToServicegroups.servicetemplate_id = Services.servicetemplate_id',
+                ]
+            ]);
+            $query->having([
+                'servicegroup_ids IS NOT NULL',
+                'serviceCount > 0'
+            ]);
+
+            unset($where['Servicegroups.id IN']);
         }
 
         if (!empty($where)) {
@@ -5313,6 +5435,11 @@ class ServicesTable extends Table {
             ->select([
                 'Services.id',
                 'Services.host_id',
+                'Services.name',
+                'Services.description',
+                'Services.tags',
+                'Services.check_interval',
+                'Services.freshness_threshold',
                 'Services.disabled',
                 'Services.servicetemplate_id'
             ])
