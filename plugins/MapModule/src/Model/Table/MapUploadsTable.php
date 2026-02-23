@@ -31,13 +31,13 @@ use App\Model\Table\ContainersTable;
 use App\Model\Table\UsersTable;
 use Cake\Core\Exception\Exception;
 use Cake\Datasource\EntityInterface;
-use itnovum\openITCOCKPIT\CakePHP\Folder;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Behavior\TimestampBehavior;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\CakePHP\Folder;
 use MapModule\Model\Entity\MapUpload;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
@@ -88,6 +88,31 @@ class MapUploadsTable extends Table {
             'foreignKey' => 'container_id',
             'className'  => 'Containers',
         ]);
+    }
+
+    public function bindCoreAssociations(Table $coreTable) {
+        switch ($coreTable->getAlias()) {
+            case 'Containers':
+                if (!$coreTable->hasAssociation('MapUploads')) {
+                    $coreTable->hasMany('MapUploads', [
+                        'className'  => 'MapModule.MapUploads',
+                        'dependent'  => true,
+                        'foreignKey' => 'container_id',
+                        'joinType'   => 'INNER'
+                    ]);
+                }
+                break;
+            case 'Users':
+                if (!$coreTable->hasAssociation('MapUploads')) {
+                    $coreTable->hasMany('MapUploads', [
+                        'className'  => 'MapModule.MapUploads',
+                        'dependent'  => true,
+                        'foreignKey' => 'user_id',
+                        'joinType'   => 'INNER'
+                    ]);
+                }
+                break;
+        }
     }
 
     /**

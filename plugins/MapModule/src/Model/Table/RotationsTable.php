@@ -102,6 +102,20 @@ class RotationsTable extends Table {
         ]);
     }
 
+    public function bindCoreAssociations(Table $coreTable) {
+        switch ($coreTable->getAlias()) {
+            case 'Containers':
+                if (!$coreTable->hasAssociation('Rotations')) {
+                    $coreTable->hasMany('Rotations', [
+                        'className'  => 'MapModule.Rotations',
+                        'foreignKey' => 'rotation_id',
+                        'joinType'   => 'INNER'
+                    ]);
+                }
+                break;
+        }
+    }
+
     /**
      * Default validation rules.
      *
