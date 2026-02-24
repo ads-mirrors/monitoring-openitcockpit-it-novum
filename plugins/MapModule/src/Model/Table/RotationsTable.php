@@ -106,7 +106,7 @@ class RotationsTable extends Table {
         switch ($coreTable->getAlias()) {
             case 'Containers':
                 if (!$coreTable->hasAssociation('Rotations')) {
-                    $coreTable->hasMany('Rotations', [
+                    $coreTable->belongsToMany('Rotations', [
                         'className'        => 'MapModule.Rotations',
                         'foreignKey'       => 'container_id',
                         'targetForeignKey' => 'rotation_id',
