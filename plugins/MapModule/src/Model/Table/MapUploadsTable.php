@@ -95,12 +95,9 @@ class MapUploadsTable extends Table {
             case 'Containers':
                 if (!$coreTable->hasAssociation('MapUploads')) {
                     $coreTable->hasMany('MapUploads', [
-                        'className'        => 'MapModule.MapUploads',
-                        'dependent'        => true,
-                        'foreignKey'       => 'container_id',
-                        'targetForeignKey' => 'rotation_id',
-                        'joinTable'        => 'rotations_to_containers',
-                        'joinType'         => 'INNER'
+                        'className'  => 'MapModule.MapUploads',
+                        'foreignKey' => 'container_id',
+                        'joinType'   => 'INNER'
                     ]);
                 }
                 break;

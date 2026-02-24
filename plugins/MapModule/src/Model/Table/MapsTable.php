@@ -227,11 +227,11 @@ class MapsTable extends Table {
                 break;
             case 'Containers':
                 if (!$coreTable->hasAssociation('Maps')) {
-                    $coreTable->hasMany('Maps', [
+                    $coreTable->belongsToMany('Maps', [
                         'className'        => 'MapModule.Maps',
-                        'foreignKey'       => 'map_id',
-                        'targetForeignKey' => 'rotation_id',
-                        'joinTable'        => 'rotations_to_containers',
+                        'foreignKey'       => 'container_id',
+                        'targetForeignKey' => 'map_id',
+                        'joinTable'        => 'maps_to_containers',
                         'joinType'         => 'INNER',
                     ]);
                 }
