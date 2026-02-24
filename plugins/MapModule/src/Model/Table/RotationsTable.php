@@ -107,9 +107,11 @@ class RotationsTable extends Table {
             case 'Containers':
                 if (!$coreTable->hasAssociation('Rotations')) {
                     $coreTable->hasMany('Rotations', [
-                        'className'  => 'MapModule.Rotations',
-                        'foreignKey' => 'rotation_id',
-                        'joinType'   => 'INNER'
+                        'className'        => 'MapModule.Rotations',
+                        'foreignKey'       => 'container_id',
+                        'targetForeignKey' => 'rotation_id',
+                        'joinTable'        => 'rotations_to_containers',
+                        'joinType'         => 'INNER',
                     ]);
                 }
                 break;

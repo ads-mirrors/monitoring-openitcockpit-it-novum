@@ -229,9 +229,10 @@ class MapsTable extends Table {
                 if (!$coreTable->hasAssociation('Maps')) {
                     $coreTable->hasMany('Maps', [
                         'className'        => 'MapModule.Maps',
-                        'cascadeCallbacks' => true,
                         'foreignKey'       => 'map_id',
-                        'joinType'         => 'INNER'
+                        'targetForeignKey' => 'rotation_id',
+                        'joinTable'        => 'rotations_to_containers',
+                        'joinType'         => 'INNER',
                     ]);
                 }
                 break;
