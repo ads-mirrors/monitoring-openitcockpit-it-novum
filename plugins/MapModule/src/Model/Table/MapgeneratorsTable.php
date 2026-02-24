@@ -113,7 +113,7 @@ class MapgeneratorsTable extends Table {
         switch ($coreTable->getAlias()) {
             case 'Containers':
                 if (!$coreTable->hasAssociation('Mapgenerators')) {
-                    $coreTable->belongsToMany('Mapgenerators', [
+                    $coreTable->hasMany('Mapgenerators', [
                         'foreignKey'       => 'container_id',
                         'targetForeignKey' => 'mapgenerator_id',
                         'joinTable'        => 'mapgenerators_to_containers',
