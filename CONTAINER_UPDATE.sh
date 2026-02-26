@@ -355,6 +355,9 @@ if [[ -d /opt/openitc/frontend/plugins/MapModule/webroot/img/ ]]; then
     chown -R www-data:www-data /opt/openitc/frontend/plugins/MapModule/webroot/img/
 fi
 
+mkdir -p /opt/openitc/var/prometheus
+chown nagios:nagios /opt/openitc/var/prometheus
+
 if getent group ssl-cert &>/dev/null; then
     if [ -z "$(groups nagios | grep ssl-cert)" ]; then
         usermod -aG ssl-cert nagios
@@ -378,6 +381,7 @@ fi
 
 echo "Restart monitoring engine"
 oitc supervisor restart naemon
+oitc supervisor restart prometheus
 
 echo "Enabling webserver configuration"
 if [[ ! -f "/etc/nginx/sites-enabled/openitc" ]]; then

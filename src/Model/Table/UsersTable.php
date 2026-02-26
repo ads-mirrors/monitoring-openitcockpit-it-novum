@@ -579,7 +579,6 @@ class UsersTable extends Table {
         foreach ($intCasts as $intCast) {
             $user[$intCast] = (int)$user[$intCast];
         }
-
         $user['containers'] = [
             '_ids' => Hash::extract($query, 'containers.{n}.id')
         ];
@@ -1913,7 +1912,12 @@ class UsersTable extends Table {
 
     }
 
-    public function getUsersAsList($ids = []) {
+    /**
+     * @param $ids
+     * @return array
+     */
+    public function getUsersAsList($ids = []): array {
+        $return = [];
         if (empty($ids)) {
             return [];
         }

@@ -23,8 +23,21 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-if (!defined('OPENITCOCKPIT_VERSION')) {
-    define('OPENITCOCKPIT_VERSION', '5.4.0');
-}
+namespace App\itnovum\openITCOCKPIT\Export;
 
-return [];
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+
+class CustomSpreadsheet extends Spreadsheet {
+
+    /**
+     * Create sheet and add it to this workbook.
+     *
+     * @param null|int $sheetIndex Index where sheet should go (0,1,..., or null for last)
+     */
+    public function createCustomSheet(?int $sheetIndex = null): CustomWorksheet {
+        $newSheet = new CustomWorksheet($this);
+        $this->addSheet($newSheet, $sheetIndex, true);
+
+        return $newSheet;
+    }
+}
