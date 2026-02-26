@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\itnovum\openITCOCKPIT\Core\Dashboards\DelayedPassiveHostsJson;
+use App\itnovum\openITCOCKPIT\Core\Dashboards\DelayedPassiveServicesJson;
 use App\itnovum\openITCOCKPIT\Core\Dashboards\HostStatusOverviewExtendedJson;
 use App\itnovum\openITCOCKPIT\Core\Dashboards\HostsTopAlertJson;
 use App\itnovum\openITCOCKPIT\Core\Dashboards\ServiceStatusOverviewExtendedJson;
@@ -2561,7 +2562,7 @@ class DashboardsController extends AppController {
         }
 
         $widgetId = (int)$this->request->getQuery('widgetId');
-        $ServiceStatusListJson = new ServiceStatusListJson();
+        $DelayedPassiveServicesJson = new DelayedPassiveServicesJson();
 
         /** @var WidgetsTable $WidgetsTable */
         $WidgetsTable = TableRegistry::getTableLocator()->get('Widgets');
@@ -2578,7 +2579,7 @@ class DashboardsController extends AppController {
                 $data = json_decode($widget->get('json_data'), true);
             }
 
-            $config = $ServiceStatusListJson->standardizedData($data);
+            $config = $DelayedPassiveServicesJson->standardizedData($data);
             $this->set('config', $config);
             $this->viewBuilder()->setOption('serialize', ['config']);
             return;
@@ -2594,7 +2595,7 @@ class DashboardsController extends AppController {
                 throw new ForbiddenException();
             }
 
-            $config = $ServiceStatusListJson->standardizedData($this->request->getData());
+            $config = $DelayedPassiveServicesJson->standardizedData($this->request->getData());
 
             $widget = $WidgetsTable->patchEntity($widget, [
                 'json_data' => json_encode($config)

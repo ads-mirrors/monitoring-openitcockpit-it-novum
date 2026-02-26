@@ -322,6 +322,11 @@ class ServicesController extends AppController {
         $this->viewBuilder()->setOption('serialize', ['all_services', 'username', 'satellites']);
     }
 
+    /**
+     * @throws MissingDbBackendException
+     * @throws GuzzleException
+     * @throws \Exception
+     */
     public function passiveList() {
         $User = new User($this->getUser());
 
@@ -330,8 +335,6 @@ class ServicesController extends AppController {
         $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
         /** @var $ServicesTable ServicesTable */
         $ServicesTable = TableRegistry::getTableLocator()->get('Services');
-        /** @var $ContainersTable ContainersTable */
-        $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
 
         if (!$this->isApiRequest()) {
             throw new MethodNotAllowedException();
@@ -376,7 +379,7 @@ class ServicesController extends AppController {
         }
 
         if ($this->DbBackend->isStatusengine3()) {
-            $services = $ServicesTable->getServiceIndexStatusengine3($ServiceConditions, $PaginateOMat);
+            $services = $ServicesTable->getServiceIndexForPassiveServicesStatusengine3($ServiceConditions, $PaginateOMat);
         }
 
         $hostContainers = [];
@@ -453,8 +456,11 @@ class ServicesController extends AppController {
                 'Downtime'        => $downtime,
                 'Acknowledgement' => $acknowledgement
             ];
-
             $tmpRecord['Service']['has_graph'] = $PerfdataChecker->hasPerfdata();
+            $tmpRecord['Service']['check_interval'] = $service['check_interval'];
+            $tmpRecord['Service']['checkIntervalHuman'] = $UserTime->secondsInHumanShort($service['check_interval']);
+            $tmpRecord['Service']['delayed'] = $service['delayed'];
+            $tmpRecord['Service']['delayedHuman'] = $UserTime->secondsInHumanShort($service['delayed']);
             $all_services[] = $tmpRecord;
         }
 
