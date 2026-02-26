@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\itnovum\openITCOCKPIT\Core\Dashboards\DelayedPassiveHostsJson;
 use App\itnovum\openITCOCKPIT\Core\Dashboards\HostStatusOverviewExtendedJson;
 use App\itnovum\openITCOCKPIT\Core\Dashboards\HostsTopAlertJson;
 use App\itnovum\openITCOCKPIT\Core\Dashboards\ServiceStatusOverviewExtendedJson;
@@ -91,7 +92,7 @@ class DashboardsController extends AppController {
 
     public function index() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
@@ -932,7 +933,7 @@ class DashboardsController extends AppController {
      */
     public function parentOutagesWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
@@ -1011,7 +1012,7 @@ class DashboardsController extends AppController {
 
     public function hostsTopAlertsWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $HostsTopAlertJson = new HostsTopAlertJson();
 
@@ -1070,7 +1071,7 @@ class DashboardsController extends AppController {
     // This gets also used by the hostsStatusListExtendedWidget to load and save the filters
     public function hostsStatusListWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $widgetId = (int)$this->request->getQuery('widgetId');
@@ -1130,7 +1131,7 @@ class DashboardsController extends AppController {
 
     public function hostsDowntimeWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $widgetId = (int)$this->request->getQuery('widgetId');
@@ -1184,7 +1185,7 @@ class DashboardsController extends AppController {
 
     public function servicesDowntimeWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $widgetId = (int)$this->request->getQuery('widgetId');
@@ -1240,7 +1241,7 @@ class DashboardsController extends AppController {
     // Gets also used by the servicesStatusListExtendedWidget
     public function servicesStatusListWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $widgetId = (int)$this->request->getQuery('widgetId');
@@ -1300,7 +1301,7 @@ class DashboardsController extends AppController {
 
     public function noticeWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $widgetId = (int)$this->request->getQuery('widgetId');
         $NoticeJson = new NoticeJson();
@@ -1365,7 +1366,7 @@ class DashboardsController extends AppController {
 
     public function trafficLightWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $TrafficlightJson = new TrafficlightJson();
@@ -1443,7 +1444,7 @@ class DashboardsController extends AppController {
 
     public function tachoWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $TachoJson = new TachoJson();
@@ -1650,7 +1651,7 @@ class DashboardsController extends AppController {
 
     public function hostStatusOverviewWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $HostStatusOverviewJson = new HostStatusOverviewJson();
 
@@ -1741,7 +1742,7 @@ class DashboardsController extends AppController {
 
     public function hostStatusOverviewExtendedWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $HostStatusOverviewExtendedJson = new HostStatusOverviewExtendedJson();
 
@@ -1835,7 +1836,7 @@ class DashboardsController extends AppController {
 
     public function servicesTopAlertsWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $ServicesTopAlertJson = new ServicesTopAlertJson();
 
@@ -1893,7 +1894,7 @@ class DashboardsController extends AppController {
 
     public function serviceStatusOverviewWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $ServiceStatusOverviewJson = new ServiceStatusOverviewJson();
 
@@ -1986,7 +1987,7 @@ class DashboardsController extends AppController {
 
     public function serviceStatusOverviewExtendedWidget() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $ServiceStatusOverviewExtendedJson = new ServiceStatusOverviewExtendedJson();
 
@@ -2138,7 +2139,7 @@ class DashboardsController extends AppController {
 
     public function websiteWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $widgetId = (int)$this->request->getQuery('widgetId');
         $WebsiteJson = new WebsiteJson();
@@ -2211,7 +2212,7 @@ class DashboardsController extends AppController {
 
     public function tacticalOverviewWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $widgetId = (int)$this->request->getQuery('widgetId');
         $type = $this->request->getQuery('type');
@@ -2393,7 +2394,7 @@ class DashboardsController extends AppController {
 
     public function todayWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $widgetId = (int)$this->request->getQuery('widgetId');
         /** @var WidgetsTable $WidgetsTable */
@@ -2425,7 +2426,7 @@ class DashboardsController extends AppController {
 
     public function calendarWidget() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
         $widgetId = (int)$this->request->getQuery('widgetId');
         /** @var WidgetsTable $WidgetsTable */
@@ -2498,5 +2499,113 @@ class DashboardsController extends AppController {
         $this->set('hoststatusSummary', $hoststatusSummary);
         $this->set('servicestatusSummary', $servicestatusSummary);
         $this->viewBuilder()->setOption('serialize', ['hoststatusSummary', 'servicestatusSummary']);
+    }
+
+    public function delayedPassiveHostsWidget() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $widgetId = (int)$this->request->getQuery('widgetId');
+        $DelayedPassiveHostsJson = new DelayedPassiveHostsJson();
+
+        /** @var WidgetsTable $WidgetsTable */
+        $WidgetsTable = TableRegistry::getTableLocator()->get('Widgets');
+
+        if (!$WidgetsTable->existsById($widgetId)) {
+            throw new NotFoundException('Widget not found');
+        }
+
+        $widget = $WidgetsTable->get($widgetId);
+
+        if ($this->request->is('get')) {
+            $data = [];
+            if ($widget->get('json_data') !== null && $widget->get('json_data') !== '') {
+                $data = json_decode($widget->get('json_data'), true);
+            }
+            $config = $DelayedPassiveHostsJson->standardizedData($data);
+            $this->set('config', $config);
+            $this->viewBuilder()->setOption('serialize', ['config']);
+            return;
+        }
+
+        if ($this->request->is('post')) {
+
+            /** @var DashboardTabsTable $DashboardTabsTable */
+            $DashboardTabsTable = TableRegistry::getTableLocator()->get('DashboardTabs');
+
+            $User = new User($this->getUser());
+
+            if (!$DashboardTabsTable->isOwnedByUser($widget->dashboard_tab_id, $User->getId())) {
+                throw new ForbiddenException();
+            }
+
+            $config = $DelayedPassiveHostsJson->standardizedData($this->request->getData());
+
+            $widget = $WidgetsTable->patchEntity($widget, [
+                'json_data' => json_encode($config)
+            ]);
+            $WidgetsTable->save($widget);
+
+            $this->set('config', $config);
+            $this->viewBuilder()->setOption('serialize', ['config']);
+            return;
+        }
+
+        throw new MethodNotAllowedException();
+    }
+
+    public function delayedPassiveServicesWidget() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $widgetId = (int)$this->request->getQuery('widgetId');
+        $ServiceStatusListJson = new ServiceStatusListJson();
+
+        /** @var WidgetsTable $WidgetsTable */
+        $WidgetsTable = TableRegistry::getTableLocator()->get('Widgets');
+
+        if (!$WidgetsTable->existsById($widgetId)) {
+            throw new NotFoundException('Widget not found');
+        }
+
+        $widget = $WidgetsTable->get($widgetId);
+
+        if ($this->request->is('get')) {
+            $data = [];
+            if ($widget->get('json_data') !== null && $widget->get('json_data') !== '') {
+                $data = json_decode($widget->get('json_data'), true);
+            }
+
+            $config = $ServiceStatusListJson->standardizedData($data);
+            $this->set('config', $config);
+            $this->viewBuilder()->setOption('serialize', ['config']);
+            return;
+        }
+
+        if ($this->request->is('post')) {
+            /** @var DashboardTabsTable $DashboardTabsTable */
+            $DashboardTabsTable = TableRegistry::getTableLocator()->get('DashboardTabs');
+
+            $User = new User($this->getUser());
+
+            if (!$DashboardTabsTable->isOwnedByUser($widget->dashboard_tab_id, $User->getId())) {
+                throw new ForbiddenException();
+            }
+
+            $config = $ServiceStatusListJson->standardizedData($this->request->getData());
+
+            $widget = $WidgetsTable->patchEntity($widget, [
+                'json_data' => json_encode($config)
+            ]);
+            $WidgetsTable->save($widget);
+
+            $this->set('config', $config);
+            $this->viewBuilder()->setOption('serialize', ['config']);
+            return;
+        }
+
+        throw new MethodNotAllowedException();
     }
 }

@@ -71,6 +71,9 @@ class HostFilter extends Filter {
             ],
             'interval_older' => [
                 'Hoststatus.last_state_change'
+            ],
+            'greater'       => [
+                'delayed'
             ]
         ];
 
