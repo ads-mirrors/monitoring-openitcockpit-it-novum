@@ -608,6 +608,14 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'gude.png',
                 'category'    => ['hardware', 'network'],
                 'active'      => true
+            ],
+            'redfish'                      => [
+                'type_id'     => 'redfish',
+                'title'       => __('Redfish Server Hardware'),
+                'description' => __('Used to monitor you Redfish Server Hardware'),
+                'image'       => 'redfish.svg',
+                'category'    => ['hardware', 'network'],
+                'active'      => true
             ]
         ];
 
