@@ -238,7 +238,7 @@ abstract class Filter {
                             if (is_array($values) && !empty($values) && sizeof($values) === 2) {
                                 //check value and  unit for valid values
                                 if (is_numeric($values[0]) && in_array($values[1], ['SECOND', 'MINUTE', 'HOUR', 'DAY'], true)) {
-                                    $conditions[] = sprintf('%s >= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)', $field, $values[0], $values[1]);
+                                    $conditions[] = sprintf('%s <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)', $field, $values[0], $values[1]);
                                 }
                             }
                             break;

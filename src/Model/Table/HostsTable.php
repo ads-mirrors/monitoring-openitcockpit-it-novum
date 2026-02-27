@@ -972,7 +972,7 @@ class HostsTable extends Table {
                 $intervalUnit = $where['Hoststatus.state_older_than_unit >'];
             }
             $query->where([
-                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $where['Hoststatus.state_older_than >'],
                     $intervalUnit
                 )
@@ -3520,7 +3520,7 @@ class HostsTable extends Table {
             }
             $query->where([
                 //  sprintf('Hoststatus.last_state_change <= NOW() - INTERVAL %s %s',
-                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $conditions['Hoststatus']['state_older_than'],
                     $intervalUnit
                 )
