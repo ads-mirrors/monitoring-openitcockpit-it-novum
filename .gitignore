@@ -145,6 +145,7 @@ plugins/NginxModule
 plugins/CitrixModule
 plugins/NetAppModule
 plugins/NextcloudModule
+plugins/KubernetesModule
 
 # NFS mounts
 .nfs.*
