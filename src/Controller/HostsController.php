@@ -327,6 +327,123 @@ class HostsController extends AppController {
     }
 
     /**
+     * @throws MissingDbBackendException
+     * @throws \Exception
+     */
+    public function passiveList() {
+        /** @var User $User */
+        $User = new User($this->getUser());
+
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+
+
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var $ContainersTable ContainersTable */
+        $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
+
+        $MY_RIGHTS = [];
+        if ($this->hasRootPrivileges === false) {
+            /** @var $ContainersTable ContainersTable */
+            //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
+            //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
+            // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to
+            $MY_RIGHTS = $this->MY_RIGHTS;
+        }
+
+        $HostFilter = new HostFilter($this->request);
+        $HostControllerRequest = new HostControllerRequest($this->request, $HostFilter);
+        $HostCondition = new HostConditions();
+        if ($HostControllerRequest->isRequestFromBrowser() === false) {
+            $HostCondition->setIncludeDisabled(false);
+            if (!empty($MY_RIGHTS)) {
+                $HostCondition->setContainerIds($MY_RIGHTS);
+            }
+
+        }
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $HostFilter->getPage());
+
+        $AcknowledgementHostsTable = $this->DbBackend->getAcknowledgementHostsTable();
+        $DowntimehistoryHostsTable = $this->DbBackend->getDowntimehistoryHostsTable();
+
+
+        if ($this->DbBackend->isNdoUtils()) {
+            $hosts = $HostsTable->getHostsIndex($HostFilter, $HostCondition, $PaginateOMat);
+        }
+
+        if ($this->DbBackend->isCrateDb()) {
+            throw new MissingDbBackendException('MissingDbBackendException');
+        }
+
+        if ($this->DbBackend->isStatusengine3()) {
+            $hosts = $HostsTable->getHostsIndexForPassiveHostsStatusengine3($HostFilter, $HostCondition, $PaginateOMat);
+        }
+
+        $all_hosts = [];
+        $UserTime = new UserTime($User->getTimezone(), $User->getDateformat());
+
+        $typesForView = $HostsTable->getHostTypesWithStyles();
+
+
+        foreach ($hosts as $host) {
+            $Host = new Host($host);
+            $Hoststatus = new Hoststatus($host['Host']['Hoststatus'], $UserTime);
+            $hostSharingPermissions = new HostSharingPermissions(
+                $Host->getContainerId(), $this->hasRootPrivileges, $Host->getContainerIds(), $this->MY_RIGHTS
+            );
+            $allowSharing = $hostSharingPermissions->allowSharing();
+            if ($this->hasRootPrivileges) {
+                $allowEdit = true;
+            } else {
+                $ContainerPermissions = new ContainerPermissions($this->MY_RIGHTS_LEVEL, $Host->getContainerIds());
+                $allowEdit = $ContainerPermissions->hasPermission();
+            }
+
+            $downtime = [];
+            if ($HostControllerRequest->includeDowntimeInformation() && $Hoststatus->isInDowntime()) {
+                $downtime = $DowntimehistoryHostsTable->byHostUuid($Host->getUuid());
+                if (!empty($downtime)) {
+                    $Downtime = new Downtime($downtime, $allowEdit, $UserTime);
+                    $downtime = $Downtime->toArray();
+                }
+            }
+
+            $acknowledgement = [];
+            if ($HostControllerRequest->includeAcknowledgementInformation() && $Hoststatus->isAcknowledged()) {
+                $acknowledgement = $AcknowledgementHostsTable->byHostUuid($Host->getUuid());
+                if (!empty($acknowledgement)) {
+                    $Acknowledgement = new AcknowledgementHost($acknowledgement, $UserTime, $allowEdit);
+                    $acknowledgement = $Acknowledgement->toArray();
+                }
+            }
+
+            $tmpRecord = [
+                'Host'            => $Host->toArray(),
+                'Hoststatus'      => $Hoststatus->toArray(),
+                'Downtime'        => $downtime,
+                'Acknowledgement' => $acknowledgement
+            ];
+            $tmpRecord['Host']['allow_sharing'] = $allowSharing;
+            $tmpRecord['Host']['allow_edit'] = $allowEdit;
+            $tmpRecord['Host']['type'] = $typesForView[$host['Host']['host_type']];
+            $tmpRecord['Host']['check_interval'] = $host['Host']['check_interval'];
+            $tmpRecord['Host']['checkIntervalHuman'] = $UserTime->secondsInHumanShort($host['Host']['check_interval']);
+            $tmpRecord['Host']['delayed'] = $host['Host']['delayed'];
+            $tmpRecord['Host']['delayedHuman'] = $UserTime->secondsInHumanShort($host['Host']['delayed']);
+
+            $all_hosts[] = $tmpRecord;
+        }
+        $this->set('all_hosts', $all_hosts);
+        $this->set('username', $User->getFullName());
+        $this->viewBuilder()->setOption('serialize', ['all_hosts', 'username']);
+    }
+
+    /**
      * @param null $id
      * @throws MissingDbBackendException
      */

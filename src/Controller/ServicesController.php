@@ -323,6 +323,153 @@ class ServicesController extends AppController {
     }
 
     /**
+     * @throws MissingDbBackendException
+     * @throws GuzzleException
+     * @throws \Exception
+     */
+    public function passiveList() {
+        $User = new User($this->getUser());
+
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+        /** @var $ServicesTable ServicesTable */
+        $ServicesTable = TableRegistry::getTableLocator()->get('Services');
+
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $MY_RIGHTS = [];
+        if ($this->hasRootPrivileges === false) {
+            /** @var $ContainersTable ContainersTable */
+            //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
+            //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
+            // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to
+            $MY_RIGHTS = $this->MY_RIGHTS;
+        }
+
+        $ServiceFilter = new ServiceFilter($this->request);
+
+        $ServiceControllerRequest = new ServiceControllerRequest($this->request, $ServiceFilter);
+        $ServiceConditions = new ServiceConditions(
+            $ServiceFilter->indexFilter()
+        );
+        $ServiceConditions->setContainerIds($MY_RIGHTS);
+        $ServiceConditions->setIncludeDisabled(false);
+
+
+        $ServiceConditions->setOrder($ServiceControllerRequest->getOrder([
+            'Hosts.name'  => 'asc',
+            'servicename' => 'asc'
+        ]));
+
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $ServiceFilter->getPage());
+
+        $AcknowledgementServicesTable = $this->DbBackend->getAcknowledgementServicesTable();
+        $DowntimehistoryServicesTable = $this->DbBackend->getDowntimehistoryServicesTable();
+
+        if ($this->DbBackend->isNdoUtils()) {
+            $services = $ServicesTable->getServiceIndex($ServiceConditions, $PaginateOMat);
+        }
+
+        if ($this->DbBackend->isCrateDb()) {
+            throw new MissingDbBackendException('MissingDbBackendException');
+        }
+
+        if ($this->DbBackend->isStatusengine3()) {
+            $services = $ServicesTable->getServiceIndexForPassiveServicesStatusengine3($ServiceConditions, $PaginateOMat);
+        }
+
+        $hostContainers = [];
+        $typesForView = $ServicesTable->getServiceTypesWithStyles();
+        foreach ($services as $index => $service) {
+            $services[$index]['allow_edit'] = $this->hasRootPrivileges;
+
+        }
+        if ($this->hasRootPrivileges === false) {
+            foreach ($services as $index => $service) {
+                $hostId = $service['_matchingData']['Hosts']['id'];
+                if (!isset($hostContainers[$hostId])) {
+                    $hostContainers[$hostId] = $HostsTable->getHostContainerIdsByHostId($hostId);
+                }
+
+                $ContainerPermissions = new ContainerPermissions($this->MY_RIGHTS_LEVEL, $hostContainers[$hostId]);
+                $services[$index]['allow_edit'] = $ContainerPermissions->hasPermission();
+            }
+        }
+
+        $HoststatusTable = $this->DbBackend->getHoststatusTable();
+
+        $HoststatusFields = new HoststatusFields($this->DbBackend);
+        $HoststatusFields
+            ->currentState()
+            ->isHardstate()
+            ->isFlapping()
+            ->lastStateChange()
+            ->lastHardStateChange();
+        $hoststatusCache = $HoststatusTable->byUuid(
+            array_unique(Hash::extract($services, '{n}._matchingData.Hosts.uuid')),
+            $HoststatusFields
+        );
+
+        $all_services = [];
+        $UserTime = $User->getUserTime();
+        $serviceTypes = $ServicesTable->getServiceTypesWithStyles();
+        foreach ($services as $service) {
+            $allowEdit = $service['allow_edit'];
+            $Host = new Host($service['_matchingData']['Hosts'], $allowEdit);
+            if (isset($hoststatusCache[$Host->getUuid()]['Hoststatus'])) {
+                $Hoststatus = new Hoststatus($hoststatusCache[$Host->getUuid()]['Hoststatus'], $UserTime);
+            } else {
+                $Hoststatus = new Hoststatus([], $UserTime);
+            }
+            $Service = new Service($service, null, $allowEdit);
+            $Servicestatus = new Servicestatus($service['Servicestatus'], $UserTime);
+            $PerfdataChecker = new PerfdataChecker($Host, $Service, $this->PerfdataBackend, $Servicestatus, $this->DbBackend, $service['service_type']);
+
+            $downtime = [];
+            if ($ServiceControllerRequest->includeDowntimeInformation() && $Servicestatus->isInDowntime()) {
+                $downtime = $DowntimehistoryServicesTable->byServiceUuid($Service->getUuid());
+                if (!empty($downtime)) {
+                    $Downtime = new Downtime($downtime, $allowEdit, $UserTime);
+                    $downtime = $Downtime->toArray();
+                }
+            }
+
+            $acknowledgement = [];
+            if ($ServiceControllerRequest->includeAcknowledgementInformation() && $Servicestatus->isAcknowledged()) {
+                $acknowledgement = $AcknowledgementServicesTable->byServiceUuid($Service->getUuid());
+                if (!empty($acknowledgement)) {
+                    $Acknowledgement = new AcknowledgementService($acknowledgement, $UserTime, $allowEdit);
+                    $acknowledgement = $Acknowledgement->toArray();
+                }
+            }
+
+            $tmpRecord = [
+                'Service'         => $Service->toArray(),
+                'Host'            => $Host->toArray(),
+                'Hoststatus'      => $Hoststatus->toArray(),
+                'Servicestatus'   => $Servicestatus->toArray(),
+                'ServiceType'     => $serviceTypes[$service['service_type']],
+                'Downtime'        => $downtime,
+                'Acknowledgement' => $acknowledgement
+            ];
+            $tmpRecord['Service']['has_graph'] = $PerfdataChecker->hasPerfdata();
+            $tmpRecord['Service']['check_interval'] = $service['check_interval'];
+            $tmpRecord['Service']['checkIntervalHuman'] = $UserTime->secondsInHumanShort($service['check_interval']);
+            $tmpRecord['Service']['delayed'] = $service['delayed'];
+            $tmpRecord['Service']['delayedHuman'] = $UserTime->secondsInHumanShort($service['delayed']);
+            $all_services[] = $tmpRecord;
+        }
+
+        $this->set('all_services', $all_services);
+        $this->set('username', $User->getFullName());
+        $this->viewBuilder()->setOption('serialize', ['all_services', 'username', 'satellites']);
+    }
+
+    /**
      * @param int|null $id
      * @throws MissingDbBackendException
      */

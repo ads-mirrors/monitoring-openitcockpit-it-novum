@@ -363,6 +363,17 @@ class WidgetsTable extends Table {
             ];
         }
 
+        if (isset($ACL_PERMISSIONS['hosts']['index'])) {
+            $widgets[] = [
+                'type_id'   => 39,
+                'title'     => __('Delayed passive hosts widget'),
+                'icon'      => 'far fa-alarm-clock',
+                'directive' => 'delayed-passive-hosts-widget',
+                'width'     => 12,
+                'height'    => 16
+            ];
+        }
+
         if (isset($ACL_PERMISSIONS['hosts']['index']) && isset($ACL_PERMISSIONS['hostgroups']['index'])) {
             $widgets[] = [
                 'type_id'   => 21,
@@ -421,6 +432,15 @@ class WidgetsTable extends Table {
                 'title'     => __('Service status list (extended)'),
                 'icon'      => 'far fa-list-alt',
                 'directive' => 'services-status-extended-widget',
+                'width'     => 12,
+                'height'    => 16
+            ];
+
+            $widgets[] = [
+                'type_id'   => 40,
+                'title'     => __('Delayed passive services widget'),
+                'icon'      => 'far fa-alarm-clock',
+                'directive' => 'delayed-passive-services-widget',
                 'width'     => 12,
                 'height'    => 16
             ];

@@ -73,6 +73,9 @@ class ServiceFilter extends Filter {
             ],
             'interval_older' => [
                 'Servicestatus.last_state_change'
+            ],
+            'greater'        => [
+                'delayed'
             ]
         ];
 
