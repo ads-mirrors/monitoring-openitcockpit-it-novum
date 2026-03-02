@@ -2129,7 +2129,7 @@ class ServicesTable extends Table {
                 $intervalUnit = $where['Servicestatus.state_older_than_unit >'];
             }
             $query->where([
-                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $where['Servicestatus.state_older_than >'],
                     $intervalUnit
                 )
@@ -3820,7 +3820,7 @@ class ServicesTable extends Table {
                 $intervalUnit = $conditions['Servicestatus']['state_older_than_unit'];
             }
             $query->where([
-                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $conditions['Servicestatus']['state_older_than'],
                     $intervalUnit
                 )
