@@ -617,6 +617,14 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['virtualization', 'cloud'],
                 'active'      => true
             ],
+            'broadcom-bes'                 => [
+                'type_id'     => 'broadcom-bes',
+                'title'       => __('Broadcom BES'),
+                'description' => __('Monitor your Broadcom BES via SNMP'),
+                'image'       => 'broadcom.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
             'redfish'                      => [
                 'type_id'     => 'redfish',
                 'title'       => __('Redfish Server Hardware'),
