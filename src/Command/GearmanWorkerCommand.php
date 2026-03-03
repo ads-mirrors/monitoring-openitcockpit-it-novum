@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -66,6 +66,7 @@ use itnovum\openITCOCKPIT\CakePHP\Folder;
 use itnovum\openITCOCKPIT\Core\MonitoringEngine\NagiosConfigDefaults;
 use itnovum\openITCOCKPIT\Core\MonitoringEngine\NagiosConfigGenerator;
 use itnovum\openITCOCKPIT\Core\System\Health\LsbRelease;
+use KubernetesModule\itnovum\openITCOCKPIT\KubernetesEndpoint\KubernetesEndpointScan;
 use MS365Module\itnovum\openITCOCKPIT\MS365Service\MS365ServiceScan;
 use NetworkModule\itnovum\openITCOCKPIT\NetworkInterfaces\NetworkInterfacesScan;
 use NWCModule\itnovum\openITCOCKPIT\SNMP\SNMPScanNwc;
@@ -1165,9 +1166,27 @@ class GearmanWorkerCommand extends Command {
                 break;
 
             case 'WizardProxmoxStorageDiscovery':
-                $DatastoreScan = new ProxmoxStorageScan($payload['data']);
+                $EndpointScan = new ProxmoxStorageScan($payload['data']);
                 try {
-                    $services = $DatastoreScan->executeStorageDiscovery();
+                    $services = $EndpointScan->executeStorageDiscovery();
+                    $return = [
+                        'success'  => $services['success'],
+                        'error'    => $services['errormsg'],
+                        'services' => $services
+                    ];
+                } catch (\RuntimeException $e) {
+                    $return = [
+                        'success'   => false,
+                        'error'     => $e->getMessage(),
+                        'exception' => 'ProcessFailedException'
+                    ];
+                }
+                break;
+
+            case 'WizardKubernetesEndpointDiscovery':
+                $EndpointScan = new KubernetesEndpointScan($payload['data']);
+                try {
+                    $services = $EndpointScan->executeEndpointDiscovery();
                     $return = [
                         'success'  => $services['success'],
                         'error'    => $services['errormsg'],

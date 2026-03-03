@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -607,6 +607,14 @@ class WizardAssignmentsTable extends Table {
                 'description' => __('Used to check GUDE Sensors'),
                 'image'       => 'gude.png',
                 'category'    => ['hardware', 'network'],
+                'active'      => true
+            ],
+            'kubernetes'                   => [
+                'type_id'     => 'kubernetes',
+                'title'       => __('Kubernetes'),
+                'description' => __('Used to monitor Kubernetes clusters and their components'),
+                'image'       => 'Kubernetes.svg',
+                'category'    => ['virtualization', 'cloud'],
                 'active'      => true
             ],
             'redfish'                      => [
