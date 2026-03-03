@@ -625,6 +625,14 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['network', 'hardware'],
                 'active'      => true
             ],
+            'redfish'                      => [
+                'type_id'     => 'redfish',
+                'title'       => __('Redfish Server Hardware'),
+                'description' => __('Used to monitor you Redfish Server Hardware'),
+                'image'       => 'network.png',
+                'category'    => ['hardware', 'network'],
+                'active'      => true
+            ]
         ];
 
         $possibleWizardsResult = [];
