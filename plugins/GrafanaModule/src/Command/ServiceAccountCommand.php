@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -139,9 +139,10 @@ class ServiceAccountCommand extends Command {
         ]);
 
         // VictoriaMetrics
+        // Notice! Its "victoriametrics" for traditional setups and "victoria-metrics" in docker
         $parser->addOption('victoria-metrics-host', [
             'help'    => 'IP-Address or hostname of the VictoriaMetrics instance',
-            'default' => 'victoria-metrics', // $VICTORIA_METRICS_HOST in Docker
+            'default' => 'victoriametrics', // $VICTORIA_METRICS_HOST in Docker
         ]);
         $parser->addOption('victoria-metrics-port', [
             'help'    => 'Port or hostname of the VictoriaMetrics instance',

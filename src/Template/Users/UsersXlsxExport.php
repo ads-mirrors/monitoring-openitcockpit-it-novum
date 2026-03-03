@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -131,7 +131,6 @@ class UsersXlsxExport {
         $allUsersContainerIds = [];
         $userContainerArray = [];
         $rightsForIntersect = array_flip($this->MY_RIGHTS);
-
         if (!empty($this->users)) {
             $this->canBeExported = true;
             foreach ($this->users as $user) {
@@ -240,6 +239,7 @@ class UsersXlsxExport {
                 unset($allUsersContainerIds[ROOT_CONTAINER]);
             }
         }
+
         $allVisibleContainers = $ContainersTable->getResolvedContainersWithFullPathAndChildred($allUsersContainerIds);
         //refill rights for subcontainer
         if (!empty($userContainerArray) && !empty($allVisibleContainers['userParentAndChildrenContainers'])) {
@@ -248,16 +248,17 @@ class UsersXlsxExport {
                 foreach ($containerIds as $id => $permissionLevel) {
                     $containerPermissionsByUserId[$userID][$id] = $permissionLevel;
                     if (isset($allVisibleContainers['userParentAndChildrenContainers'][$id])) {
+
                         foreach ($allVisibleContainers['userParentAndChildrenContainers'][$id] as $subcontainerId) {
                             if (!in_array($subcontainerId, $containerIds, true)) {
                                 $containerPermissionsByUserId[$userID][$subcontainerId] = $permissionLevel;
                             }
-
                         }
                     }
                 }
             }
         }
+
         if (!empty($allVisibleContainers['resolvedContainers']) && !empty($allVisibleContainers['userParentAndChildrenContainers'])) {
             foreach ($allVisibleContainers['resolvedContainers'] as $resolvedContainerId => $resolvedContainer) {
                 $row = [
