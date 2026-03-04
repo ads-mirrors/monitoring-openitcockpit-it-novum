@@ -632,7 +632,15 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'network.png',
                 'category'    => ['hardware', 'network'],
                 'active'      => true
-            ]
+            ],
+            'ms-windows-agentless'         => [
+                'type_id'     => 'ms-windows-agentless',
+                'title'       => __('Agentless Windows'),
+                'description' => __('Monitor your Agentless Windows'),
+                'image'       => 'Windows.svg',
+                'category'    => ['windows'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];
