@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -107,6 +107,16 @@ class Supervisorctl {
                 $SupervisorApi = new XMLRPCApi($username, $password, $url);
                 break;
 
+            case 'prometheus':
+                // Tell the Prometheus Container to start|stop|restart Prometheus
+                $url = sprintf(
+                    'http://%s:%s/RPC2',
+                    env('PROMETHEUS_HOST', 'prometheus'),
+                    env('SUPERVISOR_PORT', 9001)
+                );
+                $SupervisorApi = new XMLRPCApi($username, $password, $url);
+                break;
+
             default:
                 // Service is running in the same container as openITCOCKPIT itslef
                 $SupervisorApi = new XMLRPCApi($username, $password, 'http://127.0.0.1:9001/RPC2');
@@ -125,7 +135,7 @@ class Supervisorctl {
             $SupervisorApi = $this->getSupervisorApiEndpointByServiceName($serviceName);
             $result = $SupervisorApi->getProcessInfo($serviceName);
             if (isset($result['statename'])) {
-                if($result['statename'] === 'STARTING' || $result['statename'] === 'RUNNING') {
+                if ($result['statename'] === 'STARTING' || $result['statename'] === 'RUNNING') {
                     // We consider STARTING as running is this case as the process itself is started
                     return true;
                 }

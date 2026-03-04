@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -551,6 +551,36 @@ class Menu {
                     true,
                     '/servicetemplates/index'
                 ))
+            )->addCategory((new MenuCategory(
+                'software_inventory',
+                __('Software Inventory'),
+                7,
+
+                ['fas', 'toolbox']
+
+            ))->addLink(new MenuLink(
+                __('Packages'),
+                'PackagesIndex',
+                'packages',
+                'linux',
+                '',
+                ['fas', 'cubes'],
+                [],
+                1,
+                true,
+                '/packages/linux'
+            ))->addLink(new MenuLink(
+                __('Patch status'),
+                'PatchstatusIndex',
+                'patchstatus',
+                'index',
+                '',
+                ['fas', 'bandage'],
+                [],
+                1,
+                true,
+                '/patchstatus/index'
+            ))
             );
 
         $Administration = new MenuHeadline(self::MENU_ADMINISTRATION, __('Administration'), 3);

@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -235,6 +235,15 @@ class AgentResponseToServices {
                     $ntp = $this->getServiceStructByName('ntp', 'System Time');
                     if ($ntp) {
                         $services['ntp'] = $ntp;
+                    }
+                    break;
+
+                case 'packagemanager':
+                    if (!empty($this->agentResponse['packagemanager']['Enabled'])) {
+                        $packagemanager = $this->getServiceStructByName('packagemanager', 'System Updates');
+                        if ($packagemanager) {
+                            $services['packagemanager'] = $packagemanager;
+                        }
                     }
                     break;
             }

@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -74,41 +74,46 @@ class AgentConfiguration {
             'tls_security_level'   => 'intermediate'    // TLS security level: lax, intermediate, modern
         ],
         'bool'   => [
-            'enable_push_mode'               => false, // If the agent is running in push mode
-            'use_proxy'                      => false, // If the oITC Server should use a proxy server to query the agent in Pull mode
-            'enable_remote_config_update'    => false, // Allow to push a new configuration to the Agent (dangerous)
-            'use_http_basic_auth'            => false, // Enable basic auth for the Agents web server
-            'push_verify_server_certificate' => false, // If the agent should verify the openITCOCKPIT Servers SSL certificate (Requires valid certificates like Let's Encrypt)
-            'push_enable_webserver'          => false, // Do not enable the webserver if the agent is running in PUSH mode
-            'push_webserver_use_https'       => true,  // Start the webserver on the Agent in Push mode with HTTPS (requires ssl_certfile and ssl_keyfile to be set)
-            'use_autossl'                    => true,  // Use autossl Pull mode only
-            'verify_autossl_expiry'          => false, // Verify autossl certificate expiry date (only if use_autossl=true)
-            'use_https'                      => false, // This sets use_autossl=false and requires ssl_certfile and ssl_keyfile to start the agent with HTTPS and custom certs (e.g from Let's Encrypt)
-            'use_https_verify'               => false, // Disable certificate validation when use_https=true (Requires valid certificates like Let's Encrypt)
+            'enable_push_mode'                   => false, // If the agent is running in push mode
+            'use_proxy'                          => false, // If the oITC Server should use a proxy server to query the agent in Pull mode
+            'enable_remote_config_update'        => false, // Allow to push a new configuration to the Agent (dangerous)
+            'use_http_basic_auth'                => false, // Enable basic auth for the Agents web server
+            'push_verify_server_certificate'     => false, // If the agent should verify the openITCOCKPIT Servers SSL certificate (Requires valid certificates like Let's Encrypt)
+            'push_enable_webserver'              => false, // Do not enable the webserver if the agent is running in PUSH mode
+            'push_webserver_use_https'           => true,  // Start the webserver on the Agent in Push mode with HTTPS (requires ssl_certfile and ssl_keyfile to be set)
+            'use_autossl'                        => true,  // Use autossl Pull mode only
+            'verify_autossl_expiry'              => false, // Verify autossl certificate expiry date (only if use_autossl=true)
+            'use_https'                          => false, // This sets use_autossl=false and requires ssl_certfile and ssl_keyfile to start the agent with HTTPS and custom certs (e.g from Let's Encrypt)
+            'use_https_verify'                   => false, // Disable certificate validation when use_https=true (Requires valid certificates like Let's Encrypt)
+            'enable_packagemanager'              => true, // Enable Software Inventory
+            'enable_packagemanager_update_check' => true, // Enable that Software Inventory updates packages metadata (e.g. apt-get update) before fetching the software inventory
+
 
             // Checks
-            'cpustats'                       => true, // Enable CPU checks
-            'memory'                         => true, // Enable memory check
-            'swap'                           => true, // Enable Swap check
-            'processstats'                   => true, // Enable process checks
-            'netstats'                       => true, // Enable network checks
-            'netio'                          => true, // Enable network traffic checks
-            'diskstats'                      => true, // Enable disk usage checks
-            'diskio'                         => true, // Enable disk load checks
-            'systemdservices'                => true, // Enable Systemd checks (Linux)
-            'launchdservices'                => true, // Enable launchd checks (macOS)
-            'winservices'                    => true, // Enable Windows Services checks
-            'wineventlog'                    => false, // Enable Windows Event Log checks (Disabled by default due to bluescreens see OA-40)
-            'sensorstats'                    => true, //Enable monitoring of temperature and battery sensors
-            'dockerstats'                    => false, // Enable docker checks
-            'libvirt'                        => true, // Enable libvirt checks (requires libvirt build),
-            'userstats'                      => true, // Enable logged in users check
-            'ntp'                            => true, // Enable NTP check
+            'cpustats'                           => true, // Enable CPU checks
+            'memory'                             => true, // Enable memory check
+            'swap'                               => true, // Enable Swap check
+            'processstats'                       => true, // Enable process checks
+            'netstats'                           => true, // Enable network checks
+            'netio'                              => true, // Enable network traffic checks
+            'diskstats'                          => true, // Enable disk usage checks
+            'diskio'                             => true, // Enable disk load checks
+            'systemdservices'                    => true, // Enable Systemd checks (Linux)
+            'launchdservices'                    => true, // Enable launchd checks (macOS)
+            'winservices'                        => true, // Enable Windows Services checks
+            'wineventlog'                        => false, // Enable Windows Event Log checks (Disabled by default due to bluescreens see OA-40)
+            'sensorstats'                        => true, //Enable monitoring of temperature and battery sensors
+            'dockerstats'                        => false, // Enable docker checks
+            'libvirt'                            => true, // Enable libvirt checks (requires libvirt build),
+            'userstats'                          => true, // Enable logged in users check
+            'ntp'                                => true, // Enable NTP check
         ],
         'int'    => [
-            'bind_port'      => 3333, // Bind port of the Agents web server
-            'check_interval' => 30,   // Interval in seconds how often the Agent should execute all default checks
-            'push_timeout'   => 10,   // HTTP Timeout in seconds the Agent uses to push check results to the server
+            'bind_port'                         => 3333, // Bind port of the Agents web server
+            'check_interval'                    => 30,   // Interval in seconds how often the Agent should execute all default checks
+            'push_timeout'                      => 10,   // HTTP Timeout in seconds the Agent uses to push check results to the server
+            'packagemanager_check_interval'     => 60, // Update interval of Software Inventory in minutes
+            'packagemanager_description_length' => 80, // Limit the length of package descriptions in the software inventory to prevent very long descriptions that can cause performance issues
         ],
         'array'  => [
             'win_eventlog_types' => [  // Types that should be monitored in the Windows Event log

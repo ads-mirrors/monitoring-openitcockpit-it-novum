@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -34,7 +34,6 @@ use Cake\ORM\TableRegistry;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Exception\RequestException;
-use itnovum\openITCOCKPIT\Core\FileDebugger;
 
 class AgentHttpClient {
 
@@ -76,7 +75,7 @@ class AgentHttpClient {
 
         $this->hostaddress = $hostaddress;
         // Encapsulate IPv6 address in [...] for use in curl URLs
-        if(filter_var($hostaddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
+        if (filter_var($hostaddress, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) !== false) {
             $this->hostaddress = sprintf('[%s]', $hostaddress);
         }
 
@@ -127,7 +126,7 @@ class AgentHttpClient {
                     }
                 }
 
-            } catch (RequestException | GuzzleException $e) {
+            } catch (RequestException|GuzzleException $e) {
                 // HTTPS connection was not successfully
 
                 $context = $e->getHandlerContext();
@@ -155,7 +154,7 @@ class AgentHttpClient {
                                 ];
                             }
                         }
-                    } catch (RequestException | GuzzleException $e) {
+                    } catch (RequestException|GuzzleException $e) {
                         // Ignore
                     }
                 }
@@ -229,7 +228,7 @@ class AgentHttpClient {
                                 'oitc_errno'   => AgentHttpClientErrors::ERRNO_EXCHANGE_HTTPS_CERTIFICATE
                             ];
 
-                        } catch (RequestException | GuzzleException $e) {
+                        } catch (RequestException|GuzzleException $e) {
                             return [
                                 'status'       => 'error',
                                 'error'        => __('Error while sending certificate to Agent.'),
@@ -255,7 +254,7 @@ class AgentHttpClient {
                 ];
 
 
-            } catch (RequestException | GuzzleException $e) {
+            } catch (RequestException|GuzzleException $e) {
                 return [
                     'status'       => 'error',
                     'error'        => __('Could not establish HTTP connection for AutoTLS certificate exchange.'),
@@ -293,7 +292,7 @@ class AgentHttpClient {
                     'guzzle_error' => sprintf('[%s] %s', $response->getStatusCode(), $response->getReasonPhrase()),
                     'oitc_errno'   => AgentHttpClientErrors::ERRNO_BAD_AGENT_RESPONSE
                 ];
-            } catch (RequestException | GuzzleException $e) {
+            } catch (RequestException|GuzzleException $e) {
                 return [
                     'status'       => 'error',
                     'error'        => __('Could not establish HTTPS connection'),
@@ -329,7 +328,7 @@ class AgentHttpClient {
                     'guzzle_error' => sprintf('[%s] %s', $response->getStatusCode(), $response->getReasonPhrase()),
                     'oitc_errno'   => AgentHttpClientErrors::ERRNO_HTTP_ERROR
                 ];
-            } catch (RequestException | GuzzleException $e) {
+            } catch (RequestException|GuzzleException $e) {
                 return [
                     'status'       => 'error',
                     'error'        => __('Could not establish insecure HTTP connection'),
@@ -364,7 +363,30 @@ class AgentHttpClient {
             }
             //Agent did not returned JSON or no 'agent' key in json
             Log::error('Agent response is not a json or has no agent key');
-        } catch (RequestException | GuzzleException $e) {
+        } catch (RequestException|GuzzleException $e) {
+            Log::error('Agent connection error: ' . $e->getMessage());
+        }
+        return [];
+    }
+
+    /**
+     * @return array
+     */
+    public function getPackages() {
+        $options = $this->getGuzzleOptions();
+        $url = sprintf('%s/packages', $this->baseUrl);
+        $client = new Client();
+        try {
+            $response = $client->request('GET', $url, $options);
+            if ($response->getStatusCode() === 200) {
+                $data = @json_decode($response->getBody()->getContents(), true);
+                if (json_last_error() === JSON_ERROR_NONE && isset($data['Stats'])) {
+                    return $data;
+                }
+            }
+            //Agent did not returned JSON or no 'agent' key in json
+            Log::error('Agent response is not a json or has no Stats key');
+        } catch (RequestException|GuzzleException $e) {
             Log::error('Agent connection error: ' . $e->getMessage());
         }
         return [];

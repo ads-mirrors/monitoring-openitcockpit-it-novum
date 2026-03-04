@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -605,6 +605,30 @@ class WizardAssignmentsTable extends Table {
                 'type_id'     => 'gude-sensors',
                 'title'       => __('Gude Sensors'),
                 'description' => __('Used to check GUDE Sensors'),
+                'image'       => 'gude.png',
+                'category'    => ['hardware', 'network'],
+                'active'      => true
+            ],
+            'kubernetes'                   => [
+                'type_id'     => 'kubernetes',
+                'title'       => __('Kubernetes'),
+                'description' => __('Used to monitor Kubernetes clusters and their components'),
+                'image'       => 'Kubernetes.svg',
+                'category'    => ['virtualization', 'cloud'],
+                'active'      => true
+            ],
+            'broadcom-bes'                 => [
+                'type_id'     => 'broadcom-bes',
+                'title'       => __('Broadcom BES'),
+                'description' => __('Monitor your Broadcom BES via SNMP'),
+                'image'       => 'broadcom.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
+            'redfish'                      => [
+                'type_id'     => 'redfish',
+                'title'       => __('Redfish Server Hardware'),
+                'description' => __('Used to monitor you Redfish Server Hardware'),
                 'image'       => 'network.png',
                 'category'    => ['hardware', 'network'],
                 'active'      => true

@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -41,6 +41,7 @@ use Cake\ORM\Entity;
  * @property string $password
  * @property bool $proxy
  * @property bool $push_noticed
+ * @property bool $enable_packagemanager
  * @property string config
  * @property PushAgent $push_agent
  * @property \Cake\I18n\DateTime $created
@@ -59,23 +60,24 @@ class Agentconfig extends Entity {
      * @var array
      */
     protected array $_accessible = [
-        'port'               => true,
-        'host_id'            => true,
-        'use_https'          => true,
-        'insecure'           => true,
-        'use_autossl'        => true,
-        'autossl_successful' => true,
-        'use_push_mode'      => true,
-        'basic_auth'         => true,
-        'username'           => true,
-        'password'           => true,
-        'proxy'              => true,
-        'push_noticed'       => true,
-        'config'             => true,
-        'push_agent'         => true,
-        'created'            => true,
-        'modified'           => true,
-        'host'               => true
+        'port'                  => true,
+        'host_id'               => true,
+        'use_https'             => true,
+        'insecure'              => true,
+        'use_autossl'           => true,
+        'autossl_successful'    => true,
+        'use_push_mode'         => true,
+        'basic_auth'            => true,
+        'username'              => true,
+        'password'              => true,
+        'proxy'                 => true,
+        'push_noticed'          => true,
+        'enable_packagemanager' => true,
+        'config'                => true,
+        'push_agent'            => true,
+        'created'               => true,
+        'modified'              => true,
+        'host'                  => true
     ];
 
 }

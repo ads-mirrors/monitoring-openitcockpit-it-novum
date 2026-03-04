@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -26,6 +26,8 @@
 namespace App\Model\Table;
 
 use Acl\Model\Table\AcosTable;
+use Acl\Model\Table\ArosTable;
+use App\Lib\AclDependencies;
 use App\Lib\Traits\Cake2ResultTableTrait;
 use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use Cake\ORM\Query;
@@ -317,5 +319,109 @@ class UsergroupsTable extends Table {
         ];
 
         return $usergroup;
+    }
+
+    /**
+     * @param $ids
+     * @return array
+     */
+    public function getUsergroupsByIds($ids) {
+        if (!is_array($ids)) {
+            $ids = [$ids];
+        }
+        $query = $this->find()
+            ->select([
+                'Usergroups.id',
+                'Usergroups.name',
+                'Usergroups.description'
+            ])
+            ->where([
+                'Usergroups.id IN' => $ids
+            ])
+            ->disableHydration();
+        return $this->emptyArrayIfNull($query->toArray());
+
+    }
+
+    /**
+     * @param bool $useAcoIdAsKey
+     * @return array
+     */
+    public function getAllAcosAsFilteredList($useAcoIdAsKey = true): array {
+        /** @var AcosTable $AcosTable */
+        $AcosTable = TableRegistry::getTableLocator()->get('Acl.Acos');
+
+        $acosAsList = [];
+        $acos = $AcosTable->find('threaded')
+            ->disableHydration()
+            ->all();
+
+        $acos = $acos->toArray();
+        $AclDependencies = new AclDependencies();
+        $acos = $AclDependencies->filterAcosForFrontend($acos);
+
+        foreach ($acos[0]['children'] as $controller) {
+            if (substr($controller['alias'], -6) === 'Module') {
+                $module = $controller;
+                foreach ($module['children'] as $moduleController) {
+                    foreach ($moduleController['children'] as $moduleAction) {
+                        if ($useAcoIdAsKey === true) {
+                            $acosAsList[$moduleAction['id']] = $module['alias'] . '/' . $moduleController['alias'] . '/' . $moduleAction['alias'];
+                        } else {
+                            $key = $module['alias'] . '/' . $moduleController['alias'] . '/' . $moduleAction['alias'];
+                            $acosAsList[$key] = $moduleAction['id'];
+                        }
+                    }
+                }
+            } else {
+                //Core Controller
+                foreach ($controller['children'] as $action) {
+                    if ($useAcoIdAsKey === true) {
+                        $acosAsList[$action['id']] = $controller['alias'] . '/' . $action['alias'];
+                    } else {
+                        $key = $controller['alias'] . '/' . $action['alias'];
+                        $acosAsList[$key] = $action['id'];
+                    }
+                }
+            }
+        }
+        if ($useAcoIdAsKey) {
+            asort($acosAsList, SORT_NATURAL);
+        } else {
+            ksort($acosAsList, SORT_NATURAL);
+        }
+
+        return $acosAsList;
+    }
+
+    /**
+     * @param int $usergroupId
+     * @return array
+     */
+    public function getOnlyAllowedAcosIdByUsergroupId(int $usergroupId): array {
+        /** @var ArosTable $ArosTable */
+        $ArosTable = TableRegistry::getTableLocator()->get('Acl.Aros');
+
+        $AcosAros = $ArosTable->find()
+            ->where([
+                'Aros.foreign_key' => $usergroupId
+            ])
+            ->contain([
+                'Acos' => function (Query $query) {
+                    return $query->where([
+                        '_create' => '1'
+                    ]);
+                }
+            ])
+            ->disableHydration()
+            ->first();
+        if (empty($AcosAros['acos'])) {
+            return [];
+        }
+        $filteredAcos = [];
+        foreach ($AcosAros['acos'] as $AcoAro) {
+            $filteredAcos[$AcoAro['id']] = $AcoAro['id'];
+        }
+        return $filteredAcos;
     }
 }

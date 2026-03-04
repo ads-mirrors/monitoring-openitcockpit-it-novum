@@ -1,5 +1,6 @@
 <?php
-// Copyright (C) <2015-present>  <it-novum GmbH>
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -24,8 +25,6 @@
 
 declare(strict_types=1);
 
-use Migrations\AbstractMigration;
-
 /**
  * Class CreateMapgenerator
  * Created:
@@ -34,7 +33,7 @@ use Migrations\AbstractMigration;
  * Usage:
  * openitcockpit-update
  */
-class CreateMapgenerator extends AbstractMigration {
+class CreateMapgenerator extends \Migrations\BaseMigration {
     /**
      * Change Method.
      *

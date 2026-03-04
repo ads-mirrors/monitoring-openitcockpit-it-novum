@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -286,5 +286,56 @@ class AgentconfigsTable extends Table {
         }
 
         return $query->toArray();
+    }
+
+    /**
+     * @return Agentconfig[]
+     */
+    public function getConfigForSoftwareInventory(): array {
+        $query = $this->find()
+            ->select([
+                'Agentconfigs.id',
+                'Agentconfigs.host_id',
+                'Agentconfigs.port',
+                'Agentconfigs.use_https',
+                'Agentconfigs.insecure',
+                'Agentconfigs.use_autossl',
+                'Agentconfigs.autossl_successful',
+                'Agentconfigs.use_push_mode',
+                'Agentconfigs.basic_auth',
+                'Agentconfigs.proxy',
+                'Agentconfigs.username',
+                'Agentconfigs.password',
+                'Agentconfigs.push_noticed',
+                'Agentconfigs.enable_packagemanager',
+                'Agentconfigs.config',
+                'Hosts.id',
+                'Hosts.uuid',
+                'Hosts.name',
+                'Hosts.address',
+            ])
+            // Contain is important, otherwise the data is missing in the result
+            ->contain([
+                'Hosts'
+            ])
+            ->innerJoin(
+                ['Hosts' => 'hosts'],
+                ['Hosts.id = Agentconfigs.host_id']
+            )
+            ->innerJoin(
+                ['Hoststatus' => 'statusengine_hoststatus'],
+                ['Hoststatus.hostname = Hosts.uuid']
+            )
+            ->where([
+                'Agentconfigs.enable_packagemanager' => 1,
+                'Agentconfigs.use_push_mode'         => 0, // Only pull agents
+                'Hosts.satellite_id'                 => 0, // Only Mastersystem Hosts
+                'Hosts.disabled'                     => 0,
+                'Hoststatus.current_state'           => 0 // Only hosts that are UP
+            ]);
+
+        return $query
+            ->all()
+            ->toArray();
     }
 }

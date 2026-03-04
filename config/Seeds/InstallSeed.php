@@ -1,5 +1,6 @@
 <?php
-// Copyright (C) <2015-present>  <it-novum GmbH>
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -148,6 +149,12 @@ class InstallSeed extends \Migrations\BaseSeed {
                 'task'     => 'LdapGroupImport',
                 'plugin'   => 'Core',
                 'interval' => '1440',
+                'enabled'  => '1',
+            ],
+            [
+                'task'     => 'AgentSoftwareInventory',
+                'plugin'   => 'Core',
+                'interval' => '60',
                 'enabled'  => '1',
             ],
         ];

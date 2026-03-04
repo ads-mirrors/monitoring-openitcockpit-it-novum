@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -98,7 +98,8 @@ class AclDependencies {
 
         $this
             ->allow('Agentconnector', 'register_agent')
-            ->allow('Agentconnector', 'submit_checkdata');
+            ->allow('Agentconnector', 'submit_checkdata')
+            ->allow('Agentconnector', 'submit_package_info');
 
         $this
             ->allow('Automaps', 'loadContainers')
@@ -196,7 +197,9 @@ class AclDependencies {
             ->allow('Dashboards', 'tacticalOverviewHostsWidget')
             ->allow('Dashboards', 'tacticalOverviewServicesWidget')
             ->allow('Dashboards', 'calendarWidget')
-            ->allow('Dashboards', 'desktopWidget');
+            ->allow('Dashboards', 'desktopWidget')
+            ->allow('Dashboards', 'delayedPassiveHostsWidget')
+            ->allow('Dashboards', 'delayedPassiveServicesWidget');
 
         $this
             ->allow('FilterBookmarks', 'index')
@@ -364,6 +367,7 @@ class AclDependencies {
 
 
         $this
+            ->dependency('Hosts', 'index', 'Hosts', 'passiveList')
             ->dependency('Hosts', 'index', 'Hosts', 'listToPdf')
             ->dependency('Hosts', 'index', 'Hosts', 'listToCsv')
             ->dependency('Hosts', 'index', 'Hosts', 'loadHostsByContainerId')
@@ -375,6 +379,7 @@ class AclDependencies {
             ->dependency('Hosts', 'browser', 'Hosts', 'loadAdditionalInformation')
             ->dependency('Hosts', 'browser', 'Hosts', 'loadSlaInformation')
             ->dependency('Hosts', 'browser', 'Hosts', 'loadIsarFlowInformation')
+            ->dependency('Hosts', 'browser', 'Hosts', 'loadSoftwareInformation')
             ->dependency('Hosts', 'add', 'Hosts', 'loadContainers')
             ->dependency('Hosts', 'add', 'Hosts', 'loadCommands')
             ->dependency('Hosts', 'add', 'Hosts', 'loadElementsByContainerId')
@@ -466,6 +471,7 @@ class AclDependencies {
 
 
         $this
+            ->dependency('Services', 'index', 'Services', 'passiveList')
             ->dependency('Services', 'deactivate', 'Services', 'mass_deactivate')
             ->dependency('Services', 'index', 'Services', 'listToPdf')
             ->dependency('Services', 'index', 'Services', 'listToCsv')
@@ -656,6 +662,27 @@ class AclDependencies {
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartsByContainerId')
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartById')
             ->dependency('OrganizationalCharts', 'view', 'OrganizationalCharts', 'loadOrganizationalChartsByString');
+
+        $this
+            ->dependency('Packages', 'index', 'Agentconnector', 'linux')
+            ->dependency('Packages', 'index', 'Agentconnector', 'windows')
+            ->dependency('Packages', 'index', 'Agentconnector', 'macos')
+            ->dependency('Packages', 'index', 'Packages', 'summary')
+            ->dependency('Packages', 'index', 'Packages', 'linux')
+            ->dependency('Packages', 'index', 'Packages', 'view_linux')
+            ->dependency('Packages', 'index', 'Packages', 'windows')
+            ->dependency('Packages', 'index', 'Packages', 'view_windows')
+            ->dependency('Packages', 'index', 'Packages', 'windows_updates')
+            ->dependency('Packages', 'index', 'Packages', 'view_windows_update')
+            ->dependency('Packages', 'index', 'Packages', 'macos')
+            ->dependency('Packages', 'index', 'Packages', 'view_macos')
+            ->dependency('Packages', 'index', 'Packages', 'macos_updates')
+            ->dependency('Packages', 'index', 'Packages', 'view_macos_update')
+            ->dependency('Packages', 'index', 'Packages', 'host_linux_packages')
+            ->dependency('Packages', 'index', 'Packages', 'host_windows_updates')
+            ->dependency('Packages', 'index', 'Packages', 'host_windows_apps')
+            ->dependency('Packages', 'index', 'Packages', 'host_macos_updates')
+            ->dependency('Packages', 'index', 'Packages', 'host_macos_apps');
 
 
         //Load Plugin ALC Dependencies
