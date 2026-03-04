@@ -1,7 +1,7 @@
 #!/bin/bash
 #
 # Copyright (C) 2015-2025  it-novum GmbH
-# Copyright (C) 2025-today Allgeier IT Services GmbH
+# Copyright (C) 2025-today AVENDIS GmbH
 #
 # This file is dual licensed
 #
@@ -102,8 +102,8 @@ if [[ "$MYSQL_ONLINE" == 0 ]]; then
 fi
 set -e
 
-#mkdir -p /opt/openitc/var/prometheus
-#chown nagios:nagios /opt/openitc/var/prometheus
+mkdir -p /opt/openitc/var/prometheus
+chown nagios:nagios /opt/openitc/var/prometheus
 #mkdir -p /opt/openitc/var/prometheus/victoria-metrics
 
 echo "---------------------------------------------------------------"

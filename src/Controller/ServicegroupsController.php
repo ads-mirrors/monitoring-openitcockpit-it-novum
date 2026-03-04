@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -1052,6 +1052,7 @@ class ServicegroupsController extends AppController {
         $serviceIds = $ServicegroupsTable->getServiceIdsByServicegroupId($id);
         $ServiceFilter = new ServiceFilter($this->request);
         $ServiceConditions = new ServiceConditions($ServiceFilter->indexFilter());
+        $ServiceConditions->setOrder($ServiceFilter->getOrderForPaginator());
 
         $ServiceConditions->setIncludeDisabled(false);
         $ServiceConditions->setServiceIds($serviceIds);

@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -72,7 +72,7 @@ class SupervisorCommand extends Command {
                 'gearman_worker',
                 'event-collectd',     //todo
                 'push_notification',
-                'prometheus_bridge',  //todo
+                'prometheus_bridge',
                 'customalert_worker', //todo
 
                 // Monitoring Engines

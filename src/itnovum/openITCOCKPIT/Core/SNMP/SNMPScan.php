@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -85,28 +85,28 @@ class SNMPScan {
     public function __construct($snmpOptions) {
         $this->snmpOptions = $snmpOptions;
         if (isset($snmpOptions['snmpVersion'])) {
-            $this->snmpVersion = $snmpOptions['snmpVersion'];
+            $this->snmpVersion = trim($snmpOptions['snmpVersion']);
         }
         if (isset($snmpOptions['snmpCommunity'])) {
-            $this->snmpCommunity = $snmpOptions['snmpCommunity'];
+            $this->snmpCommunity = trim($snmpOptions['snmpCommunity']);
         }
         if (isset($snmpOptions['securityLevel'])) {
-            $this->securityLevel = $snmpOptions['securityLevel'];
+            $this->securityLevel = trim($snmpOptions['securityLevel']);
         }
         if (isset($snmpOptions['authProtocol'])) {
-            $this->authProtocol = $snmpOptions['authProtocol'];
+            $this->authProtocol = trim($snmpOptions['authProtocol']);
         }
         if (isset($snmpOptions['securityName'])) {
-            $this->securityName = $snmpOptions['securityName'];
+            $this->securityName = trim($snmpOptions['securityName']);
         }
         if (isset($snmpOptions['authPassword'])) {
-            $this->authPassword = $snmpOptions['authPassword'];
+            $this->authPassword = trim($snmpOptions['authPassword']);
         }
         if (isset($snmpOptions['privacyProtocol'])) {
-            $this->privacyProtocol = $snmpOptions['privacyProtocol'];
+            $this->privacyProtocol = trim($snmpOptions['privacyProtocol']);
         }
         if (isset($snmpOptions['privacyPassword'])) {
-            $this->privacyPassword = $snmpOptions['privacyPassword'];
+            $this->privacyPassword = trim($snmpOptions['privacyPassword']);
         }
     }
 
@@ -127,7 +127,7 @@ class SNMPScan {
         if (empty($this->snmpCommunity)) {
             throw new \InvalidArgumentException('Community name is missing');
         }
-        return ['--community', '"' . trim($this->snmpCommunity) . '"'];
+        return ['--community', escapeshellarg($this->snmpCommunity)];
     }
 
     /**
@@ -146,26 +146,26 @@ class SNMPScan {
         $snmpV3Credentials = ['--protocol 3'];
         if (!empty($this->securityName)) {
             $snmpV3Credentials[] = '--username';
-            $snmpV3Credentials[] = '"' . trim($this->securityName) . '"';
+            $snmpV3Credentials[] = escapeshellarg($this->securityName);
         }
         if (!empty($this->authPassword)) {
             $snmpV3Credentials[] = '--authpassword';
-            $snmpV3Credentials[] = '"' . trim($this->authPassword) . '"';
+            $snmpV3Credentials[] = escapeshellarg($this->authPassword);
         }
         if (!empty($this->authProtocol)) {
             $snmpV3Credentials[] = '--authprotocol';
-            $snmpV3Credentials[] = '"' . trim($this->authProtocol) . '"';
+            $snmpV3Credentials[] = escapeshellarg($this->authProtocol);
         }
         if (!empty($this->privacyPassword)) {
             $snmpV3Credentials[] = '--privpassword';
-            $snmpV3Credentials[] = '"' . trim($this->privacyPassword) . '"';
+            $snmpV3Credentials[] = escapeshellarg($this->privacyPassword);
         }
         if (!empty($this->privacyProtocol)) {
             $snmpV3Credentials[] = '--privprotocol';
-            $snmpV3Credentials[] = '"' . trim($this->privacyProtocol) . '"';
+            $snmpV3Credentials[] = escapeshellarg($this->privacyProtocol);
         }
 
-        if (sizeof($snmpV3Credentials) === 1) {
+        if (count($snmpV3Credentials) === 1) {
             throw new \InvalidArgumentException('SNMP credentials are empty');
         }
         return $snmpV3Credentials;

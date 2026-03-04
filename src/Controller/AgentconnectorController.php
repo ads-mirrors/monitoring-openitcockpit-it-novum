@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -648,17 +648,18 @@ class AgentconnectorController extends AppController {
 
             // Legacy configuration for Agent version < 3.x
             $data = [
-                'host_id'       => $hostId,
-                'port'          => $dataWithDatatypes['int']['bind_port'],
-                'basic_auth'    => $dataWithDatatypes['bool']['use_http_basic_auth'],
-                'username'      => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['username'] : '',
-                'password'      => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['password'] : '',
-                'proxy'         => $dataWithDatatypes['bool']['use_proxy'],
-                'insecure'      => !$dataWithDatatypes['bool']['use_https_verify'], // Validate TLS certificate in PULL mode
-                'use_https'     => $dataWithDatatypes['bool']['use_https'], // Use own TLS certificate for the agent like Let's Encrypt
-                'use_autossl'   => $dataWithDatatypes['bool']['use_autossl'], // New field with agent 3.x
-                'use_push_mode' => $dataWithDatatypes['bool']['enable_push_mode'], // New field with agent 3.x
-                'config'        => $AgentConfiguration->marshal(), // New field with agent 3.x
+                'host_id'               => $hostId,
+                'port'                  => $dataWithDatatypes['int']['bind_port'],
+                'basic_auth'            => $dataWithDatatypes['bool']['use_http_basic_auth'],
+                'username'              => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['username'] : '',
+                'password'              => $dataWithDatatypes['bool']['use_http_basic_auth'] ? $dataWithDatatypes['string']['password'] : '',
+                'proxy'                 => $dataWithDatatypes['bool']['use_proxy'],
+                'insecure'              => !$dataWithDatatypes['bool']['use_https_verify'], // Validate TLS certificate in PULL mode
+                'use_https'             => $dataWithDatatypes['bool']['use_https'], // Use own TLS certificate for the agent like Let's Encrypt
+                'use_autossl'           => $dataWithDatatypes['bool']['use_autossl'], // New field with agent 3.x
+                'use_push_mode'         => $dataWithDatatypes['bool']['enable_push_mode'], // New field with agent 3.x
+                'enable_packagemanager' => $dataWithDatatypes['bool']['enable_packagemanager'], // New field with agent 3.x - Not in JSON for fast access but in the config for the agent
+                'config'                => $AgentConfiguration->marshal(), // New field with agent 3.x
             ];
             $entity = $AgentconfigsTable->patchEntity($entity, $data);
             $AgentconfigsTable->save($entity);

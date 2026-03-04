@@ -5,7 +5,7 @@
     "license": "Dual licensed GPLv3 and proprietary",
     "authors": [
         {
-            "name": "Allgeier IT Services GmbH",
+            "name": "AVENDIS GmbH",
             "role": "Developer"
         }
     ],
@@ -48,8 +48,8 @@
         "cboden/ratchet": "^0.4.1",
         "chillerlan/php-qrcode": "^3.4.1 || ^4.3.3",
         "damienharper/adf-tools": "^1.1",
-        "erusev/parsedown": "^1.7",
-        "erusev/parsedown-extra": "^0.8",
+        "erusev/parsedown": "^1.8",
+        "erusev/parsedown-extra": "^0.9",
         "freedsx/ldap": "^0.8",
         "friendsofcake/cakephp-csvview": "^5.0",
         "guzzlehttp/guzzle": "^7.4",
@@ -62,6 +62,7 @@
         "microsoft/microsoft-graph": "^1.92",
         "mobiledetect/mobiledetectlib": "2.*",
         "nickbeen/php-cli-progress-bar": "^1.1",
+        "phpoffice/phpspreadsheet": "5.3.0",
         "promphp/prometheus_client_php": "^2.7",
         "spatie/emoji": "^2.1",
         "symfony/filesystem": "^5.4",

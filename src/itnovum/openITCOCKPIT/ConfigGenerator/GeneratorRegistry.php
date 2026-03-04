@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -86,6 +86,10 @@ class GeneratorRegistry {
             new NSTAMaster(),
             new PhpFpmOitc()
         ];
+
+        if (Plugin::isLoaded('PrometheusModule')) {
+            $configFiles[] = new PrometheusCfgs_prometheus();
+        }
 
         return $configFiles;
     }
