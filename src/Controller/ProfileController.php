@@ -547,4 +547,32 @@ class ProfileController extends AppController {
         }
 
     }
+
+    public function registerDevice() {
+        if (!$this->isApiRequest()) {
+            throw new \Cake\Http\Exception\MethodNotAllowedException();
+        }
+        $User = new User($this->getUser());
+        $token= '';
+        if ($this->request->is('post')) {
+            $token = $this->request->getData('Token');
+        }
+        $userId = $User->getId();
+        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $found = $DeviceTable->find()->where(['user_id' => $userId, 'device_id' => $token])->count();
+        // $device = $DeviceTable->find()->where(['user_id' => $userId])->first();
+        //$deviceId = $device->device_id;
+        if ($found === 0) {
+            $device = $DeviceTable->newEmptyEntity();
+            $device->set('user_id', $userId);
+            $device->set('device_id', $token);
+            $DeviceTable->save($device);
+        }
+    }
+
+    public function ungisterDevice() {
+        if (!$this->isApiRequest()) {
+            throw new \Cake\Http\Exception\MethodNotAllowedException();
+        }
+    }
 }

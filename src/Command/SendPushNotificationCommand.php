@@ -36,6 +36,7 @@ use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\Http\Client;
 use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Core\Views\Host;
 use itnovum\openITCOCKPIT\Core\Views\HoststatusIcon;
@@ -362,6 +363,31 @@ class SendPushNotificationCommand extends Command {
             'serviceUuid' => $this->serviceUuid,
             'icon'        => $icon
         ]));
+
+        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $device = $DeviceTable->find()->where(['user_id' => $this->userId])->first();
+        if ($device) {
+            $http = new Client();
+            $data = [
+                'title' => $title,
+                'body'  => $message,
+                'token' => $device->device_id,
+                'icon' => $icon  ?? '',
+                'type' => $this->type ?? '',
+                'hostUuid'    => $this->hostUuid ?? '',
+                'serviceUuid' => $this->serviceUuid ?? '',
+            ];
+
+            $response = $http->post('http://192.168.178.139:3333/send-notification',
+                json_encode($data),
+                [
+                    'headers' => [
+                        'Content-Type' => 'application/json'
+                    ]
+                ]
+            );
+        }
+
         return true;
     }
 

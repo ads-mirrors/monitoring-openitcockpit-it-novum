@@ -133,7 +133,9 @@ class AclDependencies {
             ->allow('Profile', 'edit_apikey')
             ->allow('Profile', 'delete_apikey')
             ->allow('Profile', 'create_apikey')
-            ->allow('Profile', 'updateI18n');
+            ->allow('Profile', 'updateI18n')
+            ->allow('Profile', 'registerDevice')
+            ->allow('Profile', 'unregisterDevice');
 
         $this
             ->allow('Proxy', 'getSettings');
