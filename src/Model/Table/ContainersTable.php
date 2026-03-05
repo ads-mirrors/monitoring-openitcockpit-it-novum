@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -1722,9 +1722,7 @@ class ContainersTable extends Table {
             ->all()
             ->toArray();
         $delimiter = '/';
-
         foreach ($nodes as $container) {
-            $containerTypeId = (int)$container['containertype_id'];
             $path = $this->treePath($container['id'], $delimiter);
             $tree = $this->find()
                 ->where([
@@ -1735,11 +1733,14 @@ class ContainersTable extends Table {
                 ->orderBy('Containers.lft')
                 ->disableHydration()
                 ->toArray();
+
             $subContainers = Hash::extract($tree, '{n}.id');
+            if(!isset($userParentAndChildrenContainers[$container['id']])){
+                $userParentAndChildrenContainers[$container['id']] = [];
+            }
             foreach ($subContainers as $subContainerId) {
                 $userParentAndChildrenContainers[$container['id']][$subContainerId] = $subContainerId;
             }
-            //$userParentAndChildrenContainers[$container['id']] = Hash::extract($tree, '{n}.id');
             if (isset($resolvedContainers[$container['id']])) {
                 //already resolved this container in a previous loop, so we can skip it and its children
                 //debug('Already resolved. Nothing to do ' . $container['id'] . ' - ' . $resolvedContainers[$container['id']]);

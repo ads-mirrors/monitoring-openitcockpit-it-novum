@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -972,7 +972,7 @@ class HostsTable extends Table {
                 $intervalUnit = $where['Hoststatus.state_older_than_unit >'];
             }
             $query->where([
-                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $where['Hoststatus.state_older_than >'],
                     $intervalUnit
                 )
@@ -1299,6 +1299,229 @@ class HostsTable extends Table {
         }
         return $result;
     }
+
+    /**
+     * @param HostFilter $HostFilter
+     * @param HostConditions $HostConditions
+     * @param null|PaginateOMat $PaginateOMat
+     * @return array
+     */
+    public function getHostsIndexForPassiveHostsStatusengine3(HostFilter $HostFilter, HostConditions $HostConditions, $PaginateOMat = null) {
+        $MY_RIGHTS = $HostConditions->getContainerIds();
+        $query = $this->find('all');
+        $query->select([
+            'Hosts.id',
+            'Hosts.uuid',
+            'Hosts.name',
+            'Hosts.description',
+            'Hosts.address',
+            'Hosts.host_type',
+            'Hoststatus.current_state',
+            'Hoststatus.last_check',
+            'Hoststatus.next_check',
+            'Hoststatus.last_hard_state_change',
+            'Hoststatus.last_state_change',
+            'Hoststatus.output',
+            'Hoststatus.scheduled_downtime_depth',
+            'Hoststatus.active_checks_enabled',
+            'Hoststatus.is_hardstate',
+            'Hoststatus.is_flapping',
+            'Hoststatus.problem_has_been_acknowledged',
+            'Hoststatus.acknowledgement_type',
+            'hostpriority'    => $query->newExpr('IF(Hosts.priority IS NULL, Hosttemplates.priority, Hosts.priority)'),
+            'hostdescription' => $query->newExpr('IF(Hosts.description IS NULL, Hosttemplates.description, Hosts.description)'),
+
+            'check_interval' => $query->newExpr('IF(Hoststatus.current_state > 0 AND Hoststatus.is_hardstate = 0,
+            IF(Hosts.check_interval IS NULL, Hosttemplates.check_interval, Hosts.check_interval),
+            IF(Hosts.retry_interval IS NULL, Hosttemplates.retry_interval, Hosts.retry_interval)
+            )'),
+            'delayed'        => $query->newExpr(
+                'UNIX_TIMESTAMP() - (
+    IF(Hoststatus.current_state > 0 AND Hoststatus.is_hardstate = 0,
+     IF(Hosts.check_interval IS NULL, Hosttemplates.check_interval, Hosts.check_interval),
+     IF(Hosts.retry_interval IS NULL, Hosttemplates.retry_interval, Hosts.retry_interval)
+     )
++ Hoststatus.last_check)'
+            )
+        ]);
+
+        $query->join([
+            'b' => [
+                'table'      => 'statusengine_hoststatus',
+                'type'       => 'INNER',
+                'alias'      => 'Hoststatus',
+                'conditions' => 'Hoststatus.hostname = Hosts.uuid',
+            ]
+        ]);
+
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                'HostsToContainersSharing.host_id = Hosts.id'
+            ]);
+            $query->where([
+                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->contain([
+            'HostsToContainersSharing',
+            'Hosttemplates' => [
+                'fields' => [
+                    'Hosttemplates.id',
+                    'Hosttemplates.uuid',
+                    'Hosttemplates.name',
+                    'Hosttemplates.description',
+                    'Hosttemplates.notes',
+                    'Hosttemplates.active_checks_enabled',
+                    'Hosttemplates.tags',
+                    'Hosttemplates.priority'
+                ]
+            ]
+        ]);
+
+        $where = $HostFilter->indexFilter();
+        if (!empty($where['Hostgroups.id IN']) && is_array($where['Hostgroups.id IN'])) {
+            $query->select([
+                'hostgroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                    GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                    GROUP_CONCAT(HostToHostgroups.hostgroup_id))'),
+                'count'         => $query->newExpr(
+                    'SELECT COUNT(hostgroups.id)
+                                FROM hostgroups
+                                WHERE FIND_IN_SET (hostgroups.id,IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                                GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                                GROUP_CONCAT(HostToHostgroups.hostgroup_id)))
+                                AND hostgroups.id IN (' . implode(', ', $where['Hostgroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'hosts_to_hostgroups'         => [
+                    'table'      => 'hosts_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HostToHostgroups',
+                    'conditions' => 'HostToHostgroups.host_id = Hosts.id',
+                ],
+                'hosttemplates_to_hostgroups' => [
+                    'table'      => 'hosttemplates_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HosttemplatesToHostgroups',
+                    'conditions' => 'HosttemplatesToHostgroups.hosttemplate_id = Hosts.hosttemplate_id',
+                ]
+            ]);
+            $query->having([
+                'hostgroup_ids IS NOT NULL',
+                'count > 0'
+            ]);
+
+            unset($where['Hostgroups.id IN']);
+        }
+
+
+        $where['Hosts.disabled'] = (int)$HostConditions->includeDisabled();
+        if ($HostConditions->getHostIds()) {
+            $hostIds = $HostConditions->getHostIds();
+            if (!is_array($hostIds)) {
+                $hostIds = [$hostIds];
+            }
+
+            $where['Hosts.id IN'] = $hostIds;
+        }
+
+        if (isset($where['Hosts.keywords rlike'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.tags IS NULL OR Hosts.tags=""), Hosttemplates.tags, Hosts.tags)',
+                $where['Hosts.keywords rlike'],
+                'string',
+                'RLIKE'
+            );
+            unset($where['Hosts.keywords rlike']);
+        }
+        if (isset($where['Hosts.not_keywords not rlike'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.tags IS NULL OR Hosts.tags=""), Hosttemplates.tags, Hosts.tags)',
+                $where['Hosts.not_keywords not rlike'],
+                'string',
+                'NOT RLIKE'
+            );
+            unset($where['Hosts.not_keywords not rlike']);
+        }
+        if (isset($where['hostpriority IN'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.priority IS NULL), Hosttemplates.priority, Hosts.priority)',
+                $where['hostpriority IN'],
+                'integer[]',
+                'IN'
+            );
+            unset($where['hostpriority IN']);
+        }
+
+        if (isset($where['hostdescription LIKE'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.description IS NULL OR Hosts.description=""), Hosttemplates.description, Hosts.description)',
+                $where['hostdescription LIKE'],
+                'string',
+                'LIKE'
+            );
+            unset($where['hostdescription LIKE']);
+        }
+
+        //consider only passive hosts
+        $query->where([
+            $query->newExpr('IF(Hosts.active_checks_enabled IS NULL, Hosttemplates.active_checks_enabled, Hosts.active_checks_enabled) = 0'),
+            'Hoststatus.passive_checks_enabled' => 1
+        ]);
+
+        if (isset($where['delayed >'][0]) && isset($where['delayed >'][1])) {
+            $delayTime = $where['delayed >'][0];
+            $delayUnit = $where['delayed >'][1];
+            if (in_array($delayUnit, ['SECOND', 'MINUTE', 'HOUR', 'DAY'], true)) {
+                switch ($delayUnit) {
+                    case 'MINUTE':
+                        $delayTime *= 60;
+                        break;
+                    case 'HOUR':
+                        $delayTime *= 3600;
+                        break;
+                    case 'DAY':
+                        $delayTime *= 86400;
+                        break;
+                }
+
+            }
+            $query->having([
+                'delayed >' => $delayTime
+            ]);
+            unset($where['delayed >']);
+        } else {
+            $query->having([
+                'delayed >' => 0
+            ]);
+        }
+
+
+        $query->where($where);
+        $query->disableHydration();
+        $query->groupBy(['Hosts.id']);
+        $query->orderBy(
+            array_merge(
+                $HostFilter->getOrderForPaginator('Hoststatus.current_state', 'desc'),
+                ['Hosts.id' => 'asc']
+            )
+        );
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $this->formatResultAsCake2($query->toArray(), false);
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scroll($query, $PaginateOMat->getHandler(), false);
+            } else {
+                $result = $this->paginate($query, $PaginateOMat->getHandler(), false);
+            }
+        }
+        return $result;
+    }
+
 
     /**
      * @param HostFilter $HostFilter
@@ -3520,7 +3743,7 @@ class HostsTable extends Table {
             }
             $query->where([
                 //  sprintf('Hoststatus.last_state_change <= NOW() - INTERVAL %s %s',
-                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Hoststatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $conditions['Hoststatus']['state_older_than'],
                     $intervalUnit
                 )

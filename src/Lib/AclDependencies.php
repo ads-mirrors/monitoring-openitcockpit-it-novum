@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -197,7 +197,9 @@ class AclDependencies {
             ->allow('Dashboards', 'tacticalOverviewHostsWidget')
             ->allow('Dashboards', 'tacticalOverviewServicesWidget')
             ->allow('Dashboards', 'calendarWidget')
-            ->allow('Dashboards', 'desktopWidget');
+            ->allow('Dashboards', 'desktopWidget')
+            ->allow('Dashboards', 'delayedPassiveHostsWidget')
+            ->allow('Dashboards', 'delayedPassiveServicesWidget');
 
         $this
             ->allow('FilterBookmarks', 'index')
@@ -365,6 +367,7 @@ class AclDependencies {
 
 
         $this
+            ->dependency('Hosts', 'index', 'Hosts', 'passiveList')
             ->dependency('Hosts', 'index', 'Hosts', 'listToPdf')
             ->dependency('Hosts', 'index', 'Hosts', 'listToCsv')
             ->dependency('Hosts', 'index', 'Hosts', 'loadHostsByContainerId')
@@ -468,6 +471,7 @@ class AclDependencies {
 
 
         $this
+            ->dependency('Services', 'index', 'Services', 'passiveList')
             ->dependency('Services', 'deactivate', 'Services', 'mass_deactivate')
             ->dependency('Services', 'index', 'Services', 'listToPdf')
             ->dependency('Services', 'index', 'Services', 'listToCsv')
