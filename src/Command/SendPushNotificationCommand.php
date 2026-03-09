@@ -365,27 +365,28 @@ class SendPushNotificationCommand extends Command {
         ]));
 
         $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
-        $device = $DeviceTable->find()->where(['user_id' => $this->userId])->first();
-        if ($device) {
+        $devices = $DeviceTable->find()->where(['user_id' => $this->userId])->all();
+        foreach ($devices as $device) {
             $http = new Client();
             $data = [
-                'title' => $title,
-                'body'  => $message,
-                'token' => $device->device_id,
-                'icon' => $icon  ?? '',
-                'type' => $this->type ?? '',
+                'title'       => $title,
+                'body'        => $message,
+                'token'       => $device->device_id,
+                'icon'        => $icon ?? '',
+                'type'        => $this->type ?? '',
                 'hostUuid'    => $this->hostUuid ?? '',
                 'serviceUuid' => $this->serviceUuid ?? '',
             ];
 
-            $response = $http->post('http://192.168.178.139:3333/send-notification',
+            $response = $http->post(
+                'http://192.168.178.139:3333/send-notification',
                 json_encode($data),
-                [
-                    'headers' => [
-                        'Content-Type' => 'application/json'
-                    ]
-                ]
+                ['headers' => ['Content-Type' => 'application/json']]
             );
+
+            if (!$response->isOk()) {
+                $DeviceTable->deleteAll(['device_id' => $device->device_id]);
+            }
         }
 
         return true;
