@@ -205,7 +205,7 @@ echo $this->element('emails/style');
                                         $Service->getUuid(),
                                         !$noEmoji
                                     );
-                                    echo $EvcTableRenderer->getEvcDataAsTable();
+                                    echo $EvcTableRenderer->getEvcDataAsTable(true);
                                     echo '<br>';
                                 endif; ?>
 

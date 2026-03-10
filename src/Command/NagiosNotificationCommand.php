@@ -361,6 +361,18 @@ class NagiosNotificationCommand extends Command {
                     foreach ($evcTree as $layerNumber => $layer) {
                         foreach ($layer as $parentId => $childNodes) {
                             foreach ($childNodes as $childIndex => $childNode) {
+                                // ITC-3587 If the vService is using a scoring operator, we tell this the previous layer
+                                // This makes the rendering in the frontend easier, because we don't have to look for the operator in the parent node
+                                if ($EventcorrelationsTable->isScoringOperator($childNode['operator'])) {
+                                    $previousLayerNumber = $layerNumber - 1;
+                                    $evcId = $childNode['id'];
+                                    for ($patchIndex = 0; $patchIndex < sizeof($evcTree[$previousLayerNumber][$evcId]); $patchIndex++) {
+                                        if (isset($evcTree[$previousLayerNumber][$evcId][$patchIndex])) {
+                                            $evcTree[$previousLayerNumber][$evcId][$patchIndex]['isUsedInScoringOperator'] = true;
+                                        }
+                                    }
+                                }
+
                                 $Servicestatus = new Servicestatus([]);
                                 if (!empty($servicestatus[$childNode['service']['uuid']])) {
                                     $Servicestatus = new Servicestatus(

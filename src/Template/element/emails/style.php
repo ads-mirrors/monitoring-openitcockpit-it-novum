@@ -445,8 +445,6 @@
     /* EVC Summary View*/
     .criticalEvcSummary {
         color: white !important;
-        -webkit-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
-        -moz-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         padding: 2px;
         background: #d9534f; /* Outlook on Windows has no support for linear-gradient */
@@ -454,15 +452,7 @@
 
     }
 
-    .criticalEvcSummary:after {
-        font-family: FontAwesome;
-        /*content: "\f071";*/
-        color: white;
-    }
-
     .okEvcSummary {
-        -webkit-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
-        -moz-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         padding: 5px;
         color: white;
@@ -471,8 +461,6 @@
     }
 
     .unknownEvcSummary {
-        -webkit-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
-        -moz-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         padding: 2px;
         color: white;
@@ -481,8 +469,6 @@
     }
 
     .warningEvcSummary {
-        -webkit-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
-        -moz-box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
         padding: 2px;
         color: white;
@@ -491,6 +477,7 @@
     }
 
     .disabledEvcSummary {
+        background: #cfc7f3; /* Outlook on Windows has no support for linear-gradient */
         background: repeating-linear-gradient(
             -45deg,
             #ffffff,
@@ -500,22 +487,12 @@
         );
     }
 
-    .disabledEvcSummary:before {
-        content: "🔌";
-        position: absolute;
-        right: 2px;
-        top: -2px;
-        font-size: 12px;
-    }
-
     .gatter {
         display: block;
         white-space: nowrap;
         font-family: Verdana;
-        -moz-transform: rotate(-90deg);
-        -moz-transform-origin: center center;
-        -webkit-transform: rotate(-90deg);
-        -webkit-transform-origin: center center;
+        transform: rotate(-90deg);
+        transform-origin: center center;
         -ms-transform: rotate(-90deg);
         -ms-transform-origin: center center;
         width: 15px;
@@ -700,6 +677,49 @@
 
     .not-underlined {
         text-decoration: none;
+    }
+
+    /* DANGER ZONE
+     * Everything below may will cause a CSS parsing err in Outlook Web (or Windows).
+     * Whenever outlook hits an error it will stop parsing the rest of the CSS
+     * So put everything that may cause an error into the danger zone and hope for the best.
+     */
+
+    .evc-summary-ok {
+        /* only works on macOS outlook */
+        background: linear-gradient(to right, #4c4f53 15px, #0fa80f 2%, #00C851);
+    }
+
+    .evc-summary-warning {
+        background: linear-gradient(to right, #4c4f53 15px, #db9225 2%, #ffbb33);
+    }
+
+    .evc-summary-critical {
+        background: linear-gradient(to right, #4c4f53 15px, #aa0202 2%, #CC0000);
+
+    }
+
+    .evc-summary-unknown {
+        background: linear-gradient(to right, #4c4f53 15px, #6a6a6a 2%, #6b7785);
+    }
+
+    .evc-summary-not-monitored {
+        background: linear-gradient(to right, #4c4f53 15px, #2d2d7e 2%, #5856d6);
+    }
+
+    /* Outlook Web has no idea about :after and :before and may stops parsing CSS on errors. because that's smart... */
+    .disabledEvcSummary:before {
+        content: "🔌";
+        position: absolute;
+        right: 2px;
+        top: -2px;
+        font-size: 12px;
+    }
+
+    .criticalEvcSummary:after {
+        font-family: FontAwesome;
+        /*content: "\f071";*/
+        color: white;
     }
 
 </style>
