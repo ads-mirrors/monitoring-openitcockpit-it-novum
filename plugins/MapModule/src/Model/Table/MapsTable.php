@@ -225,6 +225,17 @@ class MapsTable extends Table {
                     ]);
                 }
                 break;
+            case 'Containers':
+                if (!$coreTable->hasAssociation('Maps')) {
+                    $coreTable->belongsToMany('Maps', [
+                        'className'        => 'MapModule.Maps',
+                        'foreignKey'       => 'container_id',
+                        'targetForeignKey' => 'map_id',
+                        'joinTable'        => 'maps_to_containers',
+                        'joinType'         => 'INNER',
+                    ]);
+                }
+                break;
         }
     }
 

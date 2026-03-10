@@ -109,6 +109,20 @@ class MapgeneratorsTable extends Table {
 
     }
 
+    public function bindCoreAssociations(Table $coreTable) {
+        switch ($coreTable->getAlias()) {
+            case 'Containers':
+                if (!$coreTable->hasAssociation('Mapgenerators')) {
+                    $coreTable->belongsToMany('Mapgenerators', [
+                        'foreignKey'       => 'container_id',
+                        'targetForeignKey' => 'mapgenerator_id',
+                        'joinTable'        => 'mapgenerators_to_containers',
+                    ]);
+                }
+                break;
+        }
+    }
+
     /**
      * Default validation rules.
      *

@@ -616,7 +616,39 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'Kubernetes.svg',
                 'category'    => ['virtualization', 'cloud'],
                 'active'      => true
-            ]
+            ],
+            'broadcom-bes'                 => [
+                'type_id'     => 'broadcom-bes',
+                'title'       => __('Broadcom BES'),
+                'description' => __('Monitor your Broadcom BES via SNMP'),
+                'image'       => 'broadcom.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
+            'redfish'                      => [
+                'type_id'     => 'redfish',
+                'title'       => __('Redfish Server Hardware'),
+                'description' => __('Used to monitor you Redfish Server Hardware'),
+                'image'       => 'network.png',
+                'category'    => ['hardware', 'network'],
+                'active'      => true
+            ],
+            'ms-windows-agentless'         => [
+                'type_id'     => 'ms-windows-agentless',
+                'title'       => __('Agentless Windows'),
+                'description' => __('Monitor your Agentless Windows'),
+                'image'       => 'Windows.svg',
+                'category'    => ['windows'],
+                'active'      => true
+            ],
+            'checkpoint-firewall'          => [
+                'type_id'     => 'checkpoint-firewall',
+                'title'       => __('Checkpoint Firewall'),
+                'description' => __('Monitor your Checkpoint Firewall.'),
+                'image'       => 'checkpoint.png',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];

@@ -155,17 +155,6 @@ class ContainersTable extends Table {
             'cascadeCallbacks' => true
         ])->setDependent(true);
 
-        $this->hasMany('MapsToContainers', [
-            'foreignKey'       => 'container_id',
-            'cascadeCallbacks' => true
-        ]);
-
-        $this->belongsToMany('Mapgenerators', [
-            'foreignKey'       => 'container_id',
-            'targetForeignKey' => 'mapgenerator_id',
-            'joinTable'        => 'mapgenerators_to_containers',
-        ]);
-
         $this->hasMany('Tenants', [
             'foreignKey'       => 'container_id',
             'cascadeCallbacks' => true
