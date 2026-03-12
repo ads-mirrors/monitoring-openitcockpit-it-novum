@@ -476,6 +476,15 @@
         background: linear-gradient(to right, #4c4f53 15px, #f0ad4e 2%); /* W3C */
     }
 
+    .notMonitoredEvcSummary {
+        color: white !important;
+        box-shadow: 3px 3px 1px -2px rgba(0, 0, 0, 0.75);
+        padding: 2px;
+        background: #5856d6; /* Outlook on Windows has no support for linear-gradient */
+        background: linear-gradient(to right, #4c4f53 15px, #5856d6 2%); /* W3C */
+
+    }
+
     .disabledEvcSummary {
         background: #cfc7f3; /* Outlook on Windows has no support for linear-gradient */
         background: repeating-linear-gradient(
@@ -677,6 +686,24 @@
 
     .not-underlined {
         text-decoration: none;
+    }
+
+    .btn-primary {
+        margin: 0;
+        padding: 0 24px;
+        color: #ffffff;
+        font-weight: bold;
+        line-height: 40px;
+        letter-spacing: 0.1ch;
+        background-color: #5856d6;
+        border-radius: 5px;
+        box-shadow: 0 8px 14px 2px #5856d624, 0 6px 20px 5px #5856d61f, 0 8px 10px -5px #5856d633;
+        display: inline-block;
+        text-align: center;
+        text-decoration: none;
+        white-space: nowrap;
+        -webkit-text-size-adjust: none;
+        vertical-align: middle;
     }
 
     /* DANGER ZONE
