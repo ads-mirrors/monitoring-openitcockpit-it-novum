@@ -3367,7 +3367,7 @@ class ServicesTable extends Table {
         return $result;
     }
 
-    public function getAllOitcAgentServicesByHostIdForExport($hostId) {
+    public function getAllOitcAgentServicesByHostIdForExport($hostId): array {
         /** @var $ServicetemplatesTable ServicetemplatesTable */
         $ServicetemplatesTable = TableRegistry::getTableLocator()->get('Servicetemplates');
 
@@ -3411,7 +3411,7 @@ class ServicesTable extends Table {
         foreach ($services as $index => $service) {
             if (!empty($service['servicecommandargumentvalues'])) {
                 //Arguments from service
-                $commandArgumentValuesDiff = array_diff(
+                $commandArgumentValuesDiff = Hash::diff(
                     Hash::extract($service['servicetemplate']['servicetemplatecommandargumentvalues'], '{n}.commandargument_id'),
                     Hash::extract($service['servicecommandargumentvalues'], '{n}.commandargument_id')
                 );
