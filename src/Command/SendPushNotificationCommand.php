@@ -376,6 +376,7 @@ class SendPushNotificationCommand extends Command {
                 'type'        => $this->type ?? '',
                 'hostUuid'    => $this->hostUuid ?? '',
                 'serviceUuid' => $this->serviceUuid ?? '',
+                'userId'      => $this->userId,
             ];
 
             $response = $http->post(

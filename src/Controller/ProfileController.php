@@ -570,9 +570,17 @@ class ProfileController extends AppController {
         }
     }
 
-    public function ungisterDevice() {
+    public function unregisterDevice() {
         if (!$this->isApiRequest()) {
             throw new \Cake\Http\Exception\MethodNotAllowedException();
         }
+        $User = new User($this->getUser());
+        $token= '';
+        if ($this->request->is('post')) {
+            $token = $this->request->getData('Token');
+        }
+        $userId = $User->getId();
+        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $DeviceTable->deleteAll(['device_id' => $token, 'user_id' => $userId]);
     }
 }
