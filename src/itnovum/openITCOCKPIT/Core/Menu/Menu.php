@@ -893,6 +893,18 @@ class Menu {
                     '/proxy/index'
                 ))
                 ->addLink(new MenuLink(
+                    __('Notifications Relay Settings'),
+                    'PushNotificationsRelayIndex',
+                    'PushNotificationsRelay',
+                    'index',
+                    '',
+                    ['fas', 'globe'],
+                    [],
+                    2,
+                    true,
+                    '/pushnotificationsrelay/index'
+                ))
+                ->addLink(new MenuLink(
                     __('Registration'),
                     'RegistersIndex',
                     'registers',
