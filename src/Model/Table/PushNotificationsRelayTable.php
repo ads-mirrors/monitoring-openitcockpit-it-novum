@@ -52,7 +52,7 @@ class PushNotificationsRelayTable extends Table {
     public function initialize(array $config): void {
         parent::initialize($config);
 
-        $this->setTable('push_notifcations_relay');
+        $this->setTable('push_notifications_relay');
         $this->setDisplayField('id');
         $this->setPrimaryKey('id');
     }
@@ -70,9 +70,9 @@ class PushNotificationsRelayTable extends Table {
 
         $validator
             ->scalar('address')
-            ->maxLength('ipaddress', 255)
-            ->requirePresence('ipaddress', 'create')
-            ->notEmptyString('ipaddress');
+            ->maxLength('address', 255)
+            ->requirePresence('address', 'create')
+            ->notEmptyString('address');
 
         $validator
             ->integer('port', __('This field needs to be numeric.'))
@@ -101,7 +101,7 @@ class PushNotificationsRelayTable extends Table {
      */
     public function getSettings() {
         $result = $this->find()->first();
-        $settings = ['address' => '', 'port' => 0, 'enabled' => false];
+        $settings = ['address' => '', 'port' => 0, 'enabled' => false, 'auth_key' => ''];
         if (!is_null($result)) {
             $proxy = $result->toArray();
             $settings = Hash::merge($settings, $proxy);
