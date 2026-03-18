@@ -3845,7 +3845,7 @@ class HostsController extends AppController {
         /** @var \App\Model\Entity\Host $host */
         $host = $HostsTable->getHostById($id);
 
-        if (!$this->allowedByContainerId($host->getContainerIds())) {
+        if (!$this->allowedByContainerId($host->getContainerIds(), false)) {
             $this->render403();
             return;
         }
