@@ -364,7 +364,13 @@ class SendPushNotificationCommand extends Command {
             'icon'        => $icon
         ]));
 
-        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $RelayTable = TableRegistry::getTableLocator()->get('PushNotificationsRelay');
+        $relay = $RelayTable->getSettings();
+        if($relay['enabled']) {
+            $this->pushMobile($title, $message, $icon, $relay);
+        }
+
+       /* $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
         $devices = $DeviceTable->find()->where(['user_id' => $this->userId])->all();
         foreach ($devices as $device) {
             $http = new Client();
@@ -388,9 +394,49 @@ class SendPushNotificationCommand extends Command {
             if (!$response->isOk()) {
                 $DeviceTable->deleteAll(['device_id' => $device->device_id]);
             }
-        }
+        } */
 
         return true;
+    }
+
+    private function pushMobile(String $title, String $message, String $icon, array  $relay) {
+        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $devices = $DeviceTable->find()->where(['user_id' => $this->userId])->all();
+        //$http = new Client();
+        $authKey = $relay['authKey'] ?? '';
+        $url = $relay['address'] ?? '';
+        $port = $relay['port'] ?? '';
+        $endpoint = sprintf('%s:%s/send-notification', $url, $port);
+        foreach ($devices as $device) {
+            $http = new Client();
+            $data = [
+                'title'       => $title,
+                'body'        => $message,
+                'token'       => $device->device_id,
+                'icon'        => $icon ?? '',
+                'type'        => $this->type ?? '',
+                'hostUuid'    => $this->hostUuid ?? '',
+                'serviceUuid' => $this->serviceUuid ?? '',
+                'userId'      => $this->userId,
+                'auth'        => $authKey
+            ];
+            $response = $http->post(
+                $endpoint,
+                json_encode($data),                    // ← body as JSON
+                [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                        'X-Api-Key'    => $authKey,    // ← auth key in header
+                    ]
+                ]
+            );
+            if (!$response->isOk()) {
+                $DeviceTable->deleteAll(['device_id' => $device->device_id]);
+            }
+
+        }
+
+
     }
 
     private function isAcknowledgement() {

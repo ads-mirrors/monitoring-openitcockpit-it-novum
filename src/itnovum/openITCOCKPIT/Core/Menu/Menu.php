@@ -894,8 +894,8 @@ class Menu {
                 ))
                 ->addLink(new MenuLink(
                     __('Notifications Relay Settings'),
-                    'PushNotificationsRelayIndex',
-                    'PushNotificationsRelay',
+                    'NotificationsRelayIndex',
+                    'notificationsRelay',
                     'index',
                     '',
                     ['fas', 'globe'],

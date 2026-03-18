@@ -32,14 +32,14 @@ use Cake\Validation\Validator;
 /**
  * Proxies Model
  *
- * @method \App\Model\Entity\Proxy get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \App\Model\Entity\Proxy newEntity($data = null, array $options = [])
- * @method \App\Model\Entity\Proxy[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\Proxy|bool save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Proxy|bool saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\Proxy patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method \App\Model\Entity\Proxy[] patchEntities($entities, array $data, array $options = [])
- * @method \App\Model\Entity\Proxy findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\PushNotificationsRelay get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\PushNotificationsRelay newEntity($data = null, array $options = [])
+ * @method \App\Model\Entity\PushNotificationsRelay[] newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\PushNotificationsRelay|bool save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\PushNotificationsRelay|bool saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \App\Model\Entity\PushNotificationsRelay patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \App\Model\Entity\PushNotificationsRelay[] patchEntities($entities, array $data, array $options = [])
+ * @method \App\Model\Entity\PushNotificationsRelay findOrCreate($search, ?callable $callback = null, array $options = [])
  */
 class PushNotificationsRelayTable extends Table {
 
@@ -96,10 +96,10 @@ class PushNotificationsRelayTable extends Table {
     }
 
     /**
-     * Get Proxy Settings
+     * Get Relay Settings
      * @return array
      */
-    public function getSettings() {
+    public function getSettings(): array {
         $result = $this->find()->first();
         $settings = ['address' => '', 'port' => 0, 'enabled' => false, 'auth_key' => ''];
         if (!is_null($result)) {

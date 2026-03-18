@@ -37,10 +37,10 @@ use App\Model\Table\PushNotificationsRelayTable;
 use Cake\ORM\Locator\LocatorAwareTrait;
 
 /**
- * Class PushNotificationsRelayController
+ * Class NotificationsRelayController
  * @package App\Controller
  */
-class PushNotificationsRelayController extends AppController {
+class NotificationsRelayController extends AppController {
 
     use LocatorAwareTrait;
 
@@ -52,7 +52,7 @@ class PushNotificationsRelayController extends AppController {
         $TableLocator = $this->getTableLocator();
 
         /** @var PushNotificationsRelayTable $PushNotificationsRelayTable */
-        $PushNotificationsRelayTable = $TableLocator->get('');
+        $PushNotificationsRelayTable = $TableLocator->get('PushNotificationsRelay');
 
         if ($this->request->is('post') && $this->isAngularJsRequest()) {
             $entity = $PushNotificationsRelayTable->find()->first();
