@@ -403,7 +403,7 @@ class SendPushNotificationCommand extends Command {
         $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
         $devices = $DeviceTable->find()->where(['user_id' => $this->userId])->all();
         //$http = new Client();
-        $authKey = $relay['authKey'] ?? '';
+        $authKey = $relay['auth_key'] ?? '';
         $url = $relay['address'] ?? '';
         $port = $relay['port'] ?? '';
         $endpoint = sprintf('%s:%s/send-notification', $url, $port);
