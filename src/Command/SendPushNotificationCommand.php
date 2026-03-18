@@ -369,33 +369,6 @@ class SendPushNotificationCommand extends Command {
         if($relay['enabled']) {
             $this->pushMobile($title, $message, $icon, $relay);
         }
-
-       /* $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
-        $devices = $DeviceTable->find()->where(['user_id' => $this->userId])->all();
-        foreach ($devices as $device) {
-            $http = new Client();
-            $data = [
-                'title'       => $title,
-                'body'        => $message,
-                'token'       => $device->device_id,
-                'icon'        => $icon ?? '',
-                'type'        => $this->type ?? '',
-                'hostUuid'    => $this->hostUuid ?? '',
-                'serviceUuid' => $this->serviceUuid ?? '',
-                'userId'      => $this->userId,
-            ];
-
-            $response = $http->post(
-                'http://192.168.178.139:3333/send-notification',
-                json_encode($data),
-                ['headers' => ['Content-Type' => 'application/json']]
-            );
-
-            if (!$response->isOk()) {
-                $DeviceTable->deleteAll(['device_id' => $device->device_id]);
-            }
-        } */
-
         return true;
     }
 
@@ -433,10 +406,7 @@ class SendPushNotificationCommand extends Command {
             if (!$response->isOk()) {
                 $DeviceTable->deleteAll(['device_id' => $device->device_id]);
             }
-
         }
-
-
     }
 
     private function isAcknowledgement() {
