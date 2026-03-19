@@ -142,7 +142,7 @@ class NotificationHostsLogTable extends Table implements NotificationHostsLogTab
                 ['HostsToContainers' => 'hosts_to_containers'],
                 ['HostsToContainers.host_id = Hosts.id']
             )
-            ->leftJoin(
+            ->innerJoin(
                 ['Hosttemplates' => 'hosttemplates'],
                 ['Hosttemplates.id = Hosts.Hosttemplate_id']
             )
