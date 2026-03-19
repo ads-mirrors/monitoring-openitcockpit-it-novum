@@ -379,9 +379,14 @@ class SendPushNotificationCommand extends Command {
         $authKey = $relay['auth_key'] ?? '';
         $url = $relay['address'] ?? '';
         $port = $relay['port'] ?? '';
-        $endpoint = sprintf('%s:%s/send-notification', $url, $port);
+        //$endpoint = sprintf('%s:%s/send-notification', $url, $port);
+        $endpoint = sprintf('%s:%d/send-notification', rtrim($url, '/'), (int)$port);
+        $http = new Client([
+            'ssl_verify_peer' => false,      // ← for self-signed cert testing
+            'ssl_verify_host' => false,      // ← for self-signed cert testing
+        ]);
         foreach ($devices as $device) {
-            $http = new Client();
+
             $data = [
                 'title'       => $title,
                 'body'        => $message,
