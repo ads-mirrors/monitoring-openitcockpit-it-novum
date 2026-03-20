@@ -408,7 +408,7 @@ class SendPushNotificationCommand extends Command {
                     ]
                 ]
             );
-            if (!$response->isOk()) {
+            if ($response->getStatusCode() === 410) {
                 $DeviceTable->deleteAll(['device_id' => $device->device_id]);
             }
         }
