@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -32,6 +32,7 @@ class HostsTopAlertJson extends DashboardJsonStandardizer {
         'state'               => 'down',
         'not_older_than'      => 1,
         'not_older_than_unit' => 'DAY',
+        'hostpriority'        => [],
         'scroll_interval'     => 30000,
         'useScroll'           => true
     ];

@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -61,6 +61,7 @@ class ServiceStatusListJson extends DashboardJsonStandardizer {
             'keywords'     => '',
             'not_keywords' => ''
         ],
+        'servicepriority' => [],
         'sort'            => 'Servicestatus.current_state',
         'direction'       => 'desc',
         'useScroll'       => true,

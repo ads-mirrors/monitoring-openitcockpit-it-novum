@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -109,6 +109,11 @@ class Host {
      * @var string|null
      */
     private $notes;
+
+    /**
+     * @var int
+     */
+    private $hostType = GENERIC_HOST;
 
     /**
      * Host constructor.
@@ -225,6 +230,11 @@ class Host {
                 $this->priority = $host['Host']['priority'];
             }
         }
+
+        if (isset($host['Host']['host_type'])) {
+            $this->hostType = (int)$host['Host']['host_type'];
+        }
+
     }
 
     /**
@@ -350,6 +360,13 @@ class Host {
         $arr['is_satellite_host'] = $this->isSatelliteHost();
         $arr['name'] = $this->hostname;
         return $arr;
+    }
+
+    /**
+     * @return int
+     */
+    public function getHostType() {
+        return $this->hostType;
     }
 
 }

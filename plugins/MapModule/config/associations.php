@@ -5,29 +5,38 @@
 // The license agreement and license key were sent with the order confirmation.
 
 return [
-    'Hosts'         => [
+    'Hosts'                       => [
         'MapModule.Mapitems',
         'MapModule.Maplines',
         'MapModule.Mapsummaryitems',
     ],
-    'Hostgroups'    => [
+    'Hostgroups'                  => [
         'MapModule.Mapitems',
         'MapModule.Maplines',
         'MapModule.Mapsummaryitems',
     ],
-    'Services'      => [
+    'Services'                    => [
         'MapModule.Mapitems',
         'MapModule.Maplines',
         'MapModule.Mapsummaryitems',
         'MapModule.Mapgadgets',
     ],
-    'Servicegroups' => [
+    'Servicegroups'               => [
         'MapModule.Mapitems',
         'MapModule.Maplines',
         'MapModule.Mapsummaryitems',
     ],
     'DistributeModule.Satellites' => [
         'MapModule.Maps'
+    ],
+    'Containers'                  => [
+        'MapModule.Mapgenerators',
+        'MapModule.Rotations',
+        'MapModule.Maps',
+        'MapModule.MapUploads'
+    ],
+    'Users'                       => [
+        'MapModule.MapUploads'
     ]
 ];
 

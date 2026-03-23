@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -166,9 +166,11 @@ class MacosAppsHostsTable extends Table {
             $query->where($GenericFilter->genericFilters());
         }
 
-        $query->orderBy(
-            $GenericFilter->getOrderForPaginator('Hosts.name', 'asc')
-        );
+        $query
+            ->orderBy(
+                $GenericFilter->getOrderForPaginator('Hosts.name', 'asc')
+            )
+            ->groupBy(['Hosts.id']);
 
         $query->disableHydration();
 

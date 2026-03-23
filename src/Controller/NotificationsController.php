@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -174,6 +174,7 @@ class NotificationsController extends AppController {
         //Process conditions
         $Conditions = new HostNotificationConditions();
         $Conditions->setContainerIds($this->MY_RIGHTS);
+        $Conditions->setConditions($AngularNotificationsLogRequest->getServiceFilters());
         if ($this->request->getQuery('limit') !== null) {
             $Conditions->setLimit($this->request->getQuery('limit'));
         };
@@ -223,6 +224,7 @@ class NotificationsController extends AppController {
         //Process conditions
         $Conditions = new ServiceNotificationConditions();
         $Conditions->setContainerIds($this->MY_RIGHTS);
+        $Conditions->setConditions($AngularNotificationsLogRequest->getServiceFilters());
         if ($this->request->getQuery('limit') !== null) {
             $Conditions->setLimit($this->request->getQuery('limit'));
         };

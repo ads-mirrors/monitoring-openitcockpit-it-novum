@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -353,7 +353,7 @@ class PackagesHostDetailsTable extends Table {
 
         $query->orderBy(
             $GenericFilter->getOrderForPaginator('Hosts.name', 'asc')
-        );
+        )->groupBy(['Hosts.id']);
 
         $query->disableHydration();
 

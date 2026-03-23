@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -107,6 +107,20 @@ class MapgeneratorsTable extends Table {
             'className'    => 'MapModule.MapgeneratorLevels'
         ])->setDependent(true);
 
+    }
+
+    public function bindCoreAssociations(Table $coreTable) {
+        switch ($coreTable->getAlias()) {
+            case 'Containers':
+                if (!$coreTable->hasAssociation('Mapgenerators')) {
+                    $coreTable->belongsToMany('Mapgenerators', [
+                        'foreignKey'       => 'container_id',
+                        'targetForeignKey' => 'mapgenerator_id',
+                        'joinTable'        => 'mapgenerators_to_containers',
+                    ]);
+                }
+                break;
+        }
     }
 
     /**

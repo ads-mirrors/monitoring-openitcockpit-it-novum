@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -222,6 +222,17 @@ class MapsTable extends Table {
                         'targetForeignKey' => 'map_id',
                         'joinTable'        => 'maps_to_satellites',
                         'saveStrategy'     => 'replace'
+                    ]);
+                }
+                break;
+            case 'Containers':
+                if (!$coreTable->hasAssociation('Maps')) {
+                    $coreTable->belongsToMany('Maps', [
+                        'className'        => 'MapModule.Maps',
+                        'foreignKey'       => 'container_id',
+                        'targetForeignKey' => 'map_id',
+                        'joinTable'        => 'maps_to_containers',
+                        'joinType'         => 'INNER',
                     ]);
                 }
                 break;

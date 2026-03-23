@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -627,34 +627,32 @@ class PackagesLinuxTable extends Table {
             ->disableAutoFields()
             ->contain([
                 'PackageLinuxHosts' => function (Query $query) {
-                    $query
+                    $query->select([
+                        'PackageLinuxHosts.package_linux_id',
+                        'PackageLinuxHosts.needs_update',
+                        'PackageLinuxHosts.is_security_update',
+                        'PackageLinuxHosts.is_patch',
+                        'PackageLinuxHosts.host_id'
+                    ])
                         ->innerJoin(
                             ['Hosts' => 'hosts'],
                             ['Hosts.id = PackageLinuxHosts.host_id']
-                        )
-                        ->select([
-                            'PackageLinuxHosts.package_linux_id',
-                            'PackageLinuxHosts.needs_update',
-                            'PackageLinuxHosts.is_security_update',
-                            'PackageLinuxHosts.is_patch',
-                            'PackageLinuxHosts.host_id'
-                        ])
-                        ->where([
-                            'Hosts.disabled' => 0
-                        ])->disableAutoFields();
+                        );
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ])->disableAutoFields();
                     return $query;
                 }
             ]);
 
-
-        if (!empty($MY_RIGHTS)) {
-            $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
-                'HostsToContainersSharing.host_id = Hosts.id'
-            ]);
-            $query->where([
-                'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
-            ]);
-        }
 
         $query->disableHydration();
         $result = $query->toArray();

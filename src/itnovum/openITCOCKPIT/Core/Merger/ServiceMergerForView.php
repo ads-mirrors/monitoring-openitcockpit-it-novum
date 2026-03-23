@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -344,7 +344,7 @@ class ServiceMergerForView {
                 return $this->servicetemplate['servicetemplatecommandargumentvalues'];
             }
         }
-        $commandArgumentValuesDiff = array_diff(
+        $commandArgumentValuesDiff = Hash::diff(
             Hash::extract($this->servicetemplate['servicetemplatecommandargumentvalues'], '{n}.commandargument_id'),
             Hash::extract($this->service['servicecommandargumentvalues'], '{n}.commandargument_id')
         );

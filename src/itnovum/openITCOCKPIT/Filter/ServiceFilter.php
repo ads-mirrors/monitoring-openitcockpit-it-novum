@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -36,7 +36,8 @@ class ServiceFilter extends Filter {
             'bool'           => [
                 'Servicestatus.problem_has_been_acknowledged',
                 'Servicestatus.notifications_enabled',
-                'Servicestatus.active_checks_enabled'
+                'Servicestatus.active_checks_enabled',
+                'Servicestatus.is_hardstate'
             ],
             'like'           => [
                 'Servicestatus.output',
@@ -73,6 +74,9 @@ class ServiceFilter extends Filter {
             ],
             'interval_older' => [
                 'Servicestatus.last_state_change'
+            ],
+            'greater'        => [
+                'delayed'
             ]
         ];
 

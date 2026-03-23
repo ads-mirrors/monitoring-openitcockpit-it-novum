@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -36,7 +36,7 @@ class HostStatusOverviewExtendedJson extends DashboardJsonStandardizer {
      * oITC will take care of the rest of the work
      */
     protected $fields = [
-        'Host'       => [
+        'Host'         => [
             'name'          => '',
             'name_regex'    => false,
             'address'       => '',
@@ -44,7 +44,7 @@ class HostStatusOverviewExtendedJson extends DashboardJsonStandardizer {
             'keywords'      => '',
             'not_keywords'  => ''
         ],
-        'Hoststatus' => [
+        'Hoststatus'   => [
             'current_state'         => 0,
             'acknowledged'          => false,
             'not_acknowledged'      => false,
@@ -53,12 +53,13 @@ class HostStatusOverviewExtendedJson extends DashboardJsonStandardizer {
             'state_older_than'      => null,
             'state_older_than_unit' => 'MINUTE'
         ],
-        'Container'  => [
+        'Container'    => [
             '_ids' => ''
         ],
-        'Hostgroup'  => [
+        'Hostgroup'    => [
             '_ids' => ''
-        ]
+        ],
+        'hostpriority' => []
     ];
 
     /**

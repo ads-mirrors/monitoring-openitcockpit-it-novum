@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -100,6 +100,22 @@ class RotationsTable extends Table {
             'joinTable'        => 'maps_to_rotations',
             'saveStrategy'     => 'replace',
         ]);
+    }
+
+    public function bindCoreAssociations(Table $coreTable) {
+        switch ($coreTable->getAlias()) {
+            case 'Containers':
+                if (!$coreTable->hasAssociation('Rotations')) {
+                    $coreTable->belongsToMany('Rotations', [
+                        'className'        => 'MapModule.Rotations',
+                        'foreignKey'       => 'container_id',
+                        'targetForeignKey' => 'rotation_id',
+                        'joinTable'        => 'rotations_to_containers',
+                        'joinType'         => 'INNER',
+                    ]);
+                }
+                break;
+        }
     }
 
     /**

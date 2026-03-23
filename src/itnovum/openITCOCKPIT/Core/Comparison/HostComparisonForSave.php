@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -25,6 +25,7 @@
 
 namespace itnovum\openITCOCKPIT\Core\Comparison;
 
+use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\CustomVariableDiffer;
 
 /**
@@ -315,7 +316,7 @@ class HostComparisonForSave {
     public function getDataForCustomvariables() {
         // for easy host add in wizard - use from template
         if (!isset($this->host['customvariables'])) {
-            $this->host['customvariables'] =  $this->hosttemplate['customvariables'];
+            $this->host['customvariables'] = $this->hosttemplate['customvariables'];
         }
 
         $customVariableDiffer = new CustomVariableDiffer(
@@ -366,9 +367,9 @@ class HostComparisonForSave {
             $hosttemplateCommandArguments[$htcargv['commandargument_id']] = $htcargv['value'];
         }
 
-        $diff = array_diff($hostCommandArguments, $hosttemplateCommandArguments);
+        $diff = Hash::diff($hostCommandArguments, $hosttemplateCommandArguments);
         if (empty($diff)) {
-            $diff = array_diff($hosttemplateCommandArguments, $hostCommandArguments);
+            $diff = Hash::diff($hosttemplateCommandArguments, $hostCommandArguments);
         }
 
         if (empty($diff)) {

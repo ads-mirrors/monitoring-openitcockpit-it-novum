@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -2129,7 +2129,7 @@ class ServicesTable extends Table {
                 $intervalUnit = $where['Servicestatus.state_older_than_unit >'];
             }
             $query->where([
-                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $where['Servicestatus.state_older_than >'],
                     $intervalUnit
                 )
@@ -2463,6 +2463,337 @@ class ServicesTable extends Table {
 
         return $result;
     }
+
+    /**
+     * @param ServiceConditions $ServiceConditions
+     * @param null|PaginateOMat $PaginateOMat
+     * @return array
+     */
+    public function getServiceIndexForPassiveServicesStatusengine3(ServiceConditions $ServiceConditions, $PaginateOMat = null) {
+        $where = $ServiceConditions->getConditions();
+        $where['Services.disabled'] = 0;
+        if ($ServiceConditions->getServiceIds()) {
+            $serviceIds = $ServiceConditions->getServiceIds();
+            if (!is_array($serviceIds)) {
+                $serviceIds = [$serviceIds];
+            }
+
+            $where['Services.id IN'] = $serviceIds;
+        }
+
+        $having = null;
+        if (isset($where['servicename LIKE'])) {
+            $having = [
+                'servicename LIKE' => $where['servicename LIKE']
+            ];
+            unset($where['servicename LIKE']);
+        }
+
+
+        if ($ServiceConditions->getHostId()) {
+            $where['Services.host_id'] = $ServiceConditions->getHostId();
+        }
+        $query = $this->find();
+        $query
+            ->select([
+                'Services.id',
+                'Services.uuid',
+                'Services.name',
+                'Services.host_id',
+                'Services.description',
+                'Services.disabled',
+                'Services.active_checks_enabled',
+                'Services.tags',
+                'Services.priority',
+                'Services.service_type',
+                'servicename'        => $query->newExpr('IF((Services.name IS NULL OR Services.name=""), Servicetemplates.name, Services.name)'),
+                'servicepriority'    => $query->newExpr('IF(Services.priority IS NULL, Servicetemplates.priority, Services.priority)'),
+                'servicedescription' => $query->newExpr('IF(Services.description IS NULL, Servicetemplates.description, Services.description)'),
+
+                'Servicetemplates.id',
+                'Servicetemplates.uuid',
+                'Servicetemplates.name',
+                'Servicetemplates.description',
+                'Servicetemplates.active_checks_enabled',
+                'Servicetemplates.tags',
+                'Servicetemplates.priority',
+
+                'Servicestatus.current_state',
+                'Servicestatus.last_check',
+                'Servicestatus.next_check',
+                'Servicestatus.last_hard_state_change',
+                'Servicestatus.last_state_change',
+                'Servicestatus.output',
+                'Servicestatus.scheduled_downtime_depth',
+                'Servicestatus.active_checks_enabled',
+                'Servicestatus.is_hardstate',
+                'Servicestatus.problem_has_been_acknowledged',
+                'Servicestatus.acknowledgement_type',
+                'Servicestatus.is_flapping',
+                'Servicestatus.perfdata',
+                'Servicestatus.notifications_enabled',
+
+                'Hosts.name',
+                'Hosts.id',
+                'Hosts.uuid',
+                'Hosts.description',
+                'Hosts.address',
+                'Hosts.disabled',
+                'Hosts.satellite_id',
+                'Hosts.notes',
+
+                'check_interval' => $query->newExpr('IF(Servicestatus.current_state > 0 AND Servicestatus.is_hardstate = 0,
+            IF(Services.check_interval IS NULL, Servicetemplates.check_interval, Services.check_interval),
+            IF(Services.retry_interval IS NULL, Servicetemplates.retry_interval, Services.retry_interval)
+            )'),
+                'delayed'        => $query->newExpr(
+                    'UNIX_TIMESTAMP() - (
+    IF(Servicestatus.current_state > 0 AND Servicestatus.is_hardstate = 0,
+     IF(Services.check_interval IS NULL, Servicetemplates.check_interval, Services.check_interval),
+     IF(Services.retry_interval IS NULL, Servicetemplates.retry_interval, Services.retry_interval)
+     )
++ Servicestatus.last_check)')
+            ])
+            ->innerJoin(['Hosts' => 'hosts'], [
+                'Hosts.id = Services.host_id',
+            ])
+            ->innerJoin(['Hosttemplates' => 'hosttemplates'], [
+                'Hosttemplates.id = Hosts.hosttemplate_id',
+            ])
+            ->innerJoinWith('Hosts.HostsToContainersSharing', function (Query $q) use ($ServiceConditions) {
+                if (!empty($ServiceConditions->getContainerIds())) {
+                    $q->where([
+                        'HostsToContainersSharing.id IN ' => $ServiceConditions->getContainerIds()
+                    ]);
+                }
+                return $q;
+            })
+            ->innerJoinWith('Servicetemplates')
+            ->innerJoin(['Servicestatus' => 'statusengine_servicestatus'], [
+                'Servicestatus.service_description = Services.uuid'
+            ]);
+
+        if (isset($where['servicename rlike'])) {
+            $query->where(new ComparisonExpression(
+                'IF((Services.name IS NULL OR Services.name=""), Servicetemplates.name, Services.name)',
+                $where['servicename rlike'],
+                'string',
+                'rlike'
+            ));
+            unset($where['servicename rlike']);
+        }
+        if (isset($where['keywords rlike'])) {
+            $compareValue = $where['keywords rlike'];
+            if (is_string($compareValue)) {
+                $compareValue = explode(',', $compareValue);
+            }
+            $compareValue = sprintf('.*(%s).*', implode('|', $compareValue));
+            $where[] = new ComparisonExpression(
+                'IF((Services.tags IS NULL OR Services.tags=""), Servicetemplates.tags, Services.tags)',
+                $compareValue,
+                'string',
+                'rlike'
+            );
+            unset($where['keywords rlike']);
+        }
+
+        if (isset($where['not_keywords not rlike'])) {
+            $compareValue = $where['not_keywords not rlike'];
+            if (is_string($compareValue)) {
+                $compareValue = explode(',', $compareValue);
+            }
+            $compareValue = sprintf('.*(%s).*', implode('|', $compareValue));
+            $where[] = new ComparisonExpression(
+                'IF((Services.tags IS NULL OR Services.tags=""), Servicetemplates.tags, Services.tags)',
+                $compareValue,
+                'string',
+                'not rlike'
+            );
+            unset($where['not_keywords not rlike']);
+        }
+
+        if (isset($where['Hosts.keywords rlike'])) {
+            $compareValue = $where['Hosts.keywords rlike'];
+            if (is_string($compareValue)) {
+                $compareValue = explode(',', $compareValue);
+            }
+            $compareValue = sprintf('.*(%s).*', implode('|', $compareValue));
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.tags IS NULL OR Hosts.tags=""), Hosttemplates.tags, Hosts.tags)',
+                $compareValue,
+                'string',
+                'rlike'
+            );
+            unset($where['Hosts.keywords rlike']);
+        }
+
+        if (isset($where['Hosts.not_keywords not rlike'])) {
+            $compareValue = $where['Hosts.not_keywords not rlike'];
+            if (is_string($compareValue)) {
+                $compareValue = explode(',', $compareValue);
+            }
+            $compareValue = sprintf('.*(%s).*', implode('|', $compareValue));
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.tags IS NULL OR Hosts.tags=""), Hosttemplates.tags, Hosts.tags)',
+                $compareValue,
+                'string',
+                'not rlike'
+            );
+            unset($where['Hosts.not_keywords not rlike']);
+        }
+
+        if (isset($where['servicepriority IN'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Services.priority IS NULL), Servicetemplates.priority, Services.priority)',
+                $where['servicepriority IN'],
+                'integer[]',
+                'IN'
+            );
+            unset($where['servicepriority IN']);
+        }
+
+        if (isset($where['servicedescription LIKE'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Services.description IS NULL), Servicetemplates.description, Services.description)',
+                $where['servicedescription LIKE'],
+                'string',
+                'like'
+            );
+            unset($where['servicedescription LIKE']);
+        }
+
+        if (!empty($where['Hostgroups.id IN']) && is_array($where['Hostgroups.id IN'])) {
+            $query->select([
+                'hostgroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                    GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                    GROUP_CONCAT(HostToHostgroups.hostgroup_id))'),
+                'hostCount'     => $query->newExpr(
+                    'SELECT COUNT(hostgroups.id)
+                                FROM hostgroups
+                                WHERE FIND_IN_SET (hostgroups.id,IF(GROUP_CONCAT(HostToHostgroups.hostgroup_id) IS NULL,
+                                GROUP_CONCAT(HosttemplatesToHostgroups.hostgroup_id),
+                                GROUP_CONCAT(HostToHostgroups.hostgroup_id)))
+                                AND hostgroups.id IN (' . implode(', ', $where['Hostgroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'hosts_to_hostgroups'         => [
+                    'table'      => 'hosts_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HostToHostgroups',
+                    'conditions' => 'HostToHostgroups.host_id = Hosts.id',
+                ],
+                'hosttemplates_to_hostgroups' => [
+                    'table'      => 'hosttemplates_to_hostgroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'HosttemplatesToHostgroups',
+                    'conditions' => 'HosttemplatesToHostgroups.hosttemplate_id = Hosts.hosttemplate_id',
+                ]
+            ]);
+            $query->having([
+                'hostgroup_ids IS NOT NULL',
+                'hostCount > 0'
+            ]);
+
+            unset($where['Hostgroups.id IN']);
+        }
+
+        if (!empty($where['Servicegroups.id IN']) && is_array($where['Servicegroups.id IN'])) {
+            $query->select([
+                'servicegroup_ids' => $query->newExpr(
+                    'IF(GROUP_CONCAT(ServiceToServicegroups.servicegroup_id) IS NULL,
+                    GROUP_CONCAT(ServicetemplatesToServicegroups.servicegroup_id),
+                    GROUP_CONCAT(ServiceToServicegroups.servicegroup_id))'),
+                'serviceCount'     => $query->newExpr(
+                    'SELECT COUNT(servicegroups.id)
+                                FROM servicegroups
+                                WHERE FIND_IN_SET (servicegroups.id,IF(GROUP_CONCAT(ServiceToServicegroups.servicegroup_id) IS NULL,
+                                GROUP_CONCAT(ServicetemplatesToServicegroups.servicegroup_id),
+                                GROUP_CONCAT(ServiceToServicegroups.servicegroup_id)))
+                                AND servicegroups.id IN (' . implode(', ', $where['Servicegroups.id IN']) . ')')
+            ]);
+            $query->join([
+                'services_to_servicegroups'         => [
+                    'table'      => 'services_to_servicegroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'ServiceToServicegroups',
+                    'conditions' => 'ServiceToServicegroups.service_id = Services.id',
+                ],
+                'servicetemplates_to_servicegroups' => [
+                    'table'      => 'servicetemplates_to_servicegroups',
+                    'type'       => 'LEFT',
+                    'alias'      => 'ServicetemplatesToServicegroups',
+                    'conditions' => 'ServicetemplatesToServicegroups.servicetemplate_id = Services.servicetemplate_id',
+                ]
+            ]);
+            $query->having([
+                'servicegroup_ids IS NOT NULL',
+                'serviceCount > 0'
+            ]);
+
+            unset($where['Servicegroups.id IN']);
+        }
+
+        if (isset($where['delayed >'][0]) && isset($where['delayed >'][1])) {
+            $delayTime = $where['delayed >'][0];
+            $delayUnit = $where['delayed >'][1];
+            if (in_array($delayUnit, ['SECOND', 'MINUTE', 'HOUR', 'DAY'], true)) {
+                switch ($delayUnit) {
+                    case 'MINUTE':
+                        $delayTime *= 60;
+                        break;
+                    case 'HOUR':
+                        $delayTime *= 3600;
+                        break;
+                    case 'DAY':
+                        $delayTime *= 86400;
+                        break;
+                }
+
+            }
+            $query->having([
+                'delayed >' => $delayTime
+            ]);
+            unset($where['delayed >']);
+        } else {
+            $query->having([
+                'delayed >' => 0
+            ]);
+        }
+
+        if (!empty($where)) {
+            $query->andWhere($where);
+        }
+
+
+        $query->disableHydration();
+        $query->groupBy(['Services.id']);
+
+        if (!empty($having)) {
+            $query->having($having);
+        }
+
+        $query->orderBy(
+            array_merge(
+                $ServiceConditions->getOrder(),
+                ['Services.id' => 'asc']
+            )
+        );
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $this->emptyArrayIfNull($query->toArray());
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+    }
+
 
     /**
      * @param array $ids
@@ -3036,7 +3367,7 @@ class ServicesTable extends Table {
         return $result;
     }
 
-    public function getAllOitcAgentServicesByHostIdForExport($hostId) {
+    public function getAllOitcAgentServicesByHostIdForExport($hostId): array {
         /** @var $ServicetemplatesTable ServicetemplatesTable */
         $ServicetemplatesTable = TableRegistry::getTableLocator()->get('Servicetemplates');
 
@@ -3080,7 +3411,7 @@ class ServicesTable extends Table {
         foreach ($services as $index => $service) {
             if (!empty($service['servicecommandargumentvalues'])) {
                 //Arguments from service
-                $commandArgumentValuesDiff = array_diff(
+                $commandArgumentValuesDiff = Hash::diff(
                     Hash::extract($service['servicetemplate']['servicetemplatecommandargumentvalues'], '{n}.commandargument_id'),
                     Hash::extract($service['servicecommandargumentvalues'], '{n}.commandargument_id')
                 );
@@ -3641,7 +3972,8 @@ class ServicesTable extends Table {
         $query = $this->find();
         $query
             ->select([
-                'Services.id'
+                'Services.id',
+                'servicepriority' => $query->newExpr('IF(Services.priority IS NULL, Servicetemplates.priority, Services.priority)'),
             ])
             ->innerJoinWith('Servicetemplates')
             ->innerJoin(
@@ -3820,12 +4152,22 @@ class ServicesTable extends Table {
                 $intervalUnit = $conditions['Servicestatus']['state_older_than_unit'];
             }
             $query->where([
-                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(DATE(NOW() - INTERVAL %s %s))',
+                sprintf('Servicestatus.last_state_change <= UNIX_TIMESTAMP(NOW() - INTERVAL %s %s)',
                     $conditions['Servicestatus']['state_older_than'],
                     $intervalUnit
                 )
             ]);
         }
+
+        if (!empty($conditions['servicepriority'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Services.priority IS NULL), Servicetemplates.priority, Services.priority)',
+                $conditions['servicepriority'],
+                'integer[]',
+                'IN'
+            );
+        }
+
         $query->andWhere($where)
             ->groupBy(['Services.id'])
             ->disableHydration();
@@ -4965,7 +5307,8 @@ class ServicesTable extends Table {
         $query = $this->find();
         $query
             ->select([
-                'Services.uuid'
+                'Services.uuid',
+                'servicepriority' => $query->newExpr('IF(Services.priority IS NULL, Servicetemplates.priority, Services.priority)'),
             ])
             ->where([
                 'Services.disabled' => 0
@@ -5068,6 +5411,14 @@ class ServicesTable extends Table {
         if (!empty($conditions['Host']['name'])) {
             $where['Hosts.name LIKE'] = sprintf('%%%s%%', $conditions['Host']['name']);
         }
+        if (!empty($conditions['servicepriority'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Services.priority IS NULL), Servicetemplates.priority, Services.priority)',
+                $conditions['servicepriority'],
+                'integer[]',
+                'IN'
+            );
+        }
         $query->andWhere($where);
         $query->disableHydration();
         $result = $query->all();
@@ -5090,11 +5441,12 @@ class ServicesTable extends Table {
             ->select([
                 'Services.host_id',
                 'Services.id',
-                'servicename' => $query->newExpr('IF(Services.name IS NULL, Servicetemplates.name, Services.name)'),
+                'servicename'     => $query->newExpr('IF(Services.name IS NULL, Servicetemplates.name, Services.name)'),
                 'Servicestatus.current_state',
                 'Servicestatus.scheduled_downtime_depth',
                 'Servicestatus.active_checks_enabled',
-                'Servicestatus.problem_has_been_acknowledged'
+                'Servicestatus.problem_has_been_acknowledged',
+                'servicepriority' => $query->newExpr('IF(Services.priority IS NULL, Servicetemplates.priority, Services.priority)'),
             ]);
         $query->where([
             'Services.disabled' => 0
@@ -5346,6 +5698,15 @@ class ServicesTable extends Table {
                     'servicename LIKE' => sprintf('%%%s%%', $conditions['Service']['servicename'])
                 ]);
             }
+        }
+
+        if (!empty($conditions['servicepriority'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Services.priority IS NULL), Servicetemplates.priority, Services.priority)',
+                $conditions['servicepriority'],
+                'integer[]',
+                'IN'
+            );
         }
 
         $query->andWhere($where);

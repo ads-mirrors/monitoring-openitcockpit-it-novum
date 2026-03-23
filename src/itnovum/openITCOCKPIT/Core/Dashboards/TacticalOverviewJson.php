@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -34,7 +34,7 @@ class TacticalOverviewJson extends DashboardJsonStandardizer {
      * oITC will take care of the rest of the work
      */
     protected $fields = [
-        'Host'         => [
+        'Host'            => [
             'name'          => '',
             'name_regex'    => false,
             'address'       => '',
@@ -42,22 +42,24 @@ class TacticalOverviewJson extends DashboardJsonStandardizer {
             'keywords'      => '',
             'not_keywords'  => ''
         ],
-        'Service'      => [
+        'Service'         => [
             'servicename'       => '',
             'servicename_regex' => false,
             'keywords'          => '',
             'not_keywords'      => ''
         ],
-        'Hostgroup'    => [
+        'Hostgroup'       => [
             '_ids'         => '',
             'keywords'     => '',
             'not_keywords' => ''
         ],
-        'Servicegroup' => [
+        'Servicegroup'    => [
             '_ids'         => '',
             'keywords'     => '',
             'not_keywords' => ''
-        ]
+        ],
+        'hostpriority'    => [],
+        'servicepriority' => [],
     ];
 
     /**

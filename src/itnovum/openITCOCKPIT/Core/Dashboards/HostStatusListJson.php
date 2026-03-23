@@ -1,6 +1,6 @@
 <?php
 // Copyright (C) 2015-2025  it-novum GmbH
-// Copyright (C) 2025-today Allgeier IT Services GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -48,6 +48,7 @@ class HostStatusListJson extends DashboardJsonStandardizer {
             'state_older_than'      => null,
             'state_older_than_unit' => 'MINUTE'
         ],
+        'hostpriority'    => [],
         'Host'            => [
             'name'         => '',
             'name_regex'   => false,
