@@ -3411,7 +3411,7 @@ class ServicesTable extends Table {
         foreach ($services as $index => $service) {
             if (!empty($service['servicecommandargumentvalues'])) {
                 //Arguments from service
-                $commandArgumentValuesDiff = Hash::diff(
+                $commandArgumentValuesDiff = array_diff(
                     Hash::extract($service['servicetemplate']['servicetemplatecommandargumentvalues'], '{n}.commandargument_id'),
                     Hash::extract($service['servicecommandargumentvalues'], '{n}.commandargument_id')
                 );
