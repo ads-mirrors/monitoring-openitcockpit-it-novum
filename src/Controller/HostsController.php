@@ -3639,15 +3639,21 @@ class HostsController extends AppController {
         $id = $this->request->getQuery('id');
 
         $additionalInformationExists = false;
+        $externalSystemType = null;
 
         if (Plugin::isLoaded('ImportModule')) {
             /** @var ImportedHostsTable $ImportedHostsTable */
             $ImportedHostsTable = TableRegistry::getTableLocator()->get('ImportModule.ImportedHosts');
-            $additionalInformationExists = $ImportedHostsTable->existsImportedHostByHostId($id);
+            $result = $ImportedHostsTable->existsImportedHostByHostId($id);
+            if ($result) {
+                $additionalInformationExists = true;
+                $externalSystemType = $result->importer->get('external_system')->get('system_type');
+            }
         }
 
         $this->set('AdditionalInformationExists', $additionalInformationExists);
-        $this->viewBuilder()->setOption('serialize', ['AdditionalInformationExists']);
+        $this->set('externalSystemType', $externalSystemType);
+        $this->viewBuilder()->setOption('serialize', ['AdditionalInformationExists', 'externalSystemType']);
     }
 
     public function checkForDuplicateHostname() {
