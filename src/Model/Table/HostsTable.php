@@ -1464,6 +1464,15 @@ class HostsTable extends Table {
             );
             unset($where['hostdescription LIKE']);
         }
+        if (isset($where['hostpriority IN'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.priority IS NULL), Hosttemplates.priority, Hosts.priority)',
+                $where['hostpriority IN'],
+                'integer[]',
+                'IN'
+            );
+            unset($where['hostpriority IN']);
+        }
 
         //consider only passive hosts
         $query->where([
@@ -3590,7 +3599,9 @@ class HostsTable extends Table {
         $query = $this->find();
         $query
             ->select([
-                'Hosts.id'
+                'Hosts.id',
+                'Hosts.priority',
+                'hostpriority' => $query->newExpr('IF(Hosts.priority IS NULL, Hosttemplates.priority, Hosts.priority)'),
             ])
             ->innerJoinWith('Hosttemplates')
             ->join([
@@ -3749,6 +3760,17 @@ class HostsTable extends Table {
                 )
             ]);
         }
+
+        if (!empty($conditions['hostpriority'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.priority IS NULL), Hosttemplates.priority, Hosts.priority)',
+                $conditions['hostpriority'],
+                'integer[]',
+                'IN'
+            );
+            unset($where['hostpriority IN']);
+        }
+
         $query->andWhere($where)
             ->groupBy(['Hosts.id'])
             ->disableHydration();
@@ -5036,7 +5058,8 @@ class HostsTable extends Table {
         $query = $this->find();
         $query
             ->select([
-                'Hosts.uuid'
+                'Hosts.uuid',
+                'Hosts.priority'
             ])
             ->where([
                 'Hosts.disabled' => 0
@@ -5070,7 +5093,13 @@ class HostsTable extends Table {
             ]);
         }
         $query->contain([
-            'HostsToContainersSharing'
+            'HostsToContainersSharing',
+            'Hosttemplates' => [
+                'fields' => [
+                    'Hosttemplates.priority',
+                    'hostpriority' => $query->newExpr('IF(Hosts.priority IS NULL, Hosttemplates.priority, Hosts.priority)'),
+                ]
+            ]
         ]);
 
         $query->contain([
@@ -5138,6 +5167,14 @@ class HostsTable extends Table {
         if (!empty($conditions['Host']['name'])) {
             $where['Hosts.name LIKE'] = sprintf('%%%s%%', $conditions['Host']['name']);
         }
+        if (!empty($conditions['hostpriority'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.priority IS NULL), Hosttemplates.priority, Hosts.priority)',
+                $conditions['hostpriority'],
+                'integer[]',
+                'IN'
+            );
+        }
         $query->andWhere($where);
         $query->disableHydration();
         $result = $query->all();
@@ -5158,6 +5195,7 @@ class HostsTable extends Table {
         $query
             ->select([
                 'Hosts.id',
+                'Hosts.priority',
                 'Hoststatus.current_state',
                 'Hoststatus.scheduled_downtime_depth',
                 'Hoststatus.active_checks_enabled',
@@ -5190,7 +5228,13 @@ class HostsTable extends Table {
         }
 
         $query->contain([
-            'HostsToContainersSharing'
+            'HostsToContainersSharing',
+            'Hosttemplates' => [
+                'fields' => [
+                    'Hosttemplates.priority',
+                    'hostpriority' => $query->newExpr('IF(Hosts.priority IS NULL, Hosttemplates.priority, Hosts.priority)'),
+                ]
+            ]
         ]);
 
         if (!empty($conditions['Hostgroup'])) {
@@ -5314,6 +5358,16 @@ class HostsTable extends Table {
                 'NOT RLIKE'
             );
         }
+
+        if (!empty($conditions['hostpriority'])) {
+            $where[] = new ComparisonExpression(
+                'IF((Hosts.priority IS NULL), Hosttemplates.priority, Hosts.priority)',
+                $conditions['hostpriority'],
+                'integer[]',
+                'IN'
+            );
+        }
+
         $query->andWhere($where);
         $query->groupBy('Hosts.id');
         $query->disableHydration();
