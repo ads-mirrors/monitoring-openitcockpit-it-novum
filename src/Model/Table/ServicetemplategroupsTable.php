@@ -399,7 +399,8 @@ class ServicetemplategroupsTable extends Table {
                         ->select([
                             'Servicetemplates.id',
                             'Servicetemplates.name',
-                            'Servicetemplates.description'
+                            'Servicetemplates.description',
+                            'Servicetemplates.servicetemplatetype_id'
                         ])
                         ->orderBy([
                             'Servicetemplates.name' => 'ASC'
