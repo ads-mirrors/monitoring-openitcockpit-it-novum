@@ -158,10 +158,10 @@ class ServicetemplategroupsTable extends Table {
     }
 
     /**
-     * @param int $id
+     * @param $uuid
      * @return bool
      */
-    public function existsByUuid($uuid) {
+    public function existsByUuid($uuid): bool {
         return $this->exists(['Servicetemplategroups.uuid' => $uuid]);
     }
 
