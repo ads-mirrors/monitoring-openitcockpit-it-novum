@@ -26,6 +26,8 @@
 namespace itnovum\openITCOCKPIT\Core;
 
 
+use App\itnovum\openITCOCKPIT\Core\MonitoringEngine\ShellCharacters;
+
 class HostMacroReplacer {
 
     /**
@@ -37,6 +39,11 @@ class HostMacroReplacer {
      * @var array
      */
     private $hoststatus;
+
+    /**
+     * @var bool
+     */
+    private $FILTER_NAME_AND_ADDRESS_IN_CFG = false;
 
     /**
      * @var array
@@ -62,7 +69,7 @@ class HostMacroReplacer {
      * @param array $hoststatus result of CakePHPs find()
      */
 
-    public function __construct($host, $hoststatus = []) {
+    public function __construct($host, $hoststatus = [], bool $FILTER_NAME_AND_ADDRESS_IN_CFG = false) {
         if (isset($host['id']) && isset($host['uuid'])) {
             //Cake4 result...
             $host = [
@@ -71,6 +78,7 @@ class HostMacroReplacer {
         }
         $this->host = $host;
         $this->hoststatus = $hoststatus;
+        $this->FILTER_NAME_AND_ADDRESS_IN_CFG = $FILTER_NAME_AND_ADDRESS_IN_CFG;
     }
 
     /**
@@ -83,7 +91,7 @@ class HostMacroReplacer {
      * @param string $msg
      */
     public function replaceBasicMacros($msg) {
-        if(is_null($msg)){
+        if (is_null($msg)) {
             return $msg;
         }
 
@@ -101,7 +109,7 @@ class HostMacroReplacer {
      * @param string $msg
      */
     public function replaceStatusMacros($msg) {
-        if(is_null($msg)){
+        if (is_null($msg)) {
             return $msg;
         }
 
@@ -137,7 +145,11 @@ class HostMacroReplacer {
             $mapping['search'][] = $macroName;
             $findReplacement = false;
             if (isset($this->host['Host'][$databaseField])) {
-                $mapping['replace'][] = $this->host['Host'][$databaseField];
+                if ($this->FILTER_NAME_AND_ADDRESS_IN_CFG) {
+                    $mapping['replace'][] = ShellCharacters::removeDangerous($this->host['Host'][$databaseField]);
+                } else {
+                    $mapping['replace'][] = $this->host['Host'][$databaseField];
+                }
                 $findReplacement = true;
             }
 

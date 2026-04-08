@@ -329,6 +329,25 @@ class SystemsettingsTable extends Table {
     }
 
     /**
+     * @return bool
+     */
+    public function filterNameAndAddressInCfg() {
+        try {
+            if (!Cache::read('MONITORING.FILTER_NAME_AND_ADDRESS_IN_CFG', 'permissions')) {
+                $result = $this->getSystemsettingByKey('MONITORING.FILTER_NAME_AND_ADDRESS_IN_CFG');
+                $value = (int)$result->get('value');
+                $value = $value === 1;
+
+                Cache::write('MONITORING.FILTER_NAME_AND_ADDRESS_IN_CFG', $value, 'permissions');
+            }
+
+            return Cache::read('MONITORING.FILTER_NAME_AND_ADDRESS_IN_CFG', 'permissions');
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
+
+    /**
      * @param string $key
      * @return bool
      */

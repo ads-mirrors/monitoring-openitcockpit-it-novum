@@ -26,6 +26,8 @@
 namespace itnovum\openITCOCKPIT\Core;
 
 
+use App\itnovum\openITCOCKPIT\Core\MonitoringEngine\ShellCharacters;
+
 class ServiceMacroReplacer {
 
     /**
@@ -37,6 +39,11 @@ class ServiceMacroReplacer {
      * @var array
      */
     private $servicestatus;
+
+    /**
+     * @var bool
+     */
+    private $FILTER_NAME_AND_ADDRESS_IN_CFG = false;
 
     /**
      * @var array
@@ -61,15 +68,15 @@ class ServiceMacroReplacer {
      * @param array $servicestatus result of CakePHPs find()
      */
 
-    public function __construct($service, $servicestatus = []) {
+    public function __construct($service, $servicestatus = [], bool $FILTER_NAME_AND_ADDRESS_IN_CFG = false) {
         if (isset($service['id']) && isset($service['uuid'])) {
             //Cake4 result...
             $service = [
                 'Service' => $service
             ];
 
-            if(isset($service['Service']['servicetemplate']['name'])){
-                if($service['Service']['name'] === null || $service['Service']['name'] === ''){
+            if (isset($service['Service']['servicetemplate']['name'])) {
+                if ($service['Service']['name'] === null || $service['Service']['name'] === '') {
                     $service['Service']['name'] = $service['Service']['servicetemplate']['name'];
                 }
             }
@@ -77,6 +84,7 @@ class ServiceMacroReplacer {
 
         $this->service = $service;
         $this->servicestatus = $servicestatus;
+        $this->FILTER_NAME_AND_ADDRESS_IN_CFG = $FILTER_NAME_AND_ADDRESS_IN_CFG;
     }
 
     /**
@@ -88,7 +96,7 @@ class ServiceMacroReplacer {
      * @param string $msg
      */
     public function replaceBasicMacros($msg) {
-        if(is_null($msg)){
+        if (is_null($msg)) {
             return $msg;
         }
 
@@ -106,7 +114,7 @@ class ServiceMacroReplacer {
      * @param string $msg
      */
     public function replaceStatusMacros($msg) {
-        if(is_null($msg)){
+        if (is_null($msg)) {
             return $msg;
         }
 
@@ -155,7 +163,11 @@ class ServiceMacroReplacer {
                 if ($servicename === null) {
                     $servicename = '$SERVICEDISPLAYNAME$';
                 }
-                $mapping['replace'][] = $servicename;
+                if ($this->FILTER_NAME_AND_ADDRESS_IN_CFG) {
+                    $mapping['replace'][] = ShellCharacters::removeDangerous($servicename);
+                } else {
+                    $mapping['replace'][] = $servicename;
+                }
             } else {
                 if (isset($this->service['Service'][$databaseField])) {
                     $mapping['replace'][] = $this->service['Service'][$databaseField];
