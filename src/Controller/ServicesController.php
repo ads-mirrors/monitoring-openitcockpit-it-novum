@@ -1663,7 +1663,8 @@ class ServicesController extends AppController {
         }
 
         //Replace macros in service url
-        $HostMacroReplacer = new HostMacroReplacer($host);
+        $filterNameAndAddressInCfg = $SystemsettingsTable->filterNameAndAddressInCfg();
+        $HostMacroReplacer = new HostMacroReplacer($host, [], $filterNameAndAddressInCfg);
         $ServiceMacroReplacer = new ServiceMacroReplacer($mergedService);
         $ServiceCustomMacroReplacer = new CustomMacroReplacer($mergedService['customvariables'], OBJECT_SERVICE, $replacePasswordInObjectMacros);
 

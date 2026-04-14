@@ -2267,9 +2267,10 @@ class HostsController extends AppController {
         } catch (RecordNotFoundException $e) {
             // Rocket not found in system settings - do not replace passwords in $_HOSTFOOBAR$ custom variables
         }
+        $filterNameAndAddressInCfg = $SystemsettingsTable->filterNameAndAddressInCfg();
 
         //Replace macros in host url
-        $HostMacroReplacer = new HostMacroReplacer($mergedHost);
+        $HostMacroReplacer = new HostMacroReplacer($mergedHost, [], $filterNameAndAddressInCfg);
         $HostCustomMacroReplacer = new CustomMacroReplacer($mergedHost['customvariables'], OBJECT_HOST, $replacePasswordInObjectMacros);
         $mergedHost['host_url_replaced'] =
             $HostMacroReplacer->replaceBasicMacros(          // Replace $HOSTNAME$

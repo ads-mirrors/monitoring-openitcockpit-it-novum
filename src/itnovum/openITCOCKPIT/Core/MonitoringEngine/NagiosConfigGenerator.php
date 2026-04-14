@@ -31,6 +31,7 @@
 
 namespace itnovum\openITCOCKPIT\Core\MonitoringEngine;
 
+use App\itnovum\openITCOCKPIT\Core\MonitoringEngine\ShellCharacters;
 use App\itnovum\openITCOCKPIT\Supervisor\Supervisorctl;
 use App\Lib\ExportTasks;
 use App\Lib\PluginExportTasks;
@@ -558,12 +559,12 @@ class NagiosConfigGenerator {
             $content .= $this->addContent('define host{', 0);
             $content .= $this->addContent('use', 1, $hosttemplate->get('uuid'));
             $content .= $this->addContent('host_name', 1, $host->get('uuid'));
-            $content .= $this->addContent('display_name', 1, $this->removeNewlines($this->escapeLastBackslash($host->get('name'))));
-            $content .= $this->addContent('address', 1, $this->removeNewlines($this->escapeLastBackslash($host->get('address'))));
+            $content .= $this->addContent('display_name', 1, $this->escapeForConfig($host->get('name')));
+            $content .= $this->addContent('address', 1, $this->escapeForConfig($host->get('address')));
 
 
             if (!empty($host->get('description')))
-                $content .= $this->addContent('alias', 1, $this->removeNewlines($this->escapeLastBackslash($host->get('description'))));
+                $content .= $this->addContent('alias', 1, $this->escapeForConfig($host->get('description')));
 
             if ($host->hasParentHostsForExport()) {
                 $content .= $this->addContent('parents', 1, $host->getParentHostsForCfg());
@@ -851,12 +852,12 @@ class NagiosConfigGenerator {
         $content .= $this->addContent('define host{', 0);
         $content .= $this->addContent('use', 1, $hosttemplate->get('uuid'));
         $content .= $this->addContent('host_name', 1, $host->get('uuid'));
-        $content .= $this->addContent('display_name', 1, $this->removeNewlines($this->escapeLastBackslash($host->get('name'))));
-        $content .= $this->addContent('address', 1, $this->removeNewlines($this->escapeLastBackslash($host->get('address'))));
+        $content .= $this->addContent('display_name', 1, $this->escapeForConfig($host->get('name')));
+        $content .= $this->addContent('address', 1, $this->escapeForConfig($host->get('address')));
 
 
         if ($host->get('description'))
-            $content .= $this->addContent('alias', 1, $this->removeNewlines($this->escapeLastBackslash($host->get('description'))));
+            $content .= $this->addContent('alias', 1, $this->escapeForConfig($host->get('description')));
 
         $parenthosts = $host->getParentHostsForSatCfgAsArray();
         if (!empty($parenthosts)) {
@@ -1239,15 +1240,13 @@ class NagiosConfigGenerator {
                 $content .= $this->addContent('name', 1, $service->get('uuid'));
 
                 if ($service->get('name') !== null && $service->get('name') !== '') {
-                    $content .= $this->addContent('display_name', 1, $this->removeNewlines(
-                        $this->escapeLastBackslash(
-                            $service->get('name')
-                        )));
+                    $content .= $this->addContent('display_name', 1, $this->escapeForConfig(
+                        $service->get('name')
+                    ));
                 } else {
-                    $content .= $this->addContent('display_name', 1, $this->removeNewlines(
-                        $this->escapeLastBackslash(
-                            $servicetemplate->get('name')
-                        )));
+                    $content .= $this->addContent('display_name', 1, $this->escapeForConfig(
+                        $servicetemplate->get('name')
+                    ));
                 }
 
                 $content .= $this->addContent('service_description', 1, $service->get('uuid'));
@@ -1565,15 +1564,13 @@ class NagiosConfigGenerator {
 
         $content .= $this->addContent('name', 1, $service->get('uuid'));
         if ($service->get('name') !== null && $service->get('name') !== '') {
-            $content .= $this->addContent('display_name', 1, $this->removeNewlines(
-                $this->escapeLastBackslash(
-                    $service->get('name')
-                )));
+            $content .= $this->addContent('display_name', 1, $this->escapeForConfig(
+                $service->get('name')
+            ));
         } else {
-            $content .= $this->addContent('display_name', 1, $this->removeNewlines(
-                $this->escapeLastBackslash(
-                    $servicetemplate->get('name')
-                )));
+            $content .= $this->addContent('display_name', 1, $this->escapeForConfig(
+                $servicetemplate->get('name')
+            ));
         }
 
         $content .= $this->addContent('service_description', 1, $service->get('uuid'));
@@ -3133,6 +3130,29 @@ class NagiosConfigGenerator {
      */
     public function removeNewlines(string $str = '') {
         return str_replace(["\r\n", "\n", "\r"], ' ', $str);
+    }
+
+
+    /**
+     * This function will remove potential dangerous shell characters from a given string
+     * As we do not know who the strings will be used later by Naemon, we can not escape the characters and have to remove them entirely.
+     * See ITC-3685 for more details
+     * @param string $str
+     * @return string
+     */
+    public function removeShellCharacter(string $str = ''): string {
+        return ShellCharacters::removeDangerous($str);
+    }
+
+    public function escapeForConfig(string $str): string {
+        $str = $this->escapeLastBackslash($str);
+        $str = $this->removeNewlines($str);
+
+        if (!empty($this->_systemsettings['MONITORING']['MONITORING.FILTER_NAME_AND_ADDRESS_IN_CFG'])) {
+            $str = $this->removeShellCharacter($str);
+        }
+
+        return $str;
     }
 
     private function createMissingOitcAgentActiveChecks() {
