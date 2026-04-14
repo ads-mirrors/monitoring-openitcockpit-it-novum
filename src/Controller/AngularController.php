@@ -943,7 +943,6 @@ class AngularController extends AppController {
             $Hoststatus = new Hoststatus([
                 'Hoststatus' => []
             ]);
-
         }
 
         $config = [
@@ -951,6 +950,7 @@ class AngularController extends AppController {
             'hostUuid'          => $host->get('uuid'),
             'hostName'          => $host->get('name'),
             'hostAddress'       => $host->get('address'),
+            'hostType'          => $host->get('host_type'),
             'docuExists'        => $DocumentationsTable->existsByUuid($host->get('uuid')),
             'hostUrl'           => $hostUrl,
             'allowEdit'         => $allowEdit,
@@ -1090,6 +1090,7 @@ class AngularController extends AppController {
             'serviceId'            => $service->get('id'),
             'serviceUuid'          => $service->get('uuid'),
             'hostName'             => $service->get('host')->get('name'),
+            'hostType'             => $service->get('host')->get('host_type'),
             'serviceName'          => $serviceName,
             'hostAddress'          => $service->get('host')->get('address'),
             'docuExists'           => $DocumentationsTable->existsByUuid($service->get('uuid')),

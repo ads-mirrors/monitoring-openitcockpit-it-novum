@@ -23,8 +23,19 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-if (!defined('OPENITCOCKPIT_VERSION')) {
-    define('OPENITCOCKPIT_VERSION', '5.5.2');
-}
+namespace App\itnovum\openITCOCKPIT\Core\MonitoringEngine;
 
-return [];
+class ShellCharacters {
+
+    /**
+     * This function will remove potential dangerous shell characters from a given string
+     * As we do not know who the strings will be used later by Naemon, we can not escape the characters and have to remove them entirely.
+     * See ITC-3685 for more details
+     * @param string $str
+     * @return string
+     */
+    public static function removeDangerous(string $str = ''): string {
+        return str_replace(['`', '$', '\\', '"', '\'', ';', '&', '|', '<', '>', '*', '?', '~', '!'], '', $str);
+    }
+
+}

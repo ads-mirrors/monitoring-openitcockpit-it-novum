@@ -910,6 +910,14 @@ class Systemsetting extends Importer {
                 'created'  => '2025-03-26 15:17:17',
                 'modified' => '2025-03-26 15:17:17'
             ],
+            (int)107 => [
+                'key'      => 'MONITORING.FILTER_NAME_AND_ADDRESS_IN_CFG',
+                'value'    => '1',
+                'info'     => 'If enabled, the $HOSTDISPLAYNAME$, $SERVICEDISPLAYNAME$ and $HOSTADDRESS$ macros will filter out potential dangerous characters. This has a low potential to break existing setups but can improve the security of the system by preventing command injection.',
+                'section'  => 'MONITORING',
+                'created'  => '2026-02-12 09:28:17',
+                'modified' => '2026-02-12 09:28:17'
+            ],
         ];
 
         return $data;
