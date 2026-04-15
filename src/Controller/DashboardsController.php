@@ -916,15 +916,34 @@ class DashboardsController extends AppController {
                 }
             }
 
+            // initials library for avatar image has problem with to long strings
+            $userFullNameForAvatar = trim(
+                sprintf('%.3s %.3s',
+                    ucfirst(preg_replace('/[^\w\s]/i', '', $user->get('firstname'))),
+                    ucfirst(preg_replace('/[^\w\s]/i', '', $user->get('lastname'))),
+                )
+            );
+
             $this->set('isCommunityEdition', $isCommunityEdition);
             $this->set('hasSubscription', $hasSubscription);
             $this->set('server_timezone', $ServerTimeZone->getName());
             $this->set('user_timezone', $User->getTimezone());
             $this->set('userImage', $userImage);
             $this->set('user_fullname', $User->getFullName());
+            $this->set('user_fullname_avatar', $userFullNameForAvatar);
             $this->set('OPENITCOCKPIT_VERSION', OPENITCOCKPIT_VERSION);
 
-            $this->viewBuilder()->setOption('serialize', ['isCommunityEdition', 'hasSubscription', 'server_timezone', 'user_timezone', 'userImage', 'user_fullname', 'OPENITCOCKPIT_VERSION']);
+            $this->viewBuilder()->setOption('serialize', [
+                    'isCommunityEdition',
+                    'hasSubscription',
+                    'server_timezone',
+                    'user_timezone',
+                    'userImage',
+                    'user_fullname',
+                    'user_fullname_avatar',
+                    'OPENITCOCKPIT_VERSION'
+                ]
+            );
             return;
         }
     }
