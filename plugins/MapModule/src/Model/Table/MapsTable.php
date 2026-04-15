@@ -2578,5 +2578,30 @@ class MapsTable extends Table {
 
     }
 
+    /**
+     * @param MapFilter $MapFilter
+     * @param null|PaginateOMat $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMapBackgrounds($MY_RIGHTS = []) {
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+        $query = $this->find('list', valueField: 'background')
+            ->distinct('Maps.id')
+            ->contain(['Containers'])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            })
+            ->whereNotNull('Maps.background')
+            ->groupBy(['Maps.background']);
+
+
+        return $query->toArray();
+    }
 
 }

@@ -1219,14 +1219,35 @@ class MapeditorsController extends AppController {
         $finder = new Finder();
         $finder->files()->in(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds')->exclude('thumb');
 
+        /** @var MapsTable $MapsTable */
+        $MapsTable = TableRegistry::getTableLocator()->get('MapModule.Maps');
+
+        $permittedBackgrounds = [];
+        if (!$this->hasRootPrivileges) {
+            //Get all backgrounds that a not root user is allowed to see.
+            $permittedBackgrounds = $MapsTable->getMapBackgrounds($this->MY_RIGHTS);
+        }
+
         $backgrounds = [];
         /** @var SplFileInfo $file */
         foreach ($finder as $file) {
-            $backgrounds[] = [
-                'image'     => $file->getFilename(),
-                'path'      => sprintf('/map_module/img/backgrounds/%s', $file->getFilename()),
-                'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $file->getFilename()),
-            ];
+            $fileName = $file->getFilename();
+            if ($this->hasRootPrivileges) {
+                $backgrounds[] = [
+                    'image'     => $fileName,
+                    'path'      => sprintf('/map_module/img/backgrounds/%s', $fileName),
+                    'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $fileName),
+                ];
+            } else {
+                // check permitted backgrounds for not root user
+                if (in_array($fileName, $permittedBackgrounds, true)) {
+                    $backgrounds[] = [
+                        'image'     => $fileName,
+                        'path'      => sprintf('/map_module/img/backgrounds/%s', $fileName),
+                        'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $fileName),
+                    ];
+                }
+            }
         }
 
         $this->set('backgrounds', $backgrounds);
