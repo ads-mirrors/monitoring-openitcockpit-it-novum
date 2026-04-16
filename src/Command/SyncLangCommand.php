@@ -130,6 +130,24 @@ class SyncLangCommand extends Command {
 
         $fp = fopen($newPo, 'w+');
 
+        // Write file header
+        fwrite($fp, '# LANGUAGE translation of CakePHP Application' . PHP_EOL);
+        fwrite($fp, '# Copyright YEAR NAME <EMAIL@ADDRESS>' . PHP_EOL);
+        fwrite($fp, '#' . PHP_EOL);
+        fwrite($fp, '#, fuzzy' . PHP_EOL);
+        fwrite($fp, 'msgid ""' . PHP_EOL);
+        fwrite($fp, 'msgstr ""' . PHP_EOL);
+        fwrite($fp, '"Project-Id-Version: PROJECT VERSION\n"' . PHP_EOL);
+        fwrite($fp, '"POT-Creation-Date: 2023-10-09 09:40+0200\n"' . PHP_EOL);
+        fwrite($fp, '"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"' . PHP_EOL);
+        fwrite($fp, '"Last-Translator: NAME <EMAIL@ADDRESS>\n"' . PHP_EOL);
+        fwrite($fp, '"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"' . PHP_EOL);
+        fwrite($fp, '"MIME-Version: 1.0\n"' . PHP_EOL);
+        fwrite($fp, '"Content-Type: text/plain; charset=utf-8\n"' . PHP_EOL);
+        fwrite($fp, '"Content-Transfer-Encoding: 8bit\n"' . PHP_EOL);
+        fwrite($fp, '"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"' . PHP_EOL);
+        fwrite($fp, PHP_EOL);
+
         // Add already translated and still existing fields
         foreach ($newLanguageKeyValue as $key => $val) {
             fwrite($fp, sprintf("msgid \"%s\"\n", str_replace('"', '\"', (string)$key)));
