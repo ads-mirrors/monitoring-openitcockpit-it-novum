@@ -1,5 +1,6 @@
 <?php
-// Copyright (C) <2015-present>  <it-novum GmbH>
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -32,6 +33,8 @@ declare(strict_types=1);
 
 namespace MapModule\Model\Entity;
 
+use App\Model\Entity\Container;
+use App\Model\Entity\User;
 use Cake\I18n\DateTime;
 use Cake\ORM\Entity;
 
@@ -44,7 +47,7 @@ use Cake\ORM\Entity;
  * @property string $saved_name
  * @property int|null $user_id
  * @property int|null $container_id
- * @property \Cake\I18n\DateTime $created
+ * @property DateTime $created
  *
  * @property User $user
  * @property Container $container
@@ -60,12 +63,12 @@ class MapUpload extends Entity {
      * @var array
      */
     protected array $_accessible = [
-        'upload_type'  => true,
-        'upload_name'  => true,
-        'saved_name'   => true,
-        'user_id'      => true,
-        'container_id' => true,
-        'created'      => true,
-        'user'         => true,
+        'upload_type' => true,
+        'upload_name' => true,
+        'saved_name'  => true,
+        'user_id'     => true,
+        'containers'  => true,
+        'created'     => true,
+        'user'        => true,
     ];
 }

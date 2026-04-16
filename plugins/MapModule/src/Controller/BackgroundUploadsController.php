@@ -1,5 +1,6 @@
 <?php
-// Copyright (C) <2015-present>  <it-novum GmbH>
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -31,10 +32,10 @@
 namespace MapModule\Controller;
 
 use Authentication\IdentityInterface;
-use itnovum\openITCOCKPIT\CakePHP\Folder;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
+use itnovum\openITCOCKPIT\CakePHP\Folder;
 use itnovum\openITCOCKPIT\Core\UUID;
 use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use MapModule\Model\Table\MapiconsTable;
@@ -110,11 +111,11 @@ class BackgroundUploadsController extends AppController {
                 $MapUploadsTable->createThumbnailsFromBackgrounds($imageConfig, $backgroundFolder);
                 $mapUpload = $MapUploadsTable->newEmptyEntity();
                 $mapUpload = $MapUploadsTable->patchEntity($mapUpload, [
-                    'upload_type'  => $this->TYPE_BACKGROUND,
-                    'upload_name'  => $uploadFilename . '.' . $fileExtension,
-                    'saved_name'   => $saveFilename . '.' . $fileExtension,
-                    'user_id'      => $User->getId(),
-                    'container_id' => '1',
+                    'upload_type' => $this->TYPE_BACKGROUND,
+                    'upload_name' => $uploadFilename . '.' . $fileExtension,
+                    'saved_name'  => $saveFilename . '.' . $fileExtension,
+                    'user_id'     => $User->getId()
+                    // CONTAINER IDS INSERT HERE
                 ]);
                 $MapUploadsTable->save($mapUpload);
 
@@ -243,11 +244,11 @@ class BackgroundUploadsController extends AppController {
 
                 $mapUpload = $MapUploadsTable->newEmptyEntity();
                 $mapUpload = $MapUploadsTable->patchEntity($mapUpload, [
-                    'upload_type'  => $this->TYPE_ICON,
-                    'upload_name'  => $uploadFilename . '.' . $fileExtension,
-                    'saved_name'   => $fileName,
-                    'user_id'      => $User->getId(),
-                    'container_id' => '1',
+                    'upload_type' => $this->TYPE_ICON,
+                    'upload_name' => $uploadFilename . '.' . $fileExtension,
+                    'saved_name'  => $fileName,
+                    'user_id'     => $User->getId()
+                    // CONTAINER IDS INSERT HERE
                 ]);
                 $MapUploadsTable->save($mapUpload);
 

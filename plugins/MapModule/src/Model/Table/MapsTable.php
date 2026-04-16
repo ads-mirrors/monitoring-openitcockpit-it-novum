@@ -2579,12 +2579,10 @@ class MapsTable extends Table {
     }
 
     /**
-     * @param MapFilter $MapFilter
-     * @param null|PaginateOMat $PaginateOMat
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getMapBackgrounds($MY_RIGHTS = []) {
+    public function getMapBackgrounds(array $MY_RIGHTS = []): array {
         if (!is_array($MY_RIGHTS)) {
             $MY_RIGHTS = [$MY_RIGHTS];
         }
@@ -2604,4 +2602,51 @@ class MapsTable extends Table {
         return $query->toArray();
     }
 
+    /**
+     * @return array
+     */
+    public function getUsedMapBackgroundsWithMapContainerIds(): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id',
+                'Maps.background'
+            ])
+            ->distinct('Maps.id')
+            ->contain([
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->whereNotNull('Maps.background')
+            ->groupBy(['Maps.background'])
+            ->enableAutoFields(false)
+            ->disableHydration();
+        return $query->toArray();
+    }
+
+    /**
+     * @return array
+     */
+    public function getUsedMapIconsWithMapContainerIds(): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id',
+                'Mapicons.icon'
+            ])
+            ->distinct('Maps.id')
+            ->contain([
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->whereNotNull('Mapicons.icon')
+            ->groupBy(['Mapicons.icon'])
+            ->enableAutoFields(false)
+            ->disableHydration();
+        return $query->toArray();
+    }
 }
