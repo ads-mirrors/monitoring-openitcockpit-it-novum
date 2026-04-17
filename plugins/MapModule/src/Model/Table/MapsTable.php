@@ -2611,7 +2611,6 @@ class MapsTable extends Table {
                 'Maps.id',
                 'Maps.background'
             ])
-            ->distinct('Maps.id')
             ->contain([
                 'Containers' => function (Query $query) {
                     return $query->select([
@@ -2635,7 +2634,7 @@ class MapsTable extends Table {
                 'Maps.id',
                 'Mapicons.icon'
             ])
-            ->distinct('Maps.id')
+            ->innerJoinWith('Mapicons')
             ->contain([
                 'Containers' => function (Query $query) {
                     return $query->select([

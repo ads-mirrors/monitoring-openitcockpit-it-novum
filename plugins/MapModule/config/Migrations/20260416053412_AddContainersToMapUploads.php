@@ -62,13 +62,13 @@ class AddContainersToMapUploads extends BaseMigration {
      * @return void
      */
     public function change(): void {
-        /*
-                if ($this->hasTable('map_uploads')) {
-                    $this->table('map_uploads')
-                        ->removeColumn('container_id')
-                        ->update();
-                }
-        */
+
+        if ($this->hasTable('map_uploads')) {
+            $this->table('map_uploads')
+                ->removeColumn('container_id')
+                ->update();
+        }
+
         if (!$this->hasTable('mapuploads_to_containers')) {
             $this->table('mapuploads_to_containers')
                 ->addColumn('id', 'integer', [
@@ -117,11 +117,10 @@ class AddContainersToMapUploads extends BaseMigration {
             if (!empty($iconsWithMapsContainers)) {
                 foreach ($iconsWithMapsContainers as $iconWithMapsContainer) {
                     foreach ($iconWithMapsContainer['containers'] as $container) {
-                        $containerIconValues[$iconWithMapsContainer['icon']][] = $container['id'];
+                        $containerIconValues[$iconWithMapsContainer['_matchingData']['Mapicons']['icon']][] = $container['id'];
                     }
                 }
             }
-
             /** @var MapUploadsTable $MapUploadsTable */
             $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
 
@@ -131,7 +130,6 @@ class AddContainersToMapUploads extends BaseMigration {
                 $containerIds = [ROOT_CONTAINER];
                 // add map containers if background in used by maps to upload container for check the permissions
                 switch ($mapUpload['upload_type']) {
-
                     case 1:  // 1 => Upload type background
                         if (!empty($containerBackgroundValues[$mapUpload['saved_name']])) {
                             $containerIds = array_unique(array_merge(
@@ -167,7 +165,7 @@ class AddContainersToMapUploads extends BaseMigration {
                         ];
                 }
             }
-            dd('END OF TESTS');
+
             if (!empty($valuesToInsert)) {
                 $adapter = $this->table('mapuploads_to_containers')->getAdapter();
 

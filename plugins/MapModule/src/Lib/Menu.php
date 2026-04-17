@@ -1,5 +1,6 @@
 <?php
-// Copyright (C) <2015-present>  <it-novum GmbH>
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -77,6 +78,18 @@ class Menu implements MenuInterface {
                     5,
                     true,
                     'map_module/mapgenerators/index'
+                ))
+                ->addLink(new MenuLink(
+                    __('Uploads'),
+                    'BackgroundUploadsIndex',
+                    'backgrounduploads',
+                    'index',
+                    'MapModule',
+                    ['fas', 'images'],
+                    [],
+                    5,
+                    true,
+                    'map_module/backgrounduploads/index'
                 ))
             );
 

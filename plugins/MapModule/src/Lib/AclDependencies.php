@@ -85,6 +85,12 @@ class AclDependencies extends PluginAclDependencies {
 
         $this->dependency('Mapgenerators', 'add', 'Mapgenerators', 'loadContainers')
             ->dependency('Mapgenerators', 'edit', 'Mapgenerators', 'loadContainers');
+
+
+        $this
+            ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'backgrounds')
+            ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'iconns')
+            ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'iconssets');
     }
 
 }

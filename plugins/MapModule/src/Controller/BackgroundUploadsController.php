@@ -58,6 +58,11 @@ class BackgroundUploadsController extends AppController {
     public $TYPE_ICON_SET = 2;
     public $TYPE_ICON = 3;
 
+    //Only for ACLs
+    public function index() {
+        return;
+    }
+
     public function upload() {
         if (empty($_FILES)) {
             $response = [
