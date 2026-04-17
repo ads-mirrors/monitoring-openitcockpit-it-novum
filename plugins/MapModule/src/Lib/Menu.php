@@ -89,7 +89,7 @@ class Menu implements MenuInterface {
                     [],
                     5,
                     true,
-                    'map_module/backgrounduploads/index'
+                    'map_module/backgrounduploads/backgrounds'
                 ))
             );
 

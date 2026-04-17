@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace MapModule\Model\Table;
 
+use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\UsersTable;
 use Cake\Core\Exception\Exception;
@@ -44,6 +45,8 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 use itnovum\openITCOCKPIT\CakePHP\Folder;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 use MapModule\Model\Entity\MapUpload;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
@@ -66,6 +69,8 @@ use Symfony\Component\Finder\SplFileInfo;
  * @mixin TimestampBehavior
  */
 class MapUploadsTable extends Table {
+    use PaginationAndScrollIndexTrait;
+
 
     public $supportedFileExtensions = ['jpg', 'gif', 'png', 'jpeg'];
     public $TYPE_BACKGROUND = 1;
@@ -484,4 +489,52 @@ class MapUploadsTable extends Table {
             ->disableHydration()
             ->toArray();
     }
+
+    /**
+     * @param GenericFilter $GenericFilter
+     * @param null|PaginateOMat $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMapUploadsByTypeIndex(GenericFilter $GenericFilter, array $types = [], PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+        if (!empty($types) && !is_array($types)) {
+            $types = [$types];
+        }
+
+        $query = $this->find('all')
+            ->select([
+                'MapUploads.id',
+                'MapUploads.upload_name'
+            ])
+            ->where($GenericFilter->genericFilters())
+            ->contain(['Containers'])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            });
+        if (!empty($types)) {
+            $query->whereInList('MapUploads.upload_type', $types);
+        }
+        $query->disableHydration()
+            ->orderBy($GenericFilter->getOrderForPaginator('MapUploads.name', 'asc'));
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $query->toArray();
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+    }
+
 }

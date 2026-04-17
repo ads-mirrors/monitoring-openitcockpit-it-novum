@@ -89,8 +89,8 @@ class AclDependencies extends PluginAclDependencies {
 
         $this
             ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'backgrounds')
-            ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'iconns')
-            ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'iconssets');
+            ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'icons')
+            ->dependency('BackgroundUploads', 'index', 'BackgroundUploads', 'iconsets');
     }
 
 }

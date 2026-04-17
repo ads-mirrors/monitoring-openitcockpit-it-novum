@@ -35,9 +35,12 @@ use Authentication\IdentityInterface;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\CakePHP\Folder;
 use itnovum\openITCOCKPIT\Core\UUID;
 use itnovum\openITCOCKPIT\Core\ValueObjects\User;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 use MapModule\Model\Table\MapiconsTable;
 use MapModule\Model\Table\MapsTable;
 use MapModule\Model\Table\MapUploadsTable;
@@ -59,8 +62,89 @@ class BackgroundUploadsController extends AppController {
     public $TYPE_ICON = 3;
 
     //Only for ACLs
-    public function index() {
+    public function index(): void {
         return;
+    }
+
+    public function backgrounds(): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like'   => [
+                'MapUploads.name'
+            ],
+            'equals' => [
+                'MapUploads.upload_type'
+            ],
+        ]);
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        /** @var MapUploadsTable $MapUploadsTable */
+        $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
+
+        $backgrounds = $MapUploadsTable->getMapUploadsByTypeIndex(
+            $GenericFilter,
+            [$this->TYPE_BACKGROUND],
+            $PaginateOMat,
+            $MY_RIGHTS
+        );
+
+        $backgroundsWithContainers = [];
+
+        foreach ($backgrounds as $key => $background) {
+            $backgroundsWithContainers[$background['id']] = [];
+            foreach ($background['containers'] as $container) {
+                $backgroundsWithContainers[$background['id']][] = $container['id'];
+            }
+
+            $backgrounds[$key]['allow_edit'] = true;
+            if ($this->hasRootPrivileges === false) {
+                $backgrounds[$key]['allow_edit'] = false;
+                if (!empty(array_intersect($backgroundsWithContainers[$background['id']], $this->getWriteContainers()))) {
+                    $backgrounds[$key]['allow_edit'] = true;
+                }
+            }
+        }
+        $backgrounds = Hash::remove($backgrounds, '{n}.containers');
+
+        $this->set('all_backgrounds', $backgrounds);
+        $this->viewBuilder()->setOption('serialize', ['all_backgrounds']);
+
+    }
+
+    public function iconsets(): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Backgrounds.name'
+            ]
+        ]);
+    }
+
+    public function icons(): void {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Backgrounds.name'
+            ]
+        ]);
     }
 
     public function upload() {
