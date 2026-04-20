@@ -57,6 +57,13 @@ class CreateMobileDevices extends BaseMigration
                         'user_id',
                     ]
                 )
+                ->addIndex(
+                    ['device_id', 'user_id'],
+                    [
+                        'unique' => true,
+                        'name' => 'unique_device_user'
+                    ]
+                )
                 ->create();
         }
     }

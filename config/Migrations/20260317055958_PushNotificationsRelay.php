@@ -37,13 +37,6 @@ class PushNotificationsRelay extends BaseMigration
                     'limit'   => null,
                     'null'    => false,
                 ])
-                ->addIndex(
-                    ['device_id', 'user_id'],
-                    [
-                        'unique' => true,
-                        'name' => 'unique_device_user'
-                    ]
-                )
                 ->create();
         }
     }
