@@ -507,7 +507,8 @@ class MapUploadsTable extends Table {
         $query = $this->find('all')
             ->select([
                 'MapUploads.id',
-                'MapUploads.upload_name'
+                'MapUploads.upload_name',
+                'MapUploads.saved_name'
             ])
             ->where($GenericFilter->genericFilters())
             ->contain(['Containers'])
@@ -520,7 +521,8 @@ class MapUploadsTable extends Table {
         if (!empty($types)) {
             $query->whereInList('MapUploads.upload_type', $types);
         }
-        $query->disableHydration()
+        $query->groupBy(['MapUploads.id'])
+            ->disableHydration()
             ->orderBy($GenericFilter->getOrderForPaginator('MapUploads.name', 'asc'));
 
         if ($PaginateOMat === null) {
@@ -537,4 +539,28 @@ class MapUploadsTable extends Table {
         return $result;
     }
 
+    /**
+     * @param int|string $id
+     * @return bool
+     */
+    public function existsById(int|string $id): bool {
+        return $this->exists(['MapUploads.id' => $id]);
+    }
+
+    /**
+     * @param int|string $id
+     * @return array
+     */
+    public function getMapUploadById(int|string $id): array {
+        $query = $this->find()
+            ->contain([
+                'Containers'
+            ])
+            ->where([
+                'MapUploads.id' => $id
+            ])
+            ->disableHydration()
+            ->first();
+        return $this->emptyArrayIfNull($query);
+    }
 }
