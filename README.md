@@ -143,6 +143,60 @@ to: `security@openitcockpit.io`.
 All disclosed vulnerabilities are available
 here: [https://openitcockpit.io/security/](https://openitcockpit.io/security/)
 
+# Translations
+
+Most of the translations are handled by the Angular frontend. However, some parts of the application
+are generated on the server, such as reports, emails, pdf or zip files.
+
+Translation files are located at `resources/locales/`.
+
+## Update existing translations
+
+First of all, you need to extract all used translations from the application.
+
+```
+oitc i18n extract --exclude vendor,tests --extract-core no --paths /opt/openitc/frontend/src,/opt/openitc/frontend/plugins
+```
+
+This command will create (or update) the file `resources/locales/default.pot`, which holds all strings of the
+application that needs to be translated.
+
+In case you want to add a **new** language, please use this file as starting point.
+
+In case you want to **modify or update** an existing language, you should merge the new created `default.pot`
+into the existing language file. You can use the `oitc sync_lang --lang <langue-key>` command for this.
+
+```
+oitc sync_lang --lang de_DE
+```
+
+The command will keep already existing translations, add missing ones or remove deleted messages.
+The new file will be stored at `/opt/openitc/frontend/resources/locales/NEW_de_DE.po`.
+You can now start translating. Every record with an empty `msgstr ""` needs to be translated.
+
+Once your finished, you can overwrite the current file `resources/locales/de_DE/default.po`.
+
+```
+mv /opt/openitc/frontend/resources/locales/NEW_de_DE.po /opt/openitc/frontend/resources/locales/de_DE/default.po
+```
+
+## AI assistance for translations
+
+AI can be a helping hand to make the process of creating or updating translations less painful. Please keep in mind
+that you have to do this in chunks, as you can not paste a file with more than 4000 lines
+into a Chatbot and expect to get a decent result.
+
+Prompt example:
+
+```
+I have open a language file in PO format. The msgid is the english source message. Do NEVER change the msgid.
+Take the english message from msgid, translate it into German, and write it to msgstr. Please make sure to escape double
+quots (like `\"`).
+`{0}` or `{1}` are placeholders, please keep them.
+The context is a IT monitoring system. A "Host" is a device that gets monitored and "Services" are services running on
+the host.
+```
+
 # License
 
 ```
