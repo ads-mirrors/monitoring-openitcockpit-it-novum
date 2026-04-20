@@ -559,15 +559,19 @@ class ProfileController extends AppController {
         }
         $userId = $User->getId();
         $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
-        $found = $DeviceTable->find()->where(['user_id' => $userId, 'device_id' => $token])->count();
-        // $device = $DeviceTable->find()->where(['user_id' => $userId])->first();
-        //$deviceId = $device->device_id;
-        if ($found === 0) {
-            $device = $DeviceTable->newEmptyEntity();
+        $device = $DeviceTable->findOrCreate(
+            ['device_id' => $token],   // ← find by token
+            function($entity) use ($userId) {
+                $entity->set('user_id', $userId);  // ← only set on create
+            }
+        );
+
+// update user_id if device already exists with different user
+        if ($device->user_id !== $userId) {
             $device->set('user_id', $userId);
-            $device->set('device_id', $token);
             $DeviceTable->save($device);
         }
+
     }
 
     public function unregisterDevice() {
