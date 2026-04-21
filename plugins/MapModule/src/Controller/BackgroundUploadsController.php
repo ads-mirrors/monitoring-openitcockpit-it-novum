@@ -182,7 +182,7 @@ class BackgroundUploadsController extends AppController {
         ];
         $uploadedFile['path'] = sprintf('/map_module/img/backgrounds/%s', $uploadedFile['saved_name']);
 
-        $requiredContainerId = array_unique(
+        $requiredContainerIds = array_unique(
             Hash::extract(
                 $MapsTable->getMapsWithMapContainerIdsByBackground($uploadedFile['saved_name']),
                 '{n}.containers.{n}.id'
@@ -190,14 +190,14 @@ class BackgroundUploadsController extends AppController {
         );
 
         $MapContainersPermissions = new MapContainersPermissions(
-            $requiredContainerId,
+            $requiredContainerIds,
             $this->getWriteContainers(),
             $this->hasRootPrivileges
         );
 
         if ($this->request->is('get')) {
             $this->set('areContainersChangeable', $MapContainersPermissions->areContainersChangeable());
-            $this->set('requiredContainers', $requiredContainerId);
+            $this->set('requiredContainers', $requiredContainerIds);
             $this->set('uploadedFile', $uploadedFile);
             $this->viewBuilder()->setOption('serialize', [
                 'uploadedFile', 'areContainersChangeable', 'requiredContainers'
@@ -332,15 +332,72 @@ class BackgroundUploadsController extends AppController {
 
         /** @var MapsTable $MapsTable */
         $MapsTable = TableRegistry::getTableLocator()->get('MapModule.Maps');
-        /** @var MapUploadsTable $MapsTable */
+
+        /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
 
-        $background = $MapUploadsTable->getByFilename($filename, $this->MY_RIGHTS);
-        $backgroundEntity = $MapUploadsTable->get($background['id']);
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
 
-        if (empty($backgroundEntity)) {
+        $background = $MapUploadsTable->getByFilename($filename, $MY_RIGHTS);
+
+        $backgroundEntity = $MapUploadsTable->get($background['id'], contain: [
+            'Containers'
+        ]);
+
+        $uploadContainerIds = Hash::extract(
+            $backgroundEntity,
+            'containers.{n}.id'
+        );
+
+
+        if (!$backgroundEntity) {
             throw new NotFoundException();
         }
+
+        $MapUploadContainersPermissions = new MapContainersPermissions(
+            $uploadContainerIds,
+            $this->getWriteContainers(),
+            $this->hasRootPrivileges
+        );
+
+        // check map uploaded file permissions
+        if (!$MapUploadContainersPermissions->areContainersChangeable()) {
+            $response = [
+                'success' => false,
+                'message' => __('You do not have permissions to delete this file.')
+            ];
+            $this->set('response', $response);
+            $this->viewBuilder()->setOption('serialize', ['response']);
+            return;
+        }
+
+        $requiredContainerIds = array_unique(
+            Hash::extract(
+                $MapsTable->getMapsWithMapContainerIdsByBackground($filename),
+                '{n}.containers.{n}.id'
+            )
+        );
+
+        $MapContainersPermissions = new MapContainersPermissions(
+            $requiredContainerIds,
+            $this->getWriteContainers(),
+            $this->hasRootPrivileges
+        );
+
+        // check used maps container permissions
+        if (!$MapContainersPermissions->areContainersChangeable()) {
+            $response = [
+                'success' => false,
+                'message' => __('You do not have permissions to delete this file, because it is used in maps with containers you have no write permissions for.')
+            ];
+            $this->set('response', $response);
+            $this->viewBuilder()->setOption('serialize', ['response']);
+            return;
+        }
+
 
         $MapsTable->updateAll([
             'background' => null

@@ -39,6 +39,7 @@ use App\Model\Table\UsersTable;
 use Cake\Core\Exception\Exception;
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association\BelongsTo;
+use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Behavior\TimestampBehavior;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
@@ -55,9 +56,9 @@ use Symfony\Component\Finder\SplFileInfo;
  * MapUploads Model
  *
  * @property UsersTable&BelongsTo $Users
- * @property ContainersTable&BelongsTo $Containers
+ * @property ContainersTable&BelongsToMany $Containers
  *
- * @method MapUpload get($primaryKey, $options = [])
+ * @method MapUpload get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
  * @method MapUpload newEntity($data = null, array $options = [])
  * @method MapUpload[] newEntities(array $data, array $options = [])
  * @method MapUpload|false save(EntityInterface $entity, $options = [])
@@ -154,6 +155,13 @@ class MapUploadsTable extends Table {
             ->maxLength('saved_name', 255)
             ->requirePresence('saved_name', 'create')
             ->notEmptyString('saved_name');
+
+        $validator
+            ->requirePresence('containers', true, __('You have to choose at least one container.'))
+            ->allowEmptyString('containers', null, false)
+            ->multipleOptions('containers', [
+                'min' => 1
+            ], __('You have to choose at least one container.'));
 
         return $validator;
     }

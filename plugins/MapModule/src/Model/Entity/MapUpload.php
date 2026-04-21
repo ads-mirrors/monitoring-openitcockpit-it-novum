@@ -50,7 +50,7 @@ use Cake\ORM\Entity;
  * @property DateTime $created
  *
  * @property User $user
- * @property Container $container
+ * @property Container $containers
  */
 class MapUpload extends Entity {
     /**
