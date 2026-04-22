@@ -290,7 +290,7 @@ class MapsTable extends Table {
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getMapsIndex(MapFilter $MapFilter, $PaginateOMat = null, $MY_RIGHTS = []) {
+    public function getMapsIndex(MapFilter $MapFilter, $PaginateOMat = null, $MY_RIGHTS = []): array {
         if (!is_array($MY_RIGHTS)) {
             $MY_RIGHTS = [$MY_RIGHTS];
         }
@@ -334,7 +334,7 @@ class MapsTable extends Table {
      * @param bool $enableHydration
      * @return array|EntityInterface|null
      */
-    public function getMapsForMaps($realMapId, $mapItemMapId, $enableHydration = true) {
+    public function getMapsForMaps($realMapId, $mapItemMapId, $enableHydration = true): array|EntityInterface|null {
         $query = $this->find()
             ->contain(['Containers'])
             ->join([

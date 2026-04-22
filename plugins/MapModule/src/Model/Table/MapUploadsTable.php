@@ -76,6 +76,7 @@ class MapUploadsTable extends Table {
     public $supportedFileExtensions = ['jpg', 'gif', 'png', 'jpeg'];
     public $TYPE_BACKGROUND = 1;
     public $TYPE_ICON_SET = 2;
+    public $TYPE_ICON = 3;
 
     /**
      * Initialize method
@@ -473,7 +474,7 @@ class MapUploadsTable extends Table {
                         'upload_name'  => $dirName,
                         'saved_name'   => $dirName,
                         'user_id'      => null,
-                        'container_id' => 1
+                        'container_id' => [1]
                     ];
                     $mapUploadEntity = $this->newEntity($data);
                     $this->save($mapUploadEntity);
@@ -500,7 +501,8 @@ class MapUploadsTable extends Table {
 
     /**
      * @param GenericFilter $GenericFilter
-     * @param null|PaginateOMat $PaginateOMat
+     * @param array $types
+     * @param PaginateOMat|null $PaginateOMat
      * @param array $MY_RIGHTS
      * @return array
      */
@@ -570,5 +572,55 @@ class MapUploadsTable extends Table {
             ->disableHydration()
             ->first();
         return $this->emptyArrayIfNull($query);
+    }
+
+
+    public function getUsedMapIconsWithMapContainerIds(array $MY_RIGHTS = []) {
+        $query = $this->find()
+            ->select([
+                'MapUploads.id',
+                'MapUploads.upload_name',
+                'MapUploads.saved_name',
+                'Mapicons.id',
+                'Mapicons.map_id',
+                'Maps.name'
+            ])
+            ->contain([
+                'Containers'
+            ])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            })
+            ->innerJoin(
+                ['Mapicons' => 'mapicons'],
+                [
+                    'Mapicons.icon = MapUploads.saved_name'
+                ]
+            )
+            ->innerJoin(
+                ['Maps' => 'maps'],
+                [
+                    'Maps.id = Mapicons.map_id'
+                ]
+            )
+            ->where([
+                'MapUploads.upload_type' => $this->TYPE_ICON,
+            ]);
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(
+                ['MapsToContainers' => 'maps_to_containers'],
+                [
+                    'MapsToContainers.map_id = Mapicons.map_id',
+                    'MapsToContainers.container_id IN' => $MY_RIGHTS
+                ]
+            );
+        }
+        $query->groupBy(['Mapicons.id'])
+            ->disableHydration();
+
+        return $this->emptyArrayIfNull($query->toArray());
     }
 }
