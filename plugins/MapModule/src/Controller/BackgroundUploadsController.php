@@ -233,7 +233,22 @@ class BackgroundUploadsController extends AppController {
         $uploadedFile['containers'] = [
             '_ids' => Hash::extract($uploadedFile['containers'], '{n}.id')
         ];
-        $uploadedFile['path'] = sprintf('/map_module/img/backgrounds/%s', $uploadedFile['saved_name']);
+
+        switch ($uploadedFile['upload_type']) {
+            case $this->TYPE_BACKGROUND:
+                $type = 'backgrounds';
+                break;
+            case $this->TYPE_ICON:
+                $type = 'icons';
+                break;
+            case $this->TYPE_ICON_SET:
+                $type = 'items';
+                break;
+            default:
+                $type = 'backgrounds';
+        }
+
+        $uploadedFile['path'] = sprintf('/map_module/img/%s/%s', $type, $uploadedFile['saved_name']);
 
         $requiredContainerIds = array_unique(
             Hash::extract(
