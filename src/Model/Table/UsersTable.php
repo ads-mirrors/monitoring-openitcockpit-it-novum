@@ -107,6 +107,11 @@ class UsersTable extends Table {
             'foreignKey' => 'user_id'
         ]);
 
+        // cascade delete to mobile_devices
+        $this->hasMany('MobileDevices', [
+            'foreignKey' => 'user_id',
+        ])->setDependent(true);
+
         $this->hasMany('DashboardTabs', [
             'foreignKey'       => 'user_id',
             'dependent'        => true,

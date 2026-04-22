@@ -57,7 +57,7 @@ class ProfileController extends AppController {
 
     public function edit() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
@@ -214,7 +214,7 @@ class ProfileController extends AppController {
 
     public function upload_profile_icon() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
@@ -367,7 +367,7 @@ class ProfileController extends AppController {
 
     public function create_apikey() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $ApikeysTable ApikeysTable */
@@ -434,7 +434,7 @@ class ProfileController extends AppController {
 
     public function delete_apikey($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
 
@@ -463,7 +463,7 @@ class ProfileController extends AppController {
 
     public function deleteImage() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
@@ -550,12 +550,15 @@ class ProfileController extends AppController {
 
     public function registerDevice() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
+        }
+        if(!$this->request->is('post')) {
+            throw new MethodNotAllowedException();
         }
         $User = new User($this->getUser());
-        $token= '';
-        if ($this->request->is('post')) {
-            $token = $this->request->getData('Token');
+        $token = $this->request->getData('Token');
+        if (empty($token)) {
+            throw new BadRequestException('Token is required');
         }
         $userId = $User->getId();
         $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
@@ -566,7 +569,7 @@ class ProfileController extends AppController {
             }
         );
 
-// update user_id if device already exists with different user
+        // update user_id if device already exists with different user
         if ($device->user_id !== $userId) {
             $device->set('user_id', $userId);
             $DeviceTable->save($device);
@@ -576,15 +579,17 @@ class ProfileController extends AppController {
 
     public function unregisterDevice() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
+        }
+        if(!$this->request->is('post')) {
+            throw new MethodNotAllowedException();
         }
         $User = new User($this->getUser());
-        $token= '';
-        if ($this->request->is('post')) {
-            $token = $this->request->getData('Token');
+        $token = $this->request->getData('Token');
+        if (empty($token)) {
+            throw new BadRequestException('Token is required');
         }
-        $userId = $User->getId();
         $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
-        $DeviceTable->deleteAll(['device_id' => $token, 'user_id' => $userId]);
+        $DeviceTable->deleteAll(['device_id' => $token]);
     }
 }
