@@ -74,9 +74,6 @@ class MapUploadsTable extends Table {
 
 
     public $supportedFileExtensions = ['jpg', 'gif', 'png', 'jpeg'];
-    public $TYPE_BACKGROUND = 1;
-    public $TYPE_ICON_SET = 2;
-    public $TYPE_ICON = 3;
 
     /**
      * Initialize method
@@ -183,15 +180,15 @@ class MapUploadsTable extends Table {
 
     /**
      * @param $filename
-     * @param array $MY_RIGHTS
-     * @return array|EntityInterface|null
+     * @param int $type
+     * @param $MY_RIGHTS
+     * @return mixed
      */
-    public function getByFilename($filename, $MY_RIGHTS = []) {
+    public function getByFilename($filename, int $type, $MY_RIGHTS = []) {
         if (!is_array($MY_RIGHTS)) {
             $MY_RIGHTS = [$MY_RIGHTS];
         }
-
-        $query = $this->find()
+        return $this->find()
             ->where([
                 'MapUploads.saved_name' => $filename,
             ])
@@ -204,9 +201,13 @@ class MapUploadsTable extends Table {
                 }
                 return $query;
             })
-            ->disableHydration()
+            ->where([
+                'MapUploads.upload_type' => $type
+            ])
+            ->groupBy([
+                'MapUploads.id'
+            ])->disableHydration()
             ->first();
-        return $query;
     }
 
     /**
@@ -451,7 +452,7 @@ class MapUploadsTable extends Table {
         $finder->directories()->in($basePath);
 
         $allIconsets = $this->find()->where([
-            'MapUploads.upload_type' => $this->TYPE_ICON_SET
+            'MapUploads.upload_type' => MapUpload::TYPE_ICON_SET
         ])->all()->toArray();
 
         $availableIconsets = [];
@@ -470,7 +471,7 @@ class MapUploadsTable extends Table {
                 if (file_exists($basePath . DS . $dirName . DS . 'ok.png')) {
                     //Icon set is missing in database, add it
                     $data = [
-                        'upload_type'  => $this->TYPE_ICON_SET,
+                        'upload_type'  => MapUpload::TYPE_ICON_SET,
                         'upload_name'  => $dirName,
                         'saved_name'   => $dirName,
                         'user_id'      => null,
@@ -607,7 +608,7 @@ class MapUploadsTable extends Table {
                 ]
             )
             ->where([
-                'MapUploads.upload_type' => $this->TYPE_ICON,
+                'MapUploads.upload_type' => MapUpload::TYPE_ICON
             ]);
         if (!empty($MY_RIGHTS)) {
             $query->innerJoin(

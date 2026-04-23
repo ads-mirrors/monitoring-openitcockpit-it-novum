@@ -2679,6 +2679,7 @@ class MapsTable extends Table {
     }
 
     /**
+     * @param string $backgroundSavedName
      * @return array
      */
     public function getMapsWithMapContainerIdsByBackground(string $backgroundSavedName): array {
@@ -2702,4 +2703,32 @@ class MapsTable extends Table {
         return $query->toArray();
     }
 
+    /**
+     * @param string $backgroundSavedName
+     * @return array
+     */
+    public function getMapsWithMapContainerIdsByIcon(string $iconName): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id'
+            ])
+            ->contain([
+
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->innerJoin(
+                ['Mapicons' => 'mapicons'],
+                [
+                    'Mapicons.map_id = Maps.id',
+                    'Mapicons.icon' => $iconName
+                ]
+            )
+            ->disableAutoFields()
+            ->disableHydration();
+        return $query->toArray();
+    }
 }

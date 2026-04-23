@@ -44,6 +44,8 @@ use itnovum\openITCOCKPIT\Core\UUID;
 use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\GenericFilter;
+use MapModule\Model\Entity\Mapicon;
+use MapModule\Model\Entity\MapUpload;
 use MapModule\Model\Table\MapiconsTable;
 use MapModule\Model\Table\MapsTable;
 use MapModule\Model\Table\MapUploadsTable;
@@ -59,11 +61,6 @@ use ZipArchive;
  * @property Mapicon $Mapicon
  */
 class BackgroundUploadsController extends AppController {
-
-    public $TYPE_BACKGROUND = 1;
-    public $TYPE_ICON_SET = 2;
-    public $TYPE_ICON = 3;
-
     //Only for ACLs
     public function index(): void {
         return;
@@ -105,7 +102,7 @@ class BackgroundUploadsController extends AppController {
 
         $backgrounds = $MapUploadsTable->getMapUploadsByTypeIndex(
             $GenericFilter,
-            [$this->TYPE_BACKGROUND],
+            [],
             $PaginateOMat,
             $MY_RIGHTS
         );
@@ -172,7 +169,7 @@ class BackgroundUploadsController extends AppController {
 
         $icons = $MapUploadsTable->getMapUploadsByTypeIndex(
             $GenericFilter,
-            [$this->TYPE_ICON],
+            [MapUpload::TYPE_ICON],
             $PaginateOMat,
             $MY_RIGHTS
         );
@@ -235,13 +232,13 @@ class BackgroundUploadsController extends AppController {
         ];
 
         switch ($uploadedFile['upload_type']) {
-            case $this->TYPE_BACKGROUND:
+            case MapUpload::TYPE_BACKGROUND:
                 $type = 'backgrounds';
                 break;
-            case $this->TYPE_ICON:
+            case MapUpload::TYPE_ICON:
                 $type = 'icons';
                 break;
-            case $this->TYPE_ICON_SET:
+            case MapUpload::TYPE_ICON_SET:
                 $type = 'items';
                 break;
             default:
@@ -250,12 +247,25 @@ class BackgroundUploadsController extends AppController {
 
         $uploadedFile['path'] = sprintf('/map_module/img/%s/%s', $type, $uploadedFile['saved_name']);
 
-        $requiredContainerIds = array_unique(
-            Hash::extract(
-                $MapsTable->getMapsWithMapContainerIdsByBackground($uploadedFile['saved_name']),
-                '{n}.containers.{n}.id'
-            )
-        );
+        $requiredContainerIds = [];
+        if ($uploadedFile['upload_type'] === MapUpload::TYPE_BACKGROUND) {
+            $requiredContainerIds = array_unique(
+                Hash::extract(
+                    $MapsTable->getMapsWithMapContainerIdsByBackground($uploadedFile['saved_name']),
+                    '{n}.containers.{n}.id'
+                )
+            );
+        }
+
+        if ($uploadedFile['upload_type'] === MapUpload::TYPE_ICON) {
+            $requiredContainerIds = array_unique(
+                Hash::extract(
+                    $MapsTable->getMapsWithMapContainerIdsByIcon($uploadedFile['saved_name']),
+                    '{n}.containers.{n}.id'
+                )
+            );
+        }
+
 
         $MapContainersPermissions = new MapContainersPermissions(
             $requiredContainerIds,
@@ -385,7 +395,7 @@ class BackgroundUploadsController extends AppController {
                 $MapUploadsTable->createThumbnailsFromBackgrounds($imageConfig, $backgroundFolder);
                 $mapUpload = $MapUploadsTable->newEmptyEntity();
                 $mapUpload = $MapUploadsTable->patchEntity($mapUpload, [
-                    'upload_type' => $this->TYPE_BACKGROUND,
+                    'upload_type' => MapUpload::TYPE_BACKGROUND,
                     'upload_name' => $uploadFilename . '.' . $fileExtension,
                     'saved_name'  => $saveFilename . '.' . $fileExtension,
                     'user_id'     => $User->getId(),
@@ -435,7 +445,7 @@ class BackgroundUploadsController extends AppController {
             $MY_RIGHTS = [];
         }
 
-        $background = $MapUploadsTable->getByFilename($filename, $MY_RIGHTS);
+        $background = $MapUploadsTable->getByFilename($filename, MapUpload::TYPE_BACKGROUND, $MY_RIGHTS);
         $backgroundEntity = $MapUploadsTable->get($background['id'], contain: [
             'Containers'
         ]);
@@ -467,22 +477,13 @@ class BackgroundUploadsController extends AppController {
             return;
         }
 
-        if ($backgroundEntity['upload_type'] == $this->TYPE_BACKGROUND || $backgroundEntity['upload_type'] == $this->TYPE_ICON) {
-            $requiredContainerIds = [];
-            if ($backgroundEntity['upload_type'] == $this->TYPE_BACKGROUND) {
-                $requiredContainerIds = array_unique(
-                    Hash::extract(
-                        $MapsTable->getMapsWithMapContainerIdsByBackground($filename),
-                        '{n}.containers.{n}.id'
-                    )
-                );
-            }
-
-            if ($backgroundEntity['upload_type'] == $this->TYPE_ICON) {
-                //@todo check icons in maps
-            }
-
-
+        if ($backgroundEntity['upload_type'] == MapUpload::TYPE_BACKGROUND) {
+            $requiredContainerIds = array_unique(
+                Hash::extract(
+                    $MapsTable->getMapsWithMapContainerIdsByBackground($filename),
+                    '{n}.containers.{n}.id'
+                )
+            );
             $MapContainersPermissions = new MapContainersPermissions(
                 $requiredContainerIds,
                 $this->getWriteContainers(),
@@ -613,7 +614,7 @@ class BackgroundUploadsController extends AppController {
 
                 $mapUpload = $MapUploadsTable->newEmptyEntity();
                 $mapUpload = $MapUploadsTable->patchEntity($mapUpload, [
-                    'upload_type' => $this->TYPE_ICON,
+                    'upload_type' => MapUpload::TYPE_ICON,
                     'upload_name' => $uploadFilename . '.' . $fileExtension,
                     'saved_name'  => $saveFilename,
                     'user_id'     => $User->getId(),
@@ -657,11 +658,78 @@ class BackgroundUploadsController extends AppController {
             throw new NotFoundException();
         }
 
+        /** @var MapUploadsTable $MapUploadsTable */
+        $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $icon = $MapUploadsTable->getByFilename($filename, MapUpload::TYPE_ICON, $MY_RIGHTS);
+        $iconEntity = $MapUploadsTable->get($icon['id'], contain: [
+            'Containers'
+        ]);
+
+        $uploadContainerIds = Hash::extract(
+            $iconEntity,
+            'containers.{n}.id'
+        );
+
+        if (!$iconEntity) {
+            throw new NotFoundException();
+        }
+
+
+        $MapUploadContainersPermissions = new MapContainersPermissions(
+            $uploadContainerIds,
+            $this->getWriteContainers(),
+            $this->hasRootPrivileges
+        );
+        // check map uploaded file permissions
+        if (!$MapUploadContainersPermissions->areContainersChangeable()) {
+            $response = [
+                'success' => false,
+                'message' => __('You do not have permissions to delete this file.')
+            ];
+            $this->set('response', $response);
+            $this->viewBuilder()->setOption('serialize', ['response']);
+            return;
+        }
+
+        /** @var MapsTable $MapsTable */
+        $MapsTable = TableRegistry::getTableLocator()->get('MapModule.Maps');
+
+        $requiredContainerIds = array_unique(
+            Hash::extract(
+                $MapsTable->getMapsWithMapContainerIdsByIcon($filename),
+                '{n}.containers.{n}.id'
+            )
+        );
+
+
+        $MapContainersPermissions = new MapContainersPermissions(
+            $requiredContainerIds,
+            $this->getWriteContainers(),
+            $this->hasRootPrivileges
+        );
+
+        // check used maps container permissions
+        if (!$MapContainersPermissions->areContainersChangeable()) {
+            $response = [
+                'success' => false,
+                'message' => __('You do not have permissions to delete this file, because it is used in maps with containers you have no write permissions for.')
+            ];
+            $this->set('response', $response);
+            $this->viewBuilder()->setOption('serialize', ['response']);
+            return;
+        }
+
         /** @var MapiconsTable $MapiconsTable */
         $MapiconsTable = TableRegistry::getTableLocator()->get('MapModule.Mapicons');
 
         unlink($fullFilePath);
-        if ($MapiconsTable->deleteAll(['Mapicon.icon' => $filename])) {
+        if ($MapiconsTable->deleteAll(['Mapicon.icon' => $filename]) && $MapUploadsTable->delete($iconEntity)) {
             $response = [
                 'success' => true,
                 'message' => __('Icon deleted successfully.')

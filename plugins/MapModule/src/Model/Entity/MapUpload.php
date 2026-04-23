@@ -71,4 +71,8 @@ class MapUpload extends Entity {
         'created'     => true,
         'user'        => true,
     ];
+
+    public const TYPE_BACKGROUND = 1;
+    public const TYPE_ICON_SET = 2;
+    public const TYPE_ICON = 3;
 }
