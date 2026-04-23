@@ -2189,6 +2189,7 @@ class HostsController extends AppController {
         }
 
         $host = $HostsTable->getHostForBrowser($id);
+        $parentAndChildHostsTree = [];
         if (!empty($host['parenthosts']) && $host['satellite_id'] > 0) {
             $parentHostsFiltered = [];
             foreach ($host['parenthosts'] as $parentHost) {
@@ -2197,6 +2198,43 @@ class HostsController extends AppController {
                 }
             }
             $host['parenthosts'] = $parentHostsFiltered;
+        }
+        // add parent hosts to main host to $parentAndChildHostsTree
+        foreach ($host['parenthosts'] as $parentHost) {
+            $parentAndChildHostsTree[$parentHost['uuid']] = [
+                'id'                => $parentHost['id'],
+                'name'              => $parentHost['name'],
+                'is_satellite_host' => (int)$parentHost['satellite_id'] !== 0,
+                'parentIds'         => []
+            ];
+        }
+        if (!empty($host['child_hosts']) && $host['satellite_id'] > 0) {
+            $childHostsFiltered = [];
+            foreach ($host['child_hosts'] as $childHost) {
+                if ($childHost['satellite_id'] === 0 || $childHost['satellite_id'] === $host['satellite_id']) {
+                    $childHostsFiltered[] = $childHost;
+                }
+            }
+            $host['child_hosts'] = $childHostsFiltered;
+        }
+        // add children of main host to $parentAndChildHostsTree
+        foreach ($host['child_hosts'] as $childHost) {
+            $parentAndChildHostsTree[$childHost['uuid']] = [
+                'id'                => $childHost['id'],
+                'name'              => $childHost['name'],
+                'is_satellite_host' => (int)$childHost['satellite_id'] !== 0,
+                'parentIds'         => [intval($id)]
+            ];
+        }
+        if (!empty($host['child_hosts']) || !empty($host['parenthosts'])) {
+            // add main host to $parentAndChildHostsTree
+            $parentAndChildHostsTree[$host['uuid']] = [
+                'id'                => intval($id),
+                'name'              => $host['name'],
+                'is_satellite_host' => (int)$host['satellite_id'] !== 0,
+                'isMainHost'        => true,
+                'parentIds'         => Hash::extract($host['parenthosts'], '{n}.id')
+            ];
         }
 
         //Check permissions
@@ -2411,16 +2449,44 @@ class HostsController extends AppController {
         //Load parent hosts and parent host status
         $parenthosts = $host['parenthosts'];
         $ParentHoststatusFields = new HoststatusFields($this->DbBackend);
-        $ParentHoststatusFields->currentState()->lastStateChange()->isHardstate();
+        $ParentHoststatusFields->currentState()
+            ->lastStateChange()
+            ->isHardstate()
+            ->lastCheck()
+            ->currentCheckAttempt()
+            ->maxCheckAttempts()
+            ->activeChecksEnabled()
+            ->nextCheck();
         $parentHostStatusRaw = $HoststatusTable->byUuid(
             Hash::extract($host['parenthosts'], '{n}.uuid'),
             $ParentHoststatusFields
         );
+        $childHostStatusRaw = $HoststatusTable->byUuid(
+            Hash::extract($host['child_hosts'], '{n}.uuid'),
+            $ParentHoststatusFields
+        );
         $parentHostStatus = [];
+        // add hoststatus to $parentAndChildHostsTree
         foreach ($parentHostStatusRaw as $uuid => $parentHoststatus) {
             $ParentHoststatus = new Hoststatus($parentHoststatus['Hoststatus'], $UserTime);
             $parentHostStatus[$uuid] = $ParentHoststatus->toArrayForBrowser();
+            if (!empty($parentAndChildHostsTree[$uuid])) {
+                $parentAndChildHostsTree[$uuid]['hoststatus'] = $parentHostStatus[$uuid];
+                $parentAndChildHostsTree[$uuid]['isAcknowledged'] = $ParentHoststatus->isAcknowledged();
+                $parentAndChildHostsTree[$uuid]['isInDowntime'] = $ParentHoststatus->isInDowntime();
+            }
         }
+        foreach ($childHostStatusRaw as $uuid => $childHoststatus) {
+            $ChildHoststatus = new Hoststatus($childHoststatus['Hoststatus'], $UserTime);
+            if (!empty($parentAndChildHostsTree[$uuid])) {
+                $parentAndChildHostsTree[$uuid]['hoststatus'] = $ChildHoststatus->toArrayForBrowser();
+                $parentAndChildHostsTree[$uuid]['isAcknowledged'] = $ChildHoststatus->isAcknowledged();
+                $parentAndChildHostsTree[$uuid]['isInDowntime'] = $ChildHoststatus->isInDowntime();
+            }
+        }
+        $parentAndChildHostsTree[$host['uuid']]['hoststatus'] = $hoststatus;
+        $parentAndChildHostsTree[$host['uuid']]['isAcknowledged'] = $Hoststatus->isAcknowledged();
+        $parentAndChildHostsTree[$host['uuid']]['isInDowntime'] = $Hoststatus->isInDowntime();
 
         $canSubmitExternalCommands = $this->hasPermission('externalcommands', 'hosts') && $this->hasPermission('submit', 'cmd', 'nagiosmodule');
 
@@ -2483,6 +2549,7 @@ class HostsController extends AppController {
         $this->set('sharedContainers', $sharedContainers);
         $this->set('parenthosts', $parenthosts);
         $this->set('parentHostStatus', $parentHostStatus);
+        $this->set('parentAndChildHostsTree', $parentAndChildHostsTree);
         $this->set('acknowledgement', $acknowledgement);
         $this->set('downtime', $downtime);
         $this->set('plannedDowntimes', $plannedDowntimes);
@@ -2506,6 +2573,7 @@ class HostsController extends AppController {
             'sharedContainers',
             'parenthosts',
             'parentHostStatus',
+            'parentAndChildHostsTree',
             'acknowledgement',
             'downtime',
             'plannedDowntimes',
