@@ -646,17 +646,13 @@ class BackgroundUploadsController extends AppController {
     }
 
     public function deleteIcon() {
-        $iconImgDirectory = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'icons';
         if (!$this->request->is('post')) {
             throw new MethodNotAllowedException();
         }
 
+        $iconImgDirectory = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'icons';
         $filename = $this->request->getData('filename');
         $fullFilePath = $iconImgDirectory . DS . $filename;
-
-        if (!file_exists($fullFilePath) || is_dir($fullFilePath)) {
-            throw new NotFoundException();
-        }
 
         /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
@@ -679,7 +675,6 @@ class BackgroundUploadsController extends AppController {
         if (!$iconEntity) {
             throw new NotFoundException();
         }
-
 
         $MapUploadContainersPermissions = new MapContainersPermissions(
             $uploadContainerIds,
@@ -728,12 +723,28 @@ class BackgroundUploadsController extends AppController {
         /** @var MapiconsTable $MapiconsTable */
         $MapiconsTable = TableRegistry::getTableLocator()->get('MapModule.Mapicons');
 
-        unlink($fullFilePath);
         if ($MapiconsTable->deleteAll(['Mapicon.icon' => $filename]) && $MapUploadsTable->delete($iconEntity)) {
             $response = [
                 'success' => true,
                 'message' => __('Icon deleted successfully.')
             ];
+
+            $MapUploadsTable->delete($iconEntity);
+
+            if (!$iconEntity->hasErrors()) {
+                if (file_exists($fullFilePath)) {
+                    unlink($fullFilePath);
+                }
+
+                $response = [
+                    'success' => true,
+                    'message' => __('Icon deleted successfully.')
+                ];
+                $this->set('response', $response);
+                $this->viewBuilder()->setOption('serialize', ['response']);
+                return;
+            }
+
             $this->set('response', $response);
             $this->viewBuilder()->setOption('serialize', ['response']);
             return;
