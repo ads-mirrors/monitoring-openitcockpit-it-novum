@@ -2199,7 +2199,7 @@ class HostsController extends AppController {
             }
             $host['parenthosts'] = $parentHostsFiltered;
         }
-        // add parent hosts to main host to $parentAndChildHostsTree
+        // add parent hosts of main host to $parentAndChildHostsTree
         foreach ($host['parenthosts'] as $parentHost) {
             $parentAndChildHostsTree[$parentHost['uuid']] = [
                 'id'                => $parentHost['id'],
@@ -2217,7 +2217,7 @@ class HostsController extends AppController {
             }
             $host['child_hosts'] = $childHostsFiltered;
         }
-        // add children of main host to $parentAndChildHostsTree
+        // add child hosts of main host to $parentAndChildHostsTree
         foreach ($host['child_hosts'] as $childHost) {
             $parentAndChildHostsTree[$childHost['uuid']] = [
                 'id'                => $childHost['id'],
@@ -2456,7 +2456,9 @@ class HostsController extends AppController {
             ->currentCheckAttempt()
             ->maxCheckAttempts()
             ->activeChecksEnabled()
-            ->nextCheck();
+            ->nextCheck()
+            ->problemHasBeenAcknowledged()
+            ->scheduledDowntimeDepth();
         $parentHostStatusRaw = $HoststatusTable->byUuid(
             Hash::extract($host['parenthosts'], '{n}.uuid'),
             $ParentHoststatusFields
