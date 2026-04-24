@@ -624,4 +624,53 @@ class MapUploadsTable extends Table {
 
         return $this->emptyArrayIfNull($query->toArray());
     }
+
+    public function getUsedMapItemsWithMapContainerIds(array $MY_RIGHTS = []) {
+        $query = $this->find()
+            ->select([
+                'MapUploads.id',
+                'MapUploads.upload_name',
+                'MapUploads.saved_name',
+                'Mapitems.id',
+                'Mapitems.map_id',
+                'Maps.name'
+            ])
+            ->contain([
+                'Containers'
+            ])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            })
+            ->innerJoin(
+                ['Mapitems' => 'mapitems'],
+                [
+                    'Mapitems.iconset = MapUploads.saved_name'
+                ]
+            )
+            ->innerJoin(
+                ['Maps' => 'maps'],
+                [
+                    'Maps.id = Mapitems.map_id'
+                ]
+            )
+            ->where([
+                'MapUploads.upload_type' => MapUpload::TYPE_ICON_SET
+            ]);
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoin(
+                ['MapsToContainers' => 'maps_to_containers'],
+                [
+                    'MapsToContainers.map_id = Mapitems.map_id',
+                    'MapsToContainers.container_id IN' => $MY_RIGHTS
+                ]
+            );
+        }
+        $query->groupBy(['Mapitems.id'])
+            ->disableHydration();
+
+        return $this->emptyArrayIfNull($query->toArray());
+    }
 }

@@ -2704,7 +2704,7 @@ class MapsTable extends Table {
     }
 
     /**
-     * @param string $backgroundSavedName
+     * @param string $iconName
      * @return array
      */
     public function getMapsWithMapContainerIdsByIcon(string $iconName): array {
@@ -2725,6 +2725,35 @@ class MapsTable extends Table {
                 [
                     'Mapicons.map_id = Maps.id',
                     'Mapicons.icon' => $iconName
+                ]
+            )
+            ->disableAutoFields()
+            ->disableHydration();
+        return $query->toArray();
+    }
+
+    /**
+     * @param string $itemName
+     * @return array
+     */
+    public function getMapsWithMapContainerIdsByItem(string $itemName): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id'
+            ])
+            ->contain([
+
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->innerJoin(
+                ['Mapitems' => 'mapitems'],
+                [
+                    'Mapitems.map_id = Maps.id',
+                    'Mapitems.iconset' => $itemName
                 ]
             )
             ->disableAutoFields()

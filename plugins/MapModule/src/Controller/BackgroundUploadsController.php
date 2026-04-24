@@ -102,7 +102,7 @@ class BackgroundUploadsController extends AppController {
 
         $backgrounds = $MapUploadsTable->getMapUploadsByTypeIndex(
             $GenericFilter,
-            [],
+            [MapUpload::TYPE_BACKGROUND],
             $PaginateOMat,
             $MY_RIGHTS
         );
@@ -206,9 +206,67 @@ class BackgroundUploadsController extends AppController {
         $GenericFilter = new GenericFilter($this->request);
         $GenericFilter->setFilters([
             'like' => [
-                'Backgrounds.name'
+                'MapUploads.upload_name'
             ]
         ]);
+
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $GenericFilter->getPage());
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        /** @var MapUploadsTable $MapUploadsTable */
+        $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
+
+        $mapsItemsWithMaps = $MapUploadsTable->getUsedMapItemsWithMapContainerIds($MY_RIGHTS);
+
+        $mapsGroupedByItem = [];
+
+        foreach ($mapsItemsWithMaps as $mapsItemWithMap) {
+            $mapsGroupedByItem[$mapsItemWithMap['saved_name']][$mapsItemWithMap['Mapitems']['map_id']] = [
+                'id'   => $mapsItemWithMap['Mapitems']['map_id'],
+                'name' => $mapsItemWithMap['Maps']['name'],
+            ];
+        }
+
+        // reformat for andular
+        $reformatMapsGroupedByItem = [];
+        foreach ($mapsGroupedByItem as $key => $mapGroupedByItem) {
+            $reformatMapsGroupedByItem[$key] = Hash::extract($mapGroupedByItem, '{n}');
+        }
+        $mapGroupedByItem = $reformatMapsGroupedByItem;
+
+        $items = $MapUploadsTable->getMapUploadsByTypeIndex(
+            $GenericFilter,
+            [MapUpload::TYPE_ICON_SET],
+            $PaginateOMat,
+            $MY_RIGHTS
+        );
+
+        $itemsWithContainers = [];
+
+        foreach ($items as $key => $item) {
+            $itemsWithContainers[$item['id']] = [];
+            foreach ($item['containers'] as $container) {
+                $itemsWithContainers[$item['id']][] = $container['id'];
+            }
+
+
+            $items[$key]['allowEdit'] = true;
+            if ($this->hasRootPrivileges === false) {
+                $items[$key]['allowEdit'] = false;
+                if (!empty(array_intersect($itemsWithContainers[$background['id']], $this->getWriteContainers()))) {
+                    $items[$key]['allowEdit'] = true;
+                }
+            }
+            $items[$key]['maps'] = $mapGroupedByItem[$item['saved_name']] ?? [];
+        }
+        $items = Hash::remove($items, '{n}.containers');
+
+        $this->set('all_items', $items);
+        $this->viewBuilder()->setOption('serialize', ['all_items']);
     }
 
     public function editContainers($id = null): void {
@@ -248,22 +306,32 @@ class BackgroundUploadsController extends AppController {
         $uploadedFile['path'] = sprintf('/map_module/img/%s/%s', $type, $uploadedFile['saved_name']);
 
         $requiredContainerIds = [];
-        if ($uploadedFile['upload_type'] === MapUpload::TYPE_BACKGROUND) {
-            $requiredContainerIds = array_unique(
-                Hash::extract(
-                    $MapsTable->getMapsWithMapContainerIdsByBackground($uploadedFile['saved_name']),
-                    '{n}.containers.{n}.id'
-                )
-            );
-        }
 
-        if ($uploadedFile['upload_type'] === MapUpload::TYPE_ICON) {
-            $requiredContainerIds = array_unique(
-                Hash::extract(
-                    $MapsTable->getMapsWithMapContainerIdsByIcon($uploadedFile['saved_name']),
-                    '{n}.containers.{n}.id'
-                )
-            );
+        switch ($uploadedFile['upload_type']) {
+            case MapUpload::TYPE_BACKGROUND:
+                $requiredContainerIds = array_unique(
+                    Hash::extract(
+                        $MapsTable->getMapsWithMapContainerIdsByBackground($uploadedFile['saved_name']),
+                        '{n}.containers.{n}.id'
+                    )
+                );
+                break;
+            case MapUpload::TYPE_ICON:
+                $requiredContainerIds = array_unique(
+                    Hash::extract(
+                        $MapsTable->getMapsWithMapContainerIdsByIcon($uploadedFile['saved_name']),
+                        '{n}.containers.{n}.id'
+                    )
+                );
+                break;
+            case MapUpload::TYPE_ICON_SET:
+                $requiredContainerIds = array_unique(
+                    Hash::extract(
+                        $MapsTable->getMapsWithMapContainerIdsByItem($uploadedFile['saved_name']),
+                        '{n}.containers.{n}.id'
+                    )
+                );
+                break;
         }
 
 
