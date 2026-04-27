@@ -119,6 +119,14 @@ class MapeditorsController extends AppController {
         $MapForAngular = new MapForAngular($map);
         $map = $MapForAngular->toArray();
 
+        $map['Map']['allowEdit'] = true;
+        if ($this->hasRootPrivileges === false) {
+            $map['Map']['allowEdit'] = false;
+            if (!empty(array_intersect($containerIdsToCheck, $this->getWriteContainers()))) {
+                $map['Map']['allowEdit'] = true;
+            }
+        }
+
         $acl = [
             'hosts'         => [
                 'browser' => isset($this->PERMISSIONS['hosts']['browser']),
@@ -1183,6 +1191,13 @@ class MapeditorsController extends AppController {
         ])->toArray();
         $MapForAngular = new MapForAngular($map);
         $map = $MapForAngular->toArray();
+
+        $containerIdsToCheck = Hash::extract($map, 'containers.{n}.id');
+        if (!$this->allowedByContainerId($containerIdsToCheck, true)) {
+            $this->render403();
+            return;
+        }
+
         $config = $MapsTable->getMapeditorSettings($map['Map']['json_data']);
 
         $this->set('map', $map);
@@ -1219,14 +1234,15 @@ class MapeditorsController extends AppController {
         $finder = new Finder();
         $finder->files()->in(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds')->exclude('thumb');
 
-        /** @var MapsTable $MapsTable */
-        $MapsTable = TableRegistry::getTableLocator()->get('MapModule.Maps');
-
+        /** @var MapUploadsTable $MapUploadsTable */
+        $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
         $permittedBackgrounds = [];
+        $MY_RIGHTS = [];
         if (!$this->hasRootPrivileges) {
-            //Get all backgrounds that a not root user is allowed to see.
-            $permittedBackgrounds = $MapsTable->getMapBackgrounds($this->MY_RIGHTS);
+            $MY_RIGHTS = $this->MY_RIGHTS;
         }
+        //Get all backgrounds that a not root user is allowed to see.
+        $permittedBackgrounds = $MapUploadsTable->getMapUploadsBackgrounds($MY_RIGHTS);
 
         $backgrounds = [];
         /** @var SplFileInfo $file */
@@ -2080,6 +2096,13 @@ class MapeditorsController extends AppController {
 
         $MapForAngular = new MapForAngular($map);
         $map = $MapForAngular->toArray();
+        $map['Map']['allowEdit'] = true;
+        if ($this->hasRootPrivileges === false) {
+            $map['Map']['allowEdit'] = false;
+            if (!empty(array_intersect($containerIdsToCheck, $this->getWriteContainers()))) {
+                $map['Map']['allowEdit'] = true;
+            }
+        }
 
         $this->set('map', $map);
         $this->viewBuilder()->setOption('serialize', ['map']);

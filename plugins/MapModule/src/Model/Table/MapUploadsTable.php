@@ -673,4 +673,30 @@ class MapUploadsTable extends Table {
 
         return $this->emptyArrayIfNull($query->toArray());
     }
+
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMapUploadsBackgrounds(array $MY_RIGHTS = []): array {
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+        $query = $this->find('list', valueField: 'saved_name')
+            ->contain(['Containers'])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            })
+            ->where([
+                'MapUploads.upload_type' => MapUpload::TYPE_BACKGROUND
+            ])
+            ->groupBy(['MapUploads.saved_name']);
+
+
+        return $query->toArray();
+    }
+
 }
