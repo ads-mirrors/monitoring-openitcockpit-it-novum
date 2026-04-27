@@ -502,6 +502,8 @@ class AclDependencies {
             ->dependency('Servicetemplategroups', 'index', 'Servicetemplategroups', 'allocateToMatchingHostgroup')
             ->dependency('Servicetemplategroups', 'index', 'Servicetemplategroups', 'loadServicetemplategroupsByString')
             ->dependency('Servicetemplategroups', 'index', 'Servicetemplategroups', 'loadHostgroupsByString')
+            ->dependency('Servicetemplategroups', 'index', 'Servicetemplategroups', 'listToCsv')
+            ->dependency('Servicetemplategroups', 'index', 'Servicetemplategroups', 'listToPdf')
             ->dependency('Servicetemplategroups', 'add', 'Servicetemplategroups', 'loadContainers')
             ->dependency('Servicetemplategroups', 'add', 'Servicetemplategroups', 'loadServicetemplatesByContainerId')
             ->dependency('Servicetemplategroups', 'add', 'Servicetemplategroups', 'append')
