@@ -843,8 +843,11 @@ class BackgroundUploadsController extends AppController {
             return;
         }
 
-        /** @var MapUploadsTable $MapsTable */
+        /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
+
+        /** @var MapsTable $MapsTable */
+        $MapsTable = TableRegistry::getTableLocator()->get('MapModule.Maps');
 
         $response = $MapUploadsTable->getUploadResponse($_FILES['file']['error']);
         if ($_FILES['file']['error'] === UPLOAD_ERR_OK) {
@@ -1000,6 +1003,7 @@ class BackgroundUploadsController extends AppController {
                     throw new \Exception('Could not create directory: ' . $destinationDirectory);
                 }
 
+
                 foreach ($iconsetIcons as $icon) {
                     copy($icon['full'], $destinationDirectory . DS . $icon['filename']);
                 }
@@ -1007,6 +1011,27 @@ class BackgroundUploadsController extends AppController {
                 //Remove tmp directory
                 $fs = new Filesystem();
                 $fs->remove($unzipDirectory);
+                $User = new User($this->getUser());
+                // use map containers as initial map uploads containers
+                $map = $MapsTable->getMapForEdit($mapId);
+                $mapContainers = $map['Map']['containers']['_ids'];
+                if (!$this->hasRootPrivileges) {
+                    $mapContainers = array_intersect($mapContainers, $this->MY_RIGHTS);
+                }
+
+                if (!empty($mapContainers)) {
+                    $mapUpload = $MapUploadsTable->newEmptyEntity();
+                    $mapUpload = $MapUploadsTable->patchEntity($mapUpload, [
+                        'upload_type' => MapUpload::TYPE_ICON_SET,
+                        'upload_name' => $iconsetName,
+                        'saved_name'  => $iconsetName,
+                        'user_id'     => $User->getId(),
+                        'containers'  => [
+                            '_ids' => $mapContainers
+                        ]
+                    ]);
+                    $MapUploadsTable->save($mapUpload);
+                }
 
                 $response = [
                     'success'     => true,
