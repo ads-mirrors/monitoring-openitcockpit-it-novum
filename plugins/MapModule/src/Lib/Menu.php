@@ -80,7 +80,7 @@ class Menu implements MenuInterface {
                     'map_module/mapgenerators/index'
                 ))
                 ->addLink(new MenuLink(
-                    __('Uploads'),
+                    __('Uploads overview'),
                     'BackgroundUploadsIndex',
                     'backgrounduploads',
                     'index',

@@ -784,7 +784,6 @@ class MapsTable extends Table {
         }
 
         $servicestatus = new Servicestatus($servicestatus['Servicestatus']);
-
         $icon = $this->serviceIcons[$servicestatus->currentState()];
 
         $iconProperty = $icon;
@@ -2577,7 +2576,7 @@ class MapsTable extends Table {
         return $this->emptyArrayIfNull($query->toArray());
 
     }
-    
+
     /**
      * @param array $MY_RIGHTS
      * @return array

@@ -44,6 +44,7 @@ use Cake\ORM\Behavior\TimestampBehavior;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
+use Cake\Utility\Hash;
 use Cake\Validation\Validator;
 use itnovum\openITCOCKPIT\CakePHP\Folder;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
@@ -233,9 +234,11 @@ class MapUploadsTable extends Table {
     }
 
     /**
+     * @param bool $hasRootPrivileges
+     * @param array $MY_RIGHTS
      * @return array
      */
-    public function getIcons() {
+    public function getIcons(bool $hasRootPrivileges, array $MY_RIGHTS = []): array {
         $basePath = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'icons';
         if (!is_dir($basePath)) {
             return [];
@@ -243,12 +246,25 @@ class MapUploadsTable extends Table {
 
         $finder = new Finder();
         $finder->files()->in($basePath);
+        //Get all icons that a not root user is allowed to see.
+        $permittedIcons = $this->getMapUploadsIcons(
+            $MY_RIGHTS
+        );
+
         $icons = [];
 
         /** @var SplFileInfo $file */
         foreach ($finder as $file) {
+            $fileName = $file->getFilename();
             if (in_array($file->getExtension(), $this->supportedFileExtensions, true)) {
-                $icons[] = $file->getFilename();
+                if ($hasRootPrivileges) {
+                    $icons[] = $fileName;
+                } else {
+                    // check permitted backgrounds for not root user
+                    if (in_array($fileName, $permittedIcons, true)) {
+                        $icons[] = $fileName;
+                    }
+                }
             }
         }
         return $icons;
@@ -444,21 +460,26 @@ class MapUploadsTable extends Table {
     }
 
     /**
+     * @param bool $hasRootPrivileges
+     * @param array $MY_RIGHTS
      * @return array
      */
-    public function getIconSets() {
+    public function getIconSets(bool $hasRootPrivileges, array $MY_RIGHTS = []) {
         $basePath = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'items';
         $finder = new Finder();
         $finder->directories()->in($basePath);
-
-        $allIconsets = $this->find()->where([
-            'MapUploads.upload_type' => MapUpload::TYPE_ICON_SET
-        ])->all()->toArray();
-
         $availableIconsets = [];
-        foreach ($allIconsets as $iconset) {
-            if (file_exists($basePath . DS . $iconset['saved_name'] . DS . 'ok.png')) {
-                $availableIconsets[$iconset['saved_name']] = ['MapUpload' => $iconset];
+
+        $allIconsets = $this->getMapUploadsIconSets(
+            $MY_RIGHTS
+        );
+        foreach ($allIconsets as $iconSet) {
+            if (file_exists($basePath . DS . $iconSet['saved_name'] . DS . 'ok.png')) {
+                $containerIds = Hash::extract($iconSet['containers'], '{n}.id') ?? [ROOT_CONTAINER];
+                $iconSet = Hash::remove($iconSet, '{n}.containers');
+                $iconSet['containers'] = $containerIds;
+                $availableIconsets[$iconSet['saved_name']] = ['MapUpload' => $iconSet];
+
             }
         }
 
@@ -468,14 +489,17 @@ class MapUploadsTable extends Table {
 
             //Does icon set exists in database?
             if (!isset($availableIconsets[$dirName])) {
-                if (file_exists($basePath . DS . $dirName . DS . 'ok.png')) {
+                if (file_exists($basePath . DS . $dirName . DS . 'ok.png') &&
+                    $this->existsBySavedNameAndType($dirName, MapUpload::TYPE_ICON_SET) === false) {
                     //Icon set is missing in database, add it
                     $data = [
-                        'upload_type'  => MapUpload::TYPE_ICON_SET,
-                        'upload_name'  => $dirName,
-                        'saved_name'   => $dirName,
-                        'user_id'      => null,
-                        'container_id' => [1]
+                        'upload_type' => MapUpload::TYPE_ICON_SET,
+                        'upload_name' => $dirName,
+                        'saved_name'  => $dirName,
+                        'user_id'     => null,
+                        'containers'  => [
+                            '_ids' => [ROOT_CONTAINER]
+                        ]
                     ];
                     $mapUploadEntity = $this->newEntity($data);
                     $this->save($mapUploadEntity);
@@ -699,4 +723,69 @@ class MapUploadsTable extends Table {
         return $query->toArray();
     }
 
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMapUploadsIcons(array $MY_RIGHTS = []): array {
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+
+        return $this->find('list', valueField: 'saved_name')
+            ->select([
+                'MapUploads.id',
+                'MapUploads.upload_name',
+                'MapUploads.saved_name'
+            ])
+            ->contain(['Containers'])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            })->where(['MapUploads.upload_type' => MapUpload::TYPE_ICON])
+            ->groupBy(['MapUploads.id'])
+            ->disableHydration()
+            ->toArray();
+    }
+
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMapUploadsIconSets(array $MY_RIGHTS = []): array {
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+
+        return $this->find()
+            ->select([
+                'MapUploads.id',
+                'MapUploads.upload_name',
+                'MapUploads.saved_name'
+            ])
+            ->contain(['Containers'])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            })->where(['MapUploads.upload_type' => MapUpload::TYPE_ICON_SET])
+            ->groupBy(['MapUploads.id'])
+            ->disableHydration()
+            ->toArray();
+    }
+
+    /**
+     * @param string $savedName
+     * @param int $type
+     * @return bool
+     */
+    public function existsBySavedNameAndType(string $savedName, int $type): bool {
+        return $this->exists([
+            'MapUploads.saved_name'  => $savedName,
+            'MapUploads.upload_type' => $type
+        ]);
+    }
 }

@@ -1189,15 +1189,14 @@ class MapeditorsController extends AppController {
             'Maptexts',
             'Mapsummaryitems'
         ])->toArray();
-        $MapForAngular = new MapForAngular($map);
-        $map = $MapForAngular->toArray();
 
         $containerIdsToCheck = Hash::extract($map, 'containers.{n}.id');
         if (!$this->allowedByContainerId($containerIdsToCheck, true)) {
             $this->render403();
             return;
         }
-
+        $MapForAngular = new MapForAngular($map);
+        $map = $MapForAngular->toArray();
         $config = $MapsTable->getMapeditorSettings($map['Map']['json_data']);
 
         $this->set('map', $map);
@@ -1277,8 +1276,14 @@ class MapeditorsController extends AppController {
 
         /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
-
-        $iconsets = $MapUploadsTable->getIconSets();
+        $MY_RIGHTS = [];
+        if (!$this->hasRootPrivileges) {
+            $MY_RIGHTS = $this->MY_RIGHTS;
+        }
+        $iconsets = $MapUploadsTable->getIconSets(
+            $this->hasRootPrivileges,
+            $MY_RIGHTS
+        );
 
         $this->set('iconsets', $iconsets);
         $this->viewBuilder()->setOption('serialize', ['iconsets']);
@@ -1958,8 +1963,14 @@ class MapeditorsController extends AppController {
 
         /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
-
-        $icons = $MapUploadsTable->getIcons();
+        $MY_RIGHTS = [];
+        if (!$this->hasRootPrivileges) {
+            $MY_RIGHTS = $this->MY_RIGHTS;
+        }
+        $icons = $MapUploadsTable->getIcons(
+            $this->hasRootPrivileges,
+            $MY_RIGHTS
+        );
 
         $this->set('icons', $icons);
         $this->viewBuilder()->setOption('serialize', ['icons']);
