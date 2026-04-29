@@ -653,8 +653,8 @@ class WizardAssignmentsTable extends Table {
                 'type_id'     => 'raritan-kvm',
                 'title'       => __('Raritan KVM'),
                 'description' => __('Monitor your Raritan KVM via SNMP.'),
-                'image'       => 'network.png',
-                'category'    => ['linux', 'network', 'hardware'],
+                'image'       => 'raritan.png',
+                'category'    => ['network', 'hardware'],
                 'active'      => true
             ],
         ];
