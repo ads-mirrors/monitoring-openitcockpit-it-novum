@@ -649,6 +649,14 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['network', 'hardware'],
                 'active'      => true
             ],
+            'sonicwall'                    => [
+                'type_id'     => 'sonicwall',
+                'title'       => __('SonicWall'),
+                'description' => __('Monitor your SonicWall via SNMP.'),
+                'image'       => 'sonicwall.svg',
+                'category'    => ['cloud', 'network'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];
