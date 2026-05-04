@@ -149,6 +149,13 @@ plugins/NextcloudModule
 plugins/KubernetesModule
 plugins/RedfishModule
 plugins/MSWindowsAgentlessModule
+plugins/ArubaModule
+plugins/BroadcomModule
+plugins/CheckpointModule
+plugins/FortinetModule
+plugins/FujitsuModule
+plugins/GudeModule
+plugins/PaloAltoModule
 
 # NFS mounts
 .nfs.*

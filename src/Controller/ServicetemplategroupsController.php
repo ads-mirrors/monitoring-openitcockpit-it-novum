@@ -562,6 +562,106 @@ class ServicetemplategroupsController extends AppController {
         $this->viewBuilder()->setOption('serialize', ['result']);
     }
 
+    public function listToCsv() {
+        /** @var $ServicetemplategroupsTable ServicetemplategroupsTable */
+        $ServicetemplategroupsTable = TableRegistry::getTableLocator()->get('Servicetemplategroups');
+
+        $ServicetemplategroupsFilter = new ServicetemplategroupsFilter($this->request);
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $ServicetemplategroupsFilter->getPage());
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+        $servicetemplategroups = $ServicetemplategroupsTable->getServicetemplategroupsCsv($ServicetemplategroupsFilter, $PaginateOMat, $MY_RIGHTS);
+
+        $header = [
+            'servicetemplate_group_name',
+            'servicetemplate_group_id',
+            'servicetemplate_group_description',
+
+            'servicetemplate_name',
+            'servicetemplate_id',
+            'servicetemplate_description',
+        ];
+
+        $all_servicetemplategroups = [];
+        foreach ($servicetemplategroups as $servicetemplategroup) {
+            if (empty($servicetemplategroup['servicetemplates'])) {
+                // Service template group has no services
+                $all_servicetemplategroups[] = [
+                    $servicetemplategroup['container']['name'],
+                    $servicetemplategroup['id'],
+                    $servicetemplategroup['description'],
+                    null,
+                    null,
+                    null
+                ];
+
+                continue;
+            }
+
+            foreach ($servicetemplategroup['servicetemplates'] as $servicetemplate) {
+                $all_servicetemplategroups[] = [
+                    $servicetemplategroup['container']['name'],
+                    $servicetemplategroup['id'],
+                    $servicetemplategroup['description'],
+                    $servicetemplate['template_name'],
+                    $servicetemplate['id'],
+                    $servicetemplate['description'],
+                ];
+            }
+
+
+        }
+
+        $this->set('data', $all_servicetemplategroups);
+
+        $filename = __('Servicestempaltegroups_') . date('dmY_his') . '.csv';
+        $this->setResponse($this->getResponse()->withDownload($filename));
+        $this->viewBuilder()
+            ->setClassName('CsvView.Csv')
+            ->setOptions([
+                'delimiter' => ';', // Excel prefers ; over ,
+                'bom'       => true, // Fix UTF-8 umlauts in Excel
+                'serialize' => 'data',
+                'header'    => $header,
+            ]);
+    }
+
+    public function listToPdf() {
+        /** @var $ServicetemplategroupsTable ServicetemplategroupsTable */
+        $ServicetemplategroupsTable = TableRegistry::getTableLocator()->get('Servicetemplategroups');
+
+        $ServicetemplategroupsFilter = new ServicetemplategroupsFilter($this->request);
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $ServicetemplategroupsFilter->getPage());
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+        $servicetemplategroups = $ServicetemplategroupsTable->getServicetemplategroupsCsv($ServicetemplategroupsFilter, $PaginateOMat, $MY_RIGHTS);
+
+        $numberOfServicetemplategroups = sizeof($servicetemplategroups);
+        $numberOfServicetemplates = 0;
+
+        foreach ($servicetemplategroups as $servicetemplategroup) {
+            $numberOfServicetemplates += sizeof($servicetemplategroup['servicetemplates']);
+        }
+
+        $this->set('servicetemplategroups', $servicetemplategroups);
+        $this->set('numberOfServicetemplategroups', $numberOfServicetemplategroups);
+        $this->set('numberOfServicetemplates', $numberOfServicetemplates);
+
+        $this->viewBuilder()->setOption(
+            'pdfConfig',
+            [
+                'download' => true,
+                'filename' => __('Servicestemplategroups_') . date('dmY_his') . '.pdf',
+            ]
+        );
+    }
+
     /********************************
      *      ALLOCATION METHODS      *
      ********************************/

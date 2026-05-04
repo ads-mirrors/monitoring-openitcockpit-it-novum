@@ -192,13 +192,14 @@ class UsersTable extends Table {
             ->scalar('firstname')
             ->maxLength('firstname', 100)
             ->requirePresence('firstname', 'create')
-            ->allowEmptyString('firstname', null, false);
+            ->allowEmptyString('firstname', null, false)
+            ->notBlank('firstname');
 
         $validator
             ->scalar('lastname')
             ->maxLength('lastname', 100)
             ->requirePresence('lastname', 'create')
-            ->allowEmptyString('lastname', null, false);
+            ->notBlank('lastname');
 
         $validator
             ->scalar('position')
