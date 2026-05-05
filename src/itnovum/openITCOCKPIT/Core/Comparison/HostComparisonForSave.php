@@ -347,11 +347,11 @@ class HostComparisonForSave {
      */
     public function getDataForCommandarguments() {
         // for easy host add in wizard - use from template
-        if (!isset($this->host['command_id'])) {
+        if (!isset($this->host['command_id']) && empty($this->host['hostcommandargumentvalues'])) {
             return [];
         }
 
-        if ($this->host['command_id'] != $this->hosttemplate['command_id']) {
+        if (!empty($this->host['command_id']) && $this->host['command_id'] != $this->hosttemplate['command_id']) {
             //Different check command than the host template uses.
             //Definitely the command arguments has changed
             return $this->host['hostcommandargumentvalues'];
