@@ -103,8 +103,8 @@ class PushNotificationsRelayTable extends Table {
         $result = $this->find()->first();
         $settings = ['address' => '', 'port' => 0, 'enabled' => false, 'auth_key' => ''];
         if (!is_null($result)) {
-            $proxy = $result->toArray();
-            $settings = Hash::merge($settings, $proxy);
+            $relay = $result->toArray();
+            $settings = Hash::merge($settings, $relay);
         }
         return $settings;
     }
