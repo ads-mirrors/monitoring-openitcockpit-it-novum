@@ -2486,9 +2486,11 @@ class HostsController extends AppController {
                 $parentAndChildHostsTree[$uuid]['isInDowntime'] = $ChildHoststatus->isInDowntime();
             }
         }
-        $parentAndChildHostsTree[$host['uuid']]['hoststatus'] = $hoststatus;
-        $parentAndChildHostsTree[$host['uuid']]['isAcknowledged'] = $Hoststatus->isAcknowledged();
-        $parentAndChildHostsTree[$host['uuid']]['isInDowntime'] = $Hoststatus->isInDowntime();
+        if (!empty($parentAndChildHostsTree[$host['uuid']])) {
+            $parentAndChildHostsTree[$host['uuid']]['hoststatus'] = $hoststatus;
+            $parentAndChildHostsTree[$host['uuid']]['isAcknowledged'] = $Hoststatus->isAcknowledged();
+            $parentAndChildHostsTree[$host['uuid']]['isInDowntime'] = $Hoststatus->isInDowntime();
+        }
 
         $canSubmitExternalCommands = $this->hasPermission('externalcommands', 'hosts') && $this->hasPermission('submit', 'cmd', 'nagiosmodule');
 
