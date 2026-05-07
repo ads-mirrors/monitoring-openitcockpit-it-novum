@@ -141,9 +141,6 @@ class AclDependencies {
             ->allow('Proxy', 'getSettings');
 
         $this
-            ->allow('NotificationsRelay', 'getSettings');
-
-        $this
             ->allow('Services', 'byUuid')
             ->allow('Services', 'loadServicesByStringCake4')
             ->allow('Services', 'loadServicesByContainerIdCake4')

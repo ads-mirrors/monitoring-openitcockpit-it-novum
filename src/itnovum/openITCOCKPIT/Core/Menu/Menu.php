@@ -895,14 +895,14 @@ class Menu {
                 ->addLink(new MenuLink(
                     __('Notifications Relay Settings'),
                     'NotificationsRelayIndex',
-                    'notificationsRelay',
+                    'notificationsrelay',
                     'index',
                     '',
                     ['fas', 'globe'],
                     [],
                     2,
                     true,
-                    '/pushnotificationsrelay/index'
+                    '/notificationsrelay/index'
                 ))
                 ->addLink(new MenuLink(
                     __('Registration'),

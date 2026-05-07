@@ -40,7 +40,7 @@ use Cake\ORM\Locator\LocatorAwareTrait;
  * Class NotificationsRelayController
  * @package App\Controller
  */
-class NotificationsRelayController extends AppController {
+class NotificationsrelayController extends AppController {
 
     use LocatorAwareTrait;
 
