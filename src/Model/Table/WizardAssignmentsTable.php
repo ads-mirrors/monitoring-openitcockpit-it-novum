@@ -284,7 +284,7 @@ class WizardAssignmentsTable extends Table {
             'network'                      => [
                 'type_id'     => 'network',
                 'title'       => __('Network'),
-                'description' => __('Used to check any kind of network devices and interfaces like: Switch, Router, Firewall, Access Point, ...'),
+                'description' => __('Effortlessly monitor your network devices and interfaces — from switches and routers to firewalls and access points.'),
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
@@ -532,8 +532,8 @@ class WizardAssignmentsTable extends Table {
             'network-interfaces'           => [
                 'type_id'     => 'network-interfaces',
                 'title'       => __('Network Interfaces'),
-                'description' => __('Used to check any kind of network devices and interfaces like: Switch, Router, Firewall, Access Point, ...'),
-                'image'       => 'network.png',
+                'description' => __('A comprehensive solution for monitoring diverse network infrastructure and interfaces like: Switch, Router, Firewall, Access Point, ...'),
+                'image'       => 'network_extended.jpg',
                 'category'    => ['linux', 'network'],
                 'active'      => true
             ],
