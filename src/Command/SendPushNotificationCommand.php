@@ -36,6 +36,7 @@ use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Core\Configure;
 use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\Http\Client;
 use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Core\Views\Host;
 use itnovum\openITCOCKPIT\Core\Views\HoststatusIcon;
@@ -362,7 +363,55 @@ class SendPushNotificationCommand extends Command {
             'serviceUuid' => $this->serviceUuid,
             'icon'        => $icon
         ]));
+
+        $RelayTable = TableRegistry::getTableLocator()->get('PushNotificationsRelay');
+        $relay = $RelayTable->getSettings();
+        if($relay['enabled']) {
+            $this->pushMobile($title, $message, $icon, $relay);
+        }
         return true;
+    }
+
+    private function pushMobile(String $title, String $message, String $icon, array  $relay) {
+        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $devices = $DeviceTable->find()->where(['user_id' => $this->userId])->all();
+        //$http = new Client();
+        $authKey = $relay['auth_key'] ?? '';
+        $url = $relay['address'] ?? '';
+        $port = $relay['port'] ?? '';
+        //$endpoint = sprintf('%s:%s/send-notification', $url, $port);
+        $endpoint = sprintf('%s:%d/send-notification', rtrim($url, '/'), (int)$port);
+        $http = new Client([
+            'ssl_verify_peer' => false,      // ← for self-signed cert testing
+            'ssl_verify_host' => false,      // ← for self-signed cert testing
+        ]);
+        foreach ($devices as $device) {
+
+            $data = [
+                'title'       => $title,
+                'body'        => $message,
+                'token'       => $device->device_id,
+                'icon'        => $icon ?? '',
+                'type'        => $this->type ?? '',
+                'hostUuid'    => $this->hostUuid ?? '',
+                'serviceUuid' => $this->serviceUuid ?? '',
+                'userId'      => $this->userId,
+                'auth'        => $authKey
+            ];
+            $response = $http->post(
+                $endpoint,
+                json_encode($data),                    // ← body as JSON
+                [
+                    'headers' => [
+                        'Content-Type' => 'application/json',
+                        'X-Api-Key'    => $authKey,    // ← auth key in header
+                    ]
+                ]
+            );
+            if ($response->getStatusCode() === 410) {
+                $DeviceTable->deleteAll(['device_id' => $device->device_id]);
+            }
+        }
     }
 
     private function isAcknowledgement() {
