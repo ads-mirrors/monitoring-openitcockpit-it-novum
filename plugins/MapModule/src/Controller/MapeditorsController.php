@@ -55,6 +55,7 @@ use itnovum\openITCOCKPIT\Core\System\FileUploadSize;
 use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Core\Views\Host;
 use itnovum\openITCOCKPIT\Core\Views\Service;
+use itnovum\openITCOCKPIT\Exceptions\NotIntException;
 use itnovum\openITCOCKPIT\Filter\MapFilter;
 use itnovum\openITCOCKPIT\Maps\MapForAngular;
 use itnovum\openITCOCKPIT\Maps\ValueObjects\Mapgadget;
@@ -88,7 +89,7 @@ class MapeditorsController extends AppController {
     /**
      * @param null $id
      */
-    public function view($id = null) {
+    public function view($id = null): void {
         if (!$this->isApiRequest() && $id === null) {
             throw new \Cake\Http\Exception\MethodNotAllowedException();
         }
@@ -118,6 +119,14 @@ class MapeditorsController extends AppController {
 
         $MapForAngular = new MapForAngular($map);
         $map = $MapForAngular->toArray();
+
+        $map['Map']['allowEdit'] = true;
+        if ($this->hasRootPrivileges === false) {
+            $map['Map']['allowEdit'] = false;
+            if (!empty(array_intersect($containerIdsToCheck, $this->getWriteContainers()))) {
+                $map['Map']['allowEdit'] = true;
+            }
+        }
 
         $acl = [
             'hosts'         => [
@@ -167,6 +176,12 @@ class MapeditorsController extends AppController {
                 $this->request->getQuery('includeServiceOutput')
             );
         } catch (Exception $e) {
+            if ($e->getCode() === 403) {
+                throw new ForbiddenException('403 Forbidden');
+            }
+            if ($e->getCode() === 404) {
+                throw new NotIntException('404 Forbidden');
+            }
             throw $e;
         }
 
@@ -248,7 +263,6 @@ class MapeditorsController extends AppController {
                 if (!empty($host)) {
                     if ($this->hasRootPrivileges === false) {
                         if (!$this->allowedByContainerId($host->getContainerIds(), false)) {
-                            $allowView = false;
                             break;
                         }
                     }
@@ -261,7 +275,6 @@ class MapeditorsController extends AppController {
                     );
                     break;
                 }
-                $allowView = false;
                 break;
 
             case 'service':
@@ -272,7 +285,6 @@ class MapeditorsController extends AppController {
                 if (!empty($service)) {
                     if ($this->hasRootPrivileges === false) {
                         if (!$this->allowedByContainerId($service->getContainerIds(), false)) {
-                            $allowView = false;
                             break;
                         }
                     }
@@ -298,7 +310,6 @@ class MapeditorsController extends AppController {
                     $adapter = new NagiosAdapter();
                     $properties['Perfdata']["'value'"]['datasource']['setup'] = $adapter->getPerformanceData($Service, $performance_data[0]['datasource'])->toArray();
                 }
-                $allowView = false;
                 break;
 
             case 'hostgroup':
@@ -351,7 +362,6 @@ class MapeditorsController extends AppController {
                         // We are only display an icon at this point
                         // As long as the user has access to at least one container, we can display the icon
                         if (!$this->allowedByContainerId(array_unique(Hash::extract($servicegroup, 'services.{n}.host.hosts_to_containers_sharing.{n}.id')), false)) {
-                            $allowView = false;
                             break;
                         }
                     }
@@ -371,7 +381,6 @@ class MapeditorsController extends AppController {
                 if (!empty($map)) {
                     if ($this->hasRootPrivileges === false) {
                         if (!$this->allowedByContainerId(Hash::extract($map, 'containers.{n}.id'), false)) {
-                            $allowView = false;
                             break;
                         }
                     }
@@ -473,7 +482,10 @@ class MapeditorsController extends AppController {
                 break;
             default:
                 throw new RuntimeException('Unknown map item type');
-                break;
+        }
+
+        if (!$allowView) {
+            throw new ForbiddenException('403 Forbidden');
         }
 
         return [
@@ -1181,6 +1193,12 @@ class MapeditorsController extends AppController {
             'Maptexts',
             'Mapsummaryitems'
         ])->toArray();
+
+        $containerIdsToCheck = Hash::extract($map, 'containers.{n}.id');
+        if (!$this->allowedByContainerId($containerIdsToCheck, true)) {
+            $this->render403();
+            return;
+        }
         $MapForAngular = new MapForAngular($map);
         $map = $MapForAngular->toArray();
         $config = $MapsTable->getMapeditorSettings($map['Map']['json_data']);
@@ -1219,14 +1237,36 @@ class MapeditorsController extends AppController {
         $finder = new Finder();
         $finder->files()->in(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds')->exclude('thumb');
 
+        /** @var MapUploadsTable $MapUploadsTable */
+        $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
+        $permittedBackgrounds = [];
+        $MY_RIGHTS = [];
+        if (!$this->hasRootPrivileges) {
+            $MY_RIGHTS = $this->MY_RIGHTS;
+        }
+        //Get all backgrounds that a not root user is allowed to see.
+        $permittedBackgrounds = $MapUploadsTable->getMapUploadsBackgrounds($MY_RIGHTS);
+
         $backgrounds = [];
         /** @var SplFileInfo $file */
         foreach ($finder as $file) {
-            $backgrounds[] = [
-                'image'     => $file->getFilename(),
-                'path'      => sprintf('/map_module/img/backgrounds/%s', $file->getFilename()),
-                'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $file->getFilename()),
-            ];
+            $fileName = $file->getFilename();
+            if ($this->hasRootPrivileges) {
+                $backgrounds[] = [
+                    'image'     => $fileName,
+                    'path'      => sprintf('/map_module/img/backgrounds/%s', $fileName),
+                    'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $fileName),
+                ];
+            } else {
+                // check permitted backgrounds for not root user
+                if (in_array($fileName, $permittedBackgrounds, true)) {
+                    $backgrounds[] = [
+                        'image'     => $fileName,
+                        'path'      => sprintf('/map_module/img/backgrounds/%s', $fileName),
+                        'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $fileName),
+                    ];
+                }
+            }
         }
 
         $this->set('backgrounds', $backgrounds);
@@ -1240,8 +1280,14 @@ class MapeditorsController extends AppController {
 
         /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
-
-        $iconsets = $MapUploadsTable->getIconSets();
+        $MY_RIGHTS = [];
+        if (!$this->hasRootPrivileges) {
+            $MY_RIGHTS = $this->MY_RIGHTS;
+        }
+        $iconsets = $MapUploadsTable->getIconSets(
+            $this->hasRootPrivileges,
+            $MY_RIGHTS
+        );
 
         $this->set('iconsets', $iconsets);
         $this->viewBuilder()->setOption('serialize', ['iconsets']);
@@ -1921,8 +1967,14 @@ class MapeditorsController extends AppController {
 
         /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
-
-        $icons = $MapUploadsTable->getIcons();
+        $MY_RIGHTS = [];
+        if (!$this->hasRootPrivileges) {
+            $MY_RIGHTS = $this->MY_RIGHTS;
+        }
+        $icons = $MapUploadsTable->getIcons(
+            $this->hasRootPrivileges,
+            $MY_RIGHTS
+        );
 
         $this->set('icons', $icons);
         $this->viewBuilder()->setOption('serialize', ['icons']);
@@ -2059,6 +2111,13 @@ class MapeditorsController extends AppController {
 
         $MapForAngular = new MapForAngular($map);
         $map = $MapForAngular->toArray();
+        $map['Map']['allowEdit'] = true;
+        if ($this->hasRootPrivileges === false) {
+            $map['Map']['allowEdit'] = false;
+            if (!empty(array_intersect($containerIdsToCheck, $this->getWriteContainers()))) {
+                $map['Map']['allowEdit'] = true;
+            }
+        }
 
         $this->set('map', $map);
         $this->viewBuilder()->setOption('serialize', ['map']);

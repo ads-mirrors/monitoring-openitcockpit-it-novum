@@ -104,22 +104,22 @@ class MapsTable extends Table {
     use CustomValidationTrait;
     use PluginManagerTableTrait;
 
-    private $hostIcons = [
+    private array $hostIcons = [
         0 => 'up.png',
         1 => 'down.png',
         2 => 'unreachable.png'
     ];
-    private $serviceIcons = [
+    private array $serviceIcons = [
         0 => 'up.png',
         1 => 'warning.png',
         2 => 'critical.png',
         3 => 'unknown.png'
     ];
-    private $ackIcon = 'ack.png';
-    private $downtimeIcon = 'downtime.png';
-    private $ackAndDowntimeIcon = 'downtime_ack.png';
+    private string $ackIcon = 'ack.png';
+    private string $downtimeIcon = 'downtime.png';
+    private string $ackAndDowntimeIcon = 'downtime_ack.png';
 
-    private $errorIcon = 'error.png';
+    private string $errorIcon = 'error.png';
 
     /**
      * Initialize method
@@ -212,7 +212,7 @@ class MapsTable extends Table {
         }
     }
 
-    public function bindCoreAssociations(Table $coreTable) {
+    public function bindCoreAssociations(Table $coreTable): void {
         switch ($coreTable->getAlias()) {
             case 'Satellites':
                 if (!$coreTable->hasAssociation('Maps')) {
@@ -290,7 +290,7 @@ class MapsTable extends Table {
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getMapsIndex(MapFilter $MapFilter, $PaginateOMat = null, $MY_RIGHTS = []) {
+    public function getMapsIndex(MapFilter $MapFilter, $PaginateOMat = null, $MY_RIGHTS = []): array {
         if (!is_array($MY_RIGHTS)) {
             $MY_RIGHTS = [$MY_RIGHTS];
         }
@@ -324,7 +324,7 @@ class MapsTable extends Table {
      * @param int $id
      * @return bool
      */
-    public function existsById($id) {
+    public function existsById($id): bool {
         return $this->exists(['Maps.id' => $id]);
     }
 
@@ -334,7 +334,7 @@ class MapsTable extends Table {
      * @param bool $enableHydration
      * @return array|EntityInterface|null
      */
-    public function getMapsForMaps($realMapId, $mapItemMapId, $enableHydration = true) {
+    public function getMapsForMaps($realMapId, $mapItemMapId, $enableHydration = true): array|EntityInterface|null {
         $query = $this->find()
             ->contain(['Containers'])
             ->join([
@@ -784,7 +784,6 @@ class MapsTable extends Table {
         }
 
         $servicestatus = new Servicestatus($servicestatus['Servicestatus']);
-
         $icon = $this->serviceIcons[$servicestatus->currentState()];
 
         $iconProperty = $icon;
@@ -2578,5 +2577,162 @@ class MapsTable extends Table {
 
     }
 
+    /**
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getMapsWithBackgroundOnly(array $MY_RIGHTS = []): array {
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+        $query = $this->find()
+            ->select([
+                'Maps.id',
+                'Maps.name',
+                'Maps.background',
+            ])
+            ->contain(['Containers'])
+            ->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                if (!empty($MY_RIGHTS)) {
+                    return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+                }
+                return $query;
+            })
+            ->whereNotNull('Maps.background')
+            ->disableHydration()
+            ->groupBy(['Maps.id']);
 
+
+        return $query->toArray();
+    }
+
+    /**
+     * @return array
+     */
+    public function getUsedMapBackgroundsWithMapContainerIds(): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id',
+                'Maps.background'
+            ])
+            ->contain([
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->whereNotNull('Maps.background')
+            ->groupBy(['Maps.background'])
+            ->enableAutoFields(false)
+            ->disableHydration();
+        return $query->toArray();
+    }
+
+    /**
+     * @return array
+     */
+    public function getUsedMapIconsWithMapContainerIds(): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id',
+                'Mapicons.icon'
+            ])
+            ->innerJoinWith('Mapicons')
+            ->contain([
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->whereNotNull('Mapicons.icon')
+            ->groupBy(['Mapicons.icon'])
+            ->enableAutoFields(false)
+            ->disableHydration();
+        return $query->toArray();
+    }
+
+    /**
+     * @param string $backgroundSavedName
+     * @return array
+     */
+    public function getMapsWithMapContainerIdsByBackground(string $backgroundSavedName): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id'
+            ])
+            ->contain([
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->where([
+                'Maps.background' => $backgroundSavedName
+            ])
+            ->whereNotNull('Maps.background')
+            ->disableAutoFields()
+            ->disableHydration();
+        return $query->toArray();
+    }
+
+    /**
+     * @param string $iconName
+     * @return array
+     */
+    public function getMapsWithMapContainerIdsByIcon(string $iconName): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id'
+            ])
+            ->contain([
+
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->innerJoin(
+                ['Mapicons' => 'mapicons'],
+                [
+                    'Mapicons.map_id = Maps.id',
+                    'Mapicons.icon' => $iconName
+                ]
+            )
+            ->disableAutoFields()
+            ->disableHydration();
+        return $query->toArray();
+    }
+
+    /**
+     * @param string $itemName
+     * @return array
+     */
+    public function getMapsWithMapContainerIdsByItem(string $itemName): array {
+        $query = $this->find()
+            ->select([
+                'Maps.id'
+            ])
+            ->contain([
+
+                'Containers' => function (Query $query) {
+                    return $query->select([
+                        'Containers.id'
+                    ]);
+                }
+            ])
+            ->innerJoin(
+                ['Mapitems' => 'mapitems'],
+                [
+                    'Mapitems.map_id = Maps.id',
+                    'Mapitems.iconset' => $itemName
+                ]
+            )
+            ->disableAutoFields()
+            ->disableHydration();
+        return $query->toArray();
+    }
 }
