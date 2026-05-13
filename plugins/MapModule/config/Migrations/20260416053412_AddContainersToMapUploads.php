@@ -124,6 +124,11 @@ class AddContainersToMapUploads extends BaseMigration {
             /** @var MapUploadsTable $MapUploadsTable */
             $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
 
+            // Clear schema cache for the table as we have dropped a column
+            $connection = $MapUploadsTable->getConnection();
+            $cache = new \Cake\Database\SchemaCache($connection);
+            $cache->clear($MapUploadsTable->getTable());
+
             $mapUploads = $MapUploadsTable->getMapUploads();
             $valuesToInsert = [];
             foreach ($mapUploads as $mapUpload) {
