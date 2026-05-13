@@ -158,10 +158,10 @@ class ServicetemplategroupsTable extends Table {
     }
 
     /**
-     * @param int $id
+     * @param $uuid
      * @return bool
      */
-    public function existsByUuid($uuid) {
+    public function existsByUuid($uuid): bool {
         return $this->exists(['Servicetemplategroups.uuid' => $uuid]);
     }
 
@@ -441,7 +441,8 @@ class ServicetemplategroupsTable extends Table {
                         ->select([
                             'Servicetemplates.id',
                             'Servicetemplates.name',
-                            'Servicetemplates.description'
+                            'Servicetemplates.description',
+                            'Servicetemplates.servicetemplatetype_id'
                         ])
                         ->orderBy([
                             'Servicetemplates.name' => 'ASC'

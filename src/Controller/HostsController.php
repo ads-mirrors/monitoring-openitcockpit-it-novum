@@ -227,6 +227,7 @@ class HostsController extends AppController {
         $typesForView = $HostsTable->getHostTypesWithStyles();
 
         $additionalInformationExists = false;
+        $additionalInformation = null;
         $existingImportedHostIdsByHostIds = [];
         if (Plugin::isLoaded('ImportModule') && !empty($hosts)) {
             /** @var ImportedHostsTable $ImportedHostsTable */
@@ -234,7 +235,6 @@ class HostsController extends AppController {
             $existingImportedHostIdsByHostIds = $ImportedHostsTable->existingImportedHostIdsByHostIds(
                 Hash::extract($hosts, '{n}.Host.id')
             );
-            $existingImportedHostIdsByHostIds = Hash::combine($existingImportedHostIdsByHostIds, '{n}', '{n}');
         }
         foreach ($hosts as $host) {
             $serviceUuids = $ServiceTable->find('list', valueField: 'uuid')
@@ -245,6 +245,17 @@ class HostsController extends AppController {
                 ->toList();
             if (!empty($existingImportedHostIdsByHostIds)) {
                 $additionalInformationExists = isset($existingImportedHostIdsByHostIds[$host['Host']['id']]);
+                if (!empty($existingImportedHostIdsByHostIds[$host['Host']['id']])) {
+                    switch ($existingImportedHostIdsByHostIds[$host['Host']['id']]) {
+                        case 'itop':
+                        case 'idoit':
+                            $additionalInformation = 'CMDB';
+                            break;
+                        case 'proxmox':
+                            $additionalInformation = 'Proxmox';
+                            break;
+                    }
+                }
             }
 
             $servicestatus = $ServicestatusTable->byUuids($serviceUuids, $ServicestatusFields);
@@ -318,6 +329,7 @@ class HostsController extends AppController {
             $tmpRecord['Host']['allow_edit'] = $allowEdit;
             $tmpRecord['Host']['type'] = $typesForView[$host['Host']['host_type']];
             $tmpRecord['Host']['additionalInformationExists'] = $additionalInformationExists;
+            $tmpRecord['Host']['additionalInformation'] = $additionalInformation;
 
             $all_hosts[] = $tmpRecord;
         }
@@ -3640,15 +3652,21 @@ class HostsController extends AppController {
         $id = $this->request->getQuery('id');
 
         $additionalInformationExists = false;
+        $externalSystemType = null;
 
         if (Plugin::isLoaded('ImportModule')) {
             /** @var ImportedHostsTable $ImportedHostsTable */
             $ImportedHostsTable = TableRegistry::getTableLocator()->get('ImportModule.ImportedHosts');
-            $additionalInformationExists = $ImportedHostsTable->existsImportedHostByHostId($id);
+            $result = $ImportedHostsTable->existsImportedHostByHostId($id);
+            if ($result) {
+                $additionalInformationExists = true;
+                $externalSystemType = $result->importer->get('external_system')->get('system_type');
+            }
         }
 
         $this->set('AdditionalInformationExists', $additionalInformationExists);
-        $this->viewBuilder()->setOption('serialize', ['AdditionalInformationExists']);
+        $this->set('externalSystemType', $externalSystemType);
+        $this->viewBuilder()->setOption('serialize', ['AdditionalInformationExists', 'externalSystemType']);
     }
 
     public function checkForDuplicateHostname() {
