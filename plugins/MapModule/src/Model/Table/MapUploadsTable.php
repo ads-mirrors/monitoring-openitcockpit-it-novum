@@ -252,21 +252,13 @@ class MapUploadsTable extends Table {
         );
 
         $icons = [];
-
-        /** @var SplFileInfo $file */
-        foreach ($finder as $file) {
-            $fileName = $file->getFilename();
-            if (in_array($file->getExtension(), $this->supportedFileExtensions, true)) {
-                if ($hasRootPrivileges) {
-                    $icons[] = $fileName;
-                } else {
-                    // check permitted backgrounds for not root user
-                    if (in_array($fileName, $permittedIcons, true)) {
-                        $icons[] = $fileName;
-                    }
-                }
+        foreach ($permittedIcons as $iconSavedName) {
+            $iconPath = $basePath . DS . $iconSavedName;
+            if (file_exists($iconPath)) {
+                $icons[] = $iconSavedName;
             }
         }
+
         return $icons;
     }
 
@@ -329,6 +321,13 @@ class MapUploadsTable extends Table {
                 $response = [
                     'success' => false,
                     'message' => __('A PHP extension stopped the file upload.')
+                ];
+                break;
+
+            default:
+                $response = [
+                    'success' => false,
+                    'message' => __('Unknown upload error.')
                 ];
                 break;
         }

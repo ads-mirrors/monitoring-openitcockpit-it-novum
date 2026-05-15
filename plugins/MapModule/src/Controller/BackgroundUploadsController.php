@@ -186,7 +186,7 @@ class BackgroundUploadsController extends AppController {
             $icons[$key]['allowEdit'] = true;
             if ($this->hasRootPrivileges === false) {
                 $icons[$key]['allowEdit'] = false;
-                if (!empty(array_intersect($iconsWithContainers[$background['id']], $this->getWriteContainers()))) {
+                if (!empty(array_intersect($iconsWithContainers[$icon['id']], $this->getWriteContainers()))) {
                     $icons[$key]['allowEdit'] = true;
                 }
             }
@@ -257,7 +257,7 @@ class BackgroundUploadsController extends AppController {
             $items[$key]['allowEdit'] = true;
             if ($this->hasRootPrivileges === false) {
                 $items[$key]['allowEdit'] = false;
-                if (!empty(array_intersect($itemsWithContainers[$background['id']], $this->getWriteContainers()))) {
+                if (!empty(array_intersect($itemsWithContainers[$item['id']], $this->getWriteContainers()))) {
                     $items[$key]['allowEdit'] = true;
                 }
             }
@@ -514,19 +514,22 @@ class BackgroundUploadsController extends AppController {
         }
 
         $background = $MapUploadsTable->getByFilename($filename, MapUpload::TYPE_BACKGROUND, $MY_RIGHTS);
+        if (empty($background)) {
+            throw new NotFoundException();
+        }
+
         $backgroundEntity = $MapUploadsTable->get($background['id'], contain: [
             'Containers'
         ]);
+
+        if (!$backgroundEntity) {
+            throw new NotFoundException();
+        }
 
         $uploadContainerIds = Hash::extract(
             $backgroundEntity,
             'containers.{n}.id'
         );
-
-
-        if (!$backgroundEntity) {
-            throw new NotFoundException();
-        }
 
         $MapUploadContainersPermissions = new MapContainersPermissions(
             $uploadContainerIds,
@@ -577,16 +580,17 @@ class BackgroundUploadsController extends AppController {
             'background' => $background['saved_name']
         ]);
 
+        $savedFileName = $backgroundEntity->saved_name;
         $MapUploadsTable->delete($backgroundEntity);
-        if (!$backgroundEntity->hasErrors()) {
+        if (!$backgroundEntity->hasErrors() && !empty($savedFileName)) {
             $backgroundImgDirectory = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds';
 
-            if (file_exists($backgroundImgDirectory . DS . $filename)) {
-                unlink($backgroundImgDirectory . DS . $filename);
+            if (file_exists($backgroundImgDirectory . DS . $savedFileName)) {
+                unlink($backgroundImgDirectory . DS . $savedFileName);
             }
 
-            if (file_exists($backgroundImgDirectory . DS . 'thumb' . DS . 'thumb_' . $filename)) {
-                unlink($backgroundImgDirectory . DS . 'thumb' . DS . 'thumb_' . $filename);
+            if (file_exists($backgroundImgDirectory . DS . 'thumb' . DS . 'thumb_' . $savedFileName)) {
+                unlink($backgroundImgDirectory . DS . 'thumb' . DS . 'thumb_' . $savedFileName);
             }
 
             $response = [
@@ -720,7 +724,6 @@ class BackgroundUploadsController extends AppController {
 
         $iconImgDirectory = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'icons';
         $filename = $this->request->getData('filename');
-        $fullFilePath = $iconImgDirectory . DS . $filename;
 
         /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
@@ -731,18 +734,22 @@ class BackgroundUploadsController extends AppController {
         }
 
         $icon = $MapUploadsTable->getByFilename($filename, MapUpload::TYPE_ICON, $MY_RIGHTS);
+        if (empty($icon)) {
+            throw new NotFoundException();
+        }
+
         $iconEntity = $MapUploadsTable->get($icon['id'], contain: [
             'Containers'
         ]);
+
+        if (!$iconEntity) {
+            throw new NotFoundException();
+        }
 
         $uploadContainerIds = Hash::extract(
             $iconEntity,
             'containers.{n}.id'
         );
-
-        if (!$iconEntity) {
-            throw new NotFoundException();
-        }
 
         $MapUploadContainersPermissions = new MapContainersPermissions(
             $uploadContainerIds,
@@ -791,15 +798,19 @@ class BackgroundUploadsController extends AppController {
         /** @var MapiconsTable $MapiconsTable */
         $MapiconsTable = TableRegistry::getTableLocator()->get('MapModule.Mapicons');
 
-        if ($MapiconsTable->deleteAll(['Mapicon.icon' => $filename]) && $MapUploadsTable->delete($iconEntity)) {
+        $MapiconsTable->deleteAll(['Mapicon.icon' => $filename]);
+        if ($MapUploadsTable->delete($iconEntity)) {
             $response = [
                 'success' => true,
                 'message' => __('Icon deleted successfully.')
             ];
 
+            $savedFileName = $iconEntity->saved_name;
             $MapUploadsTable->delete($iconEntity);
 
-            if (!$iconEntity->hasErrors()) {
+            if (!$iconEntity->hasErrors() && !empty($savedFileName)) {
+                $fullFilePath = $iconImgDirectory . DS . $savedFileName;
+
                 if (file_exists($fullFilePath)) {
                     unlink($fullFilePath);
                 }
@@ -897,7 +908,7 @@ class BackgroundUploadsController extends AppController {
                 $zipFile->extractTo($unzipDirectory);
                 $zipFile->close();
 
-                //Remove upoaded zip file
+                //Remove uploaded zip file
                 unlink($tempZipsDirectory . DS . $fileName);
 
                 $finder = new Finder();

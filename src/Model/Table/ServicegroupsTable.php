@@ -625,6 +625,7 @@ class ServicegroupsTable extends Table {
                 'Servicegroups.id',
                 'Servicegroups.description',
                 'Containers.name',
+                'Containers.parent_id',
             ])
             ->contain([
                 'Containers',
