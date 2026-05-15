@@ -186,7 +186,7 @@ class BackgroundUploadsController extends AppController {
             $icons[$key]['allowEdit'] = true;
             if ($this->hasRootPrivileges === false) {
                 $icons[$key]['allowEdit'] = false;
-                if (!empty(array_intersect($iconsWithContainers[$background['id']], $this->getWriteContainers()))) {
+                if (!empty(array_intersect($iconsWithContainers[$icon['id']], $this->getWriteContainers()))) {
                     $icons[$key]['allowEdit'] = true;
                 }
             }
@@ -257,7 +257,7 @@ class BackgroundUploadsController extends AppController {
             $items[$key]['allowEdit'] = true;
             if ($this->hasRootPrivileges === false) {
                 $items[$key]['allowEdit'] = false;
-                if (!empty(array_intersect($itemsWithContainers[$background['id']], $this->getWriteContainers()))) {
+                if (!empty(array_intersect($itemsWithContainers[$item['id']], $this->getWriteContainers()))) {
                     $items[$key]['allowEdit'] = true;
                 }
             }

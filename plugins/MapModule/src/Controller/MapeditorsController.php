@@ -329,9 +329,14 @@ class MapeditorsController extends AppController {
                     if ($this->hasRootPrivileges === false) {
                         // We are only display an icon at this point
                         // As long as the user has access to at least one container, we can display the icon
-                        if (!$this->allowedByContainerId(Hash::extract($hostgroup, 'hosts.{n}.hosts_to_containers_sharing.{n}.id'), false)) {
-                            $allowView = false;
-                            break;
+                        if (!empty($hostgroup['hosts'])) {
+                            if (!$this->allowedByContainerId(Hash::extract($hostgroup, 'hosts.{n}.hosts_to_containers_sharing.{n}.id'), false)) {
+                                break;
+                            }
+                        } else {
+                            if (!$this->allowedByContainerId($hostgroup['container']['parent_id'], false)) {
+                                break;
+                            }
                         }
                     }
                     $allowView = true;
@@ -361,8 +366,14 @@ class MapeditorsController extends AppController {
                     if ($this->hasRootPrivileges === false) {
                         // We are only display an icon at this point
                         // As long as the user has access to at least one container, we can display the icon
-                        if (!$this->allowedByContainerId(array_unique(Hash::extract($servicegroup, 'services.{n}.host.hosts_to_containers_sharing.{n}.id')), false)) {
-                            break;
+                        if (!empty($servicegroup['services'])) {
+                            if (!$this->allowedByContainerId(array_unique(Hash::extract($servicegroup, 'services.{n}.host.hosts_to_containers_sharing.{n}.id')), false)) {
+                                break;
+                            }
+                        } else {
+                            if (!$this->allowedByContainerId($servicegroup['container']['parent_id'], false)) {
+                                break;
+                            }
                         }
                     }
                     $allowView = true;
