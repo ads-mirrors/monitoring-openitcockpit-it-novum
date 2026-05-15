@@ -76,8 +76,6 @@ use MapModule\Model\Table\MapUploadsTable;
 use PrometheusModule\Lib\PrometheusAdapter;
 use RuntimeException;
 use Statusengine\PerfdataParser;
-use Symfony\Component\Finder\Finder;
-use Symfony\Component\Finder\SplFileInfo;
 
 
 /**
@@ -1237,20 +1235,18 @@ class MapeditorsController extends AppController {
             throw new MethodNotAllowedException();
         }
 
-        if (!is_dir(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds')) {
-            mkdir(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds');
+        $backgroundsBaseDir = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds';
+        if (!is_dir($backgroundsBaseDir)) {
+            mkdir($backgroundsBaseDir);
         }
 
-        if (!is_dir(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds' . DS . 'thumb')) {
-            mkdir(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds' . DS . 'thumb');
+        $backgroundsBaseDirThumb = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds' . DS . 'thumb';
+        if (!is_dir($backgroundsBaseDirThumb)) {
+            mkdir($backgroundsBaseDirThumb);
         }
-
-        $finder = new Finder();
-        $finder->files()->in(APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds')->exclude('thumb');
 
         /** @var MapUploadsTable $MapUploadsTable */
         $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
-        $permittedBackgrounds = [];
         $MY_RIGHTS = [];
         if (!$this->hasRootPrivileges) {
             $MY_RIGHTS = $this->MY_RIGHTS;
@@ -1259,24 +1255,13 @@ class MapeditorsController extends AppController {
         $permittedBackgrounds = $MapUploadsTable->getMapUploadsBackgrounds($MY_RIGHTS);
 
         $backgrounds = [];
-        /** @var SplFileInfo $file */
-        foreach ($finder as $file) {
-            $fileName = $file->getFilename();
-            if ($this->hasRootPrivileges) {
+        foreach ($permittedBackgrounds as $backgroundSavedName) {
+            if (file_exists($backgroundsBaseDir . DS . $backgroundSavedName) && file_exists($backgroundsBaseDirThumb . DS . 'thumb_' . $backgroundSavedName)) {
                 $backgrounds[] = [
-                    'image'     => $fileName,
-                    'path'      => sprintf('/map_module/img/backgrounds/%s', $fileName),
-                    'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $fileName),
+                    'image'     => $backgroundSavedName,
+                    'path'      => sprintf('/map_module/img/backgrounds/%s', $backgroundSavedName),
+                    'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $backgroundSavedName),
                 ];
-            } else {
-                // check permitted backgrounds for not root user
-                if (in_array($fileName, $permittedBackgrounds, true)) {
-                    $backgrounds[] = [
-                        'image'     => $fileName,
-                        'path'      => sprintf('/map_module/img/backgrounds/%s', $fileName),
-                        'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $fileName),
-                    ];
-                }
             }
         }
 
