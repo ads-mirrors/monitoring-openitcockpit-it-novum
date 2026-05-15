@@ -2305,6 +2305,7 @@ class MapsTable extends Table {
         return [
             'Mapeditor' => [
                 'synchronizeGridAndHelplinesSize' => true,
+                'maintainBackgroundAspectRatio'   => true,
                 'grid'                            => [
                     'enabled' => true,
                     'size'    => 15
