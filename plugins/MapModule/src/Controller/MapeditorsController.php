@@ -1210,6 +1210,30 @@ class MapeditorsController extends AppController {
         }
         $MapForAngular = new MapForAngular($map);
         $map = $MapForAngular->toArray();
+        if (!empty($map['Map']['background'])) {
+            /** @var MapUploadsTable $MapUploadsTable */
+            $MapUploadsTable = TableRegistry::getTableLocator()->get('MapModule.MapUploads');
+            $MY_RIGHTS = [];
+            if (!$this->hasRootPrivileges) {
+                $MY_RIGHTS = $this->MY_RIGHTS;
+            }
+            //Get all backgrounds that a not root user is allowed to see.
+            $permittedBackgrounds = $MapUploadsTable->getMapUploadsBackgrounds($MY_RIGHTS);
+
+            if (in_array($map['Map']['background'], $permittedBackgrounds, true)) {
+                $backgroundsBaseDir = APP . '../' . 'plugins' . DS . 'MapModule' . DS . 'webroot' . DS . 'img' . DS . 'backgrounds';
+                if (file_exists($backgroundsBaseDir . DS . $map['Map']['background'])) {
+                    $size = getimagesize($backgroundsBaseDir . DS . $map['Map']['background']);
+                    $map['Map']['background_size_x'] = ($map['Map']['background_size_x'] !== 0) ? $map['Map']['background_size_x'] : $size[0];
+                    $map['Map']['background_size_y'] = ($map['Map']['background_size_y'] !== 0) ? $map['Map']['background_size_y'] : $size[1];
+                } else {
+                    $map['Map']['background'] = null; // not exists on file system
+                }
+            } else {
+                $map['Map']['background'] = null; // not permitted or record not exists
+            }
+        }
+
         $config = $MapsTable->getMapeditorSettings($map['Map']['json_data']);
 
         $this->set('map', $map);
@@ -1257,14 +1281,16 @@ class MapeditorsController extends AppController {
         $backgrounds = [];
         foreach ($permittedBackgrounds as $backgroundSavedName) {
             if (file_exists($backgroundsBaseDir . DS . $backgroundSavedName) && file_exists($backgroundsBaseDirThumb . DS . 'thumb_' . $backgroundSavedName)) {
+                $size = getimagesize($backgroundsBaseDir . DS . $backgroundSavedName);
                 $backgrounds[] = [
-                    'image'     => $backgroundSavedName,
-                    'path'      => sprintf('/map_module/img/backgrounds/%s', $backgroundSavedName),
-                    'thumbnail' => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $backgroundSavedName),
+                    'image'             => $backgroundSavedName,
+                    'path'              => sprintf('/map_module/img/backgrounds/%s', $backgroundSavedName),
+                    'thumbnail'         => sprintf('/map_module/img/backgrounds/thumb/thumb_%s', $backgroundSavedName),
+                    'background_size_x' => $size[0],
+                    'background_size_y' => $size[1],
                 ];
             }
         }
-
         $this->set('backgrounds', $backgrounds);
         $this->viewBuilder()->setOption('serialize', ['backgrounds']);
     }
