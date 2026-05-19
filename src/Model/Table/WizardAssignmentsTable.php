@@ -649,6 +649,14 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['network', 'hardware'],
                 'active'      => true
             ],
+            'raritan-kvm'                  => [
+                'type_id'     => 'raritan-kvm',
+                'title'       => __('Raritan KVM'),
+                'description' => __('Monitor your Raritan KVM via SNMP.'),
+                'image'       => 'raritan.png',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
         ];
 
         $possibleWizardsResult = [];
