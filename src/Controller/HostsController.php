@@ -133,6 +133,9 @@ class HostsController extends AppController {
 
     use PluginManagerTableTrait;
 
+    const PARENTS_CHILDREN_TREE_PARENT_GROUP = "hostParentGroup";
+    const PARENTS_CHILDREN_TREE_CHILDREN_GROUP = "hostChildrenGroup";
+
     public function index() {
         /** @var User $User */
         $User = new User($this->getUser());
@@ -2189,7 +2192,8 @@ class HostsController extends AppController {
         }
 
         $host = $HostsTable->getHostForBrowser($id);
-        $parentAndChildHostsTree = [];
+        $parentAndChildHostsTree = [
+        ];
         if (!empty($host['parenthosts']) && $host['satellite_id'] > 0) {
             $parentHostsFiltered = [];
             foreach ($host['parenthosts'] as $parentHost) {
@@ -2205,6 +2209,7 @@ class HostsController extends AppController {
                 'id'                => $parentHost['id'],
                 'name'              => $parentHost['name'],
                 'is_satellite_host' => (int)$parentHost['satellite_id'] !== 0,
+                'groupId'           => self::PARENTS_CHILDREN_TREE_PARENT_GROUP,
                 'parentIds'         => []
             ];
         }
@@ -2223,6 +2228,7 @@ class HostsController extends AppController {
                 'id'                => $childHost['id'],
                 'name'              => $childHost['name'],
                 'is_satellite_host' => (int)$childHost['satellite_id'] !== 0,
+                'groupId'           => self::PARENTS_CHILDREN_TREE_CHILDREN_GROUP,
                 'parentIds'         => [intval($id)]
             ];
         }
@@ -2232,9 +2238,23 @@ class HostsController extends AppController {
                 'id'                => intval($id),
                 'name'              => $host['name'],
                 'is_satellite_host' => (int)$host['satellite_id'] !== 0,
-                'isMainHost'        => true,
                 'parentIds'         => Hash::extract($host['parenthosts'], '{n}.id')
             ];
+
+            //add item for groups to $parentAndChildHostsTree
+            if (!empty($host['parenthosts'])) {
+                $parentAndChildHostsTree[self::PARENTS_CHILDREN_TREE_PARENT_GROUP] = [
+                    'id'   => self::PARENTS_CHILDREN_TREE_PARENT_GROUP,
+                    'name' => __('Parents'),
+                ];
+            }
+
+            if (!empty($host['child_hosts'])) {
+                $parentAndChildHostsTree[self::PARENTS_CHILDREN_TREE_CHILDREN_GROUP] = [
+                    'id'   => self::PARENTS_CHILDREN_TREE_CHILDREN_GROUP,
+                    'name' => __('Children'),
+                ];
+            }
         }
 
         //Check permissions
