@@ -207,6 +207,23 @@ class AclDependencies {
             ->allow('FilterBookmarks', 'edit')
             ->allow('FilterBookmarks', 'delete');
 
+
+
+        $this
+            ->dependency('FilterBookmarks', 'index', 'Users', 'loadContainersForAngular');
+
+        $this
+            ->allow('FilterBookmarksAllocations', 'index')
+            ->allow('FilterBookmarksAllocations', 'add')
+            ->allow('FilterBookmarkAllocations', 'edit')
+            ->allow('FilterBookmarksAllocations', 'delete');
+
+        $this
+            ->dependency('FilterBookmarksAllocations', 'add', 'FilterBookmarksAllocations', 'loadElementsByContainerId')
+            ->dependency('FilterBookmarksAllocations', 'add', 'Users', 'loadContainersForAngular')
+            ->dependency('FilterBookmarksAllocations', 'edit', 'FilterBookmarksAllocations', 'loadElementsByContainerId')
+            ->dependency('FilterBookmarksAllocations', 'edit', 'Users', 'loadContainersForAngular');
+
         $this
             ->allow('Hosts', 'view')
             ->allow('Hosts', 'loadParentHostsByString')
