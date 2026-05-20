@@ -215,7 +215,7 @@ class AclDependencies {
         $this
             ->allow('FilterBookmarksAllocations', 'index')
             ->allow('FilterBookmarksAllocations', 'add')
-            ->allow('FilterBookmarkAllocations', 'edit')
+            ->allow('FilterBookmarksAllocations', 'edit')
             ->allow('FilterBookmarksAllocations', 'delete');
 
         $this
