@@ -155,6 +155,7 @@ plugins/FortinetModule
 plugins/FujitsuModule
 plugins/GudeModule
 plugins/PaloAltoModule
+plugins/SonicWallModule
 
 # NFS mounts
 .nfs.*
