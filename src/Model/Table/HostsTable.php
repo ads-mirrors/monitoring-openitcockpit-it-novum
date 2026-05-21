@@ -2371,6 +2371,7 @@ class HostsTable extends Table {
                 'Hostgroups',
                 'Customvariables',
                 'Parenthosts',
+                'ChildHosts',
                 'HostsToContainersSharing',
                 'Hostcommandargumentvalues' => [
                     'Commandarguments'
