@@ -156,6 +156,7 @@ plugins/FujitsuModule
 plugins/GudeModule
 plugins/PaloAltoModule
 plugins/RaritanModule
+plugins/SonicWallModule
 
 # NFS mounts
 .nfs.*
