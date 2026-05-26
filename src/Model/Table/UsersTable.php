@@ -1692,7 +1692,7 @@ class UsersTable extends Table {
         return $dashboardTabs;
     }
 
-    public function getFilterBookmarksByContainerIdsAsList($containerIds, $plugin, $controller, $action, $MY_RIGHTS) {
+    public function getFilterBookmarksByContainerIdsAsList($containerIds, $MY_RIGHTS) {
         if (!is_array($containerIds)) {
             $containerIds = [$containerIds];
         }
@@ -1700,13 +1700,7 @@ class UsersTable extends Table {
         $query = $this->find();
         $query->select([
             'id'   => 'FilterBookmarks.id',
-            'uuid' => 'FilterBookmarks.uuid',
-            'plugin' => 'FilterBookmarks.plugin',
-            'controller' => 'FilterBookmarks.controller',
-            'action' => 'FilterBookmarks.action',
-            'name' => 'FilterBookmarks.name',
-            'filter' => 'FilterBookmarks.filter',
-            'user_id' => 0
+            'name' => $query->newExpr('CONCAT(FilterBookmarks.name, " (", Users.firstname, " " ,Users.lastname,")")'),
         ])
             ->innerJoinWith('FilterBookmarks')
             ->leftJoin(
@@ -1724,13 +1718,7 @@ class UsersTable extends Table {
             ->leftJoin(
                 ['ContainersUsercontainerrolesMemberships' => 'usercontainerroles_to_containers'],
                 ['ContainersUsercontainerrolesMemberships.usercontainerrole_id = Usercontainerroles.id']
-            )
-            ->where([
-                'FilterBookmarks.plugin' => $plugin,
-                'FilterBookmarks.controller' => $controller,
-                'FilterBookmarks.action' => $action
-            ]);
-        ;
+            );
 
         if (!empty($MY_RIGHTS)) {
             //remove not allowed containerIds

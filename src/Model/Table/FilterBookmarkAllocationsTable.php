@@ -41,7 +41,7 @@ use Cake\Utility\Hash;
 use Cake\Validation\Validator;
 use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
-use itnovum\openITCOCKPIT\Filter\DashboardTabAllocationsFilter;
+use itnovum\openITCOCKPIT\Filter\BookmarkAllocationsFilter;
 
 /**
  * DashboardTabAllocations Model
@@ -195,6 +195,68 @@ class FilterBookmarkAllocationsTable extends Table {
         return $this->exists(['FilterBookmarkAllocations.id' => $id]);
     }
 
+    /**
+     * @param BookmarkAllocationsFilter $BookmarkAllocationsFilter
+     * @param PaginateOMat|null $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getBookmarkAllocationsIndex(BookmarkAllocationsFilter $BookmarkAllocationsFilter, ?PaginateOMat $PaginateOMat, array $MY_RIGHTS = []) {
+        $query = $this->find()
+            ->contain([
+                'Author'        => function (Query $query) {
+                    return $query->select([
+                        'author' => $query->func()->concat([
+                            'Author.firstname' => 'literal',
+                            ' ',
+                            'Author.lastname'  => 'literal'
+                        ])
+                    ]);
+                },
+                'Users'         => function (Query $query) {
+                    return $query->select([
+                        'full_name' => $query->func()->concat([
+                            'Users.firstname' => 'literal',
+                            ' ',
+                            'Users.lastname'  => 'literal'
+                        ])
+                    ]);
+                },
+                'Usergroups'    => function (Query $query) {
+                    return $query->select([
+                        'Usergroups.name'
+                    ]);
+                },
+                'FilterBookmarks' => function (Query $query) {
+                    return $query->select([
+                        'FilterBookmarks.name',
+                        'FilterBookmarks.controller'
+                    ]);
+                }
+            ]);
+
+        $where = $BookmarkAllocationsFilter->indexFilter();
+        if (!empty($MY_RIGHTS)) {
+            $where['FilterBookmarkAllocations.container_id IN'] = $MY_RIGHTS;
+        }
+        $query->where($where);
+
+        $query->orderBy($BookmarkAllocationsFilter->getOrderForPaginator('FilterBookmarkAllocations.name', 'asc'));
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $this->emptyArrayIfNull($query->toArray());
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+    }
+
 
     public function getFilterBookmarkAllocationForEdit($id) {
         $query = $this->find()
@@ -224,7 +286,7 @@ class FilterBookmarkAllocationsTable extends Table {
         ];
     }
 
-    public function getAllDashboardAllocationsByUser(User $User, string $plugin = '', string $controller = '', string $action = '') {
+    public function getAllBookmarkAllocationsByUser(User $User, string $plugin = '', string $controller = '', string $action = '') {
         $query = $this->find()
             ->leftJoinWith('Users')
             ->leftJoinWith('Usergroups');
@@ -251,14 +313,6 @@ class FilterBookmarkAllocationsTable extends Table {
         if (empty($allocations)) {
             return [];
         }
-       /* foreach ($allocations as $key => $allocation) {
-            $allocations[$key]['users'] = [
-                '_ids' => Hash::extract($allocations[$key]['users'], '{n}.id')
-            ];
-            $allocations[$key]['usergroups'] = [
-                '_ids' => Hash::extract($allocations[$key]['usergroups'], '{n}.id')
-            ];
-        } */
         return $allocations;
     }
 
@@ -301,6 +355,35 @@ class FilterBookmarkAllocationsTable extends Table {
             ];
         }
         return $allocations;
+    }
+
+    public function getAllocatedBookmarkIdsByContainerIdsAsList($containerIds, $MY_RIGHTS) {
+        if (!is_array($containerIds)) {
+            $containerIds = [$containerIds];
+        }
+
+        $query = $this->find();
+        $query->select([
+            'FilterBookmarkAllocations.id',
+            'FilterBookmarkAllocations.filter_bookmark_id'
+        ]);
+
+        if (!empty($containerIds)) {
+            $query->where([
+                'FilterBookmarkAllocations.container_id IN' => $containerIds
+            ]);
+        }
+
+        if (!empty($MY_RIGHTS)) {
+            $query->where([
+                'FilterBookmarkAllocations.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        $query->groupBy(['FilterBookmarkAllocations.filter_bookmark_id'])
+            ->disableHydration()
+            ->all();
+        return $this->emptyArrayIfNull($query->toArray());
     }
 
 }

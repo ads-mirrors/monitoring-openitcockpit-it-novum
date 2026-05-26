@@ -45,7 +45,7 @@ use Cake\ORM\TableRegistry;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
-//use itnovum\openITCOCKPIT\Filter\DashboardTabAllocationsFilter;
+use itnovum\openITCOCKPIT\Filter\BookmarkAllocationsFilter;
 
 
 /**
@@ -61,27 +61,27 @@ class FilterBookmarksAllocationsController extends AppController {
             throw new \Cake\Http\Exception\MethodNotAllowedException();
         }
 
-        /** @var FilterBookmarksAllocationsTable $FilterBookmarksAllocationsTable */
-        $FilterBookmarksAllocationsTable = TableRegistry::getTableLocator()->get('FilterBookmarksAllocations');
-       // $DashboardTabAllocationsFilter = new DashboardTabAllocationsFilter($this->request);
+        /** @var FilterBookmarkAllocationsTable $FilterBookmarkAllocationsTable */
+        $FilterBookmarkAllocationsTable = TableRegistry::getTableLocator()->get('FilterBookmarkAllocations');
+        $BookmarkAllocationsFilter = new BookmarkAllocationsFilter($this->request);
 
         $MY_RIGHTS = $this->MY_RIGHTS;
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];
         }
 
-       // $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $DashboardTabAllocationsFilter->getPage());
-       /* $all_bookmark_allocations = $FilterBookmarksAllocationsTable->getDashboardTabAllocationsIndex(
-            $DashboardTabAllocationsFilter,
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $BookmarkAllocationsFilter->getPage());
+        $all_filterbookmark_allocations = $FilterBookmarkAllocationsTable->getBookmarkAllocationsIndex(
+            $BookmarkAllocationsFilter,
             $PaginateOMat,
             $MY_RIGHTS
-        ); */
-        /*foreach ($all_dashboardtab_allocations as $key => $all_dashboardtab_allocation) {
-            $all_dashboardtab_allocations[$key]['allowEdit'] = $this->isWritableContainer($all_dashboardtab_allocation['container_id']);
-        } */
+        );
+        foreach ($all_filterbookmark_allocations as $key => $all_filterbookmark_allocation) {
+            $all_filterbookmark_allocations[$key]['allowEdit'] = $this->isWritableContainer($all_filterbookmark_allocation['container_id']);
+        }
 
-        $this->set('all_dashboardtab_allocations', []);
-        $this->viewBuilder()->setOption('serialize', ['all_dashboardtab_allocations']);
+        $this->set('all_filterbookmark_allocations', $all_filterbookmark_allocations);
+        $this->viewBuilder()->setOption('serialize', ['all_filterbookmark_allocations']);
     }
 
     public function add() {
@@ -128,10 +128,10 @@ class FilterBookmarksAllocationsController extends AppController {
         }
 
         $allocation = $FilterBookmarkAllocationsTable->getFilterBookmarkAllocationForEdit($id);
-        /*if (!$this->allowedByContainerId($allocation['FilterBookmarkAllocation']['container_id'], true)) {
+        if (!$this->allowedByContainerId($allocation['FilterBookmarkAllocation']['container_id'], true)) {
             $this->render403();
             return;
-        } */
+        }
 
         if ($this->request->is('get')) {
             $this->set('allocation', $allocation);
@@ -149,8 +149,8 @@ class FilterBookmarksAllocationsController extends AppController {
             $allocation = $FilterBookmarkAllocationsTable->patchEntity($allocation, $this->request->getData('BookmarkAllocation', []));
 
             // Set the author of the allocation
-            $User = new User($this->getUser());
-            $allocation->set('user_id', $User->getId());
+            //$User = new User($this->getUser());
+            //$allocation->set('user_id', $User->getId());
 
             $FilterBookmarkAllocationsTable->save($allocation);
 
@@ -183,10 +183,10 @@ class FilterBookmarksAllocationsController extends AppController {
 
         $allocation = $FilterBookmarkAllocationsTable->get($id);
 
-       /* if (!$this->allowedByContainerId($allocation->container_id)) {
+        if (!$this->allowedByContainerId($allocation->container_id)) {
             $this->render403();
             return;
-        }*/
+        }
 
         if ($FilterBookmarkAllocationsTable->delete($allocation)) {
 
@@ -212,13 +212,6 @@ class FilterBookmarksAllocationsController extends AppController {
             throw new MethodNotAllowedException();
         }
 
-        $plugin = $this->request->getQuery('plugin', null);
-        $controller = $this->request->getQuery('controller', null);
-        $action = $this->request->getQuery('action', null);
-        if ($controller === null || $action === null) {
-            throw new BadRequestException('Missing parameter');
-        }
-
         /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
 
@@ -229,6 +222,7 @@ class FilterBookmarksAllocationsController extends AppController {
         $UsergroupsTable = TableRegistry::getTableLocator()->get('Usergroups');
 
         /** @var FilterBookmarkAllocationsTable $FilterBookmarkAllocationsTable */
+        $FilterBookmarkAllocationsTable = TableRegistry::getTableLocator()->get('FilterBookmarkAllocations');
 
         if (!$ContainersTable->existsById($containerId)) {
             throw new NotFoundException(__('Invalid container'));
@@ -247,12 +241,21 @@ class FilterBookmarksAllocationsController extends AppController {
         $usergroups = $UsergroupsTable->getUsergroupsList();
         $usergroups = Api::makeItJavaScriptAble($usergroups);
 
+        $filterBookmarks = $UsersTable->getFilterBookmarksByContainerIdsAsList($containerIds, $MY_RIGHTS);
+        $filterBookmarks = Api::makeItJavaScriptAble($filterBookmarks);
+
+        $allAllocatedFilterBookmarkIds = $FilterBookmarkAllocationsTable->getAllocatedBookmarkIdsByContainerIdsAsList($containerIds, $MY_RIGHTS);
+
         $this->set('users', $users);
         $this->set('usergroups', $usergroups);
+        $this->set('filter_bookmarks', $filterBookmarks);
+        $this->set('allocated_filter_bookmarks', $allAllocatedFilterBookmarkIds);
 
         $this->viewBuilder()->setOption('serialize', [
             'users',
             'usergroups',
+            'filter_bookmarks',
+            'allocated_filter_bookmarks'
         ]);
     }
 

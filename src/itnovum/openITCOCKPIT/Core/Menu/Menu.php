@@ -651,6 +651,18 @@ class Menu {
                     true,
                     '/DashboardAllocations/index'
                 ))
+                ->addLink(new MenuLink(
+                    __('Filter Bookmark Allocation'),
+                    'FilterBookmarkAllocationsIndex',
+                    'FilterBookmarksAllocations',
+                    'index',
+                    '',
+                    ['fas', 'table'],
+                    [],
+                    6,
+                    true,
+                    '/FilterbookmarkAllocations/index'
+                ))
             )
             ->addCategory((new MenuCategory(
                 'container_mgmt_category',

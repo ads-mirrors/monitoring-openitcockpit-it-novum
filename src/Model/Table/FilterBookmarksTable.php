@@ -208,12 +208,12 @@ class FilterBookmarksTable extends Table {
         //$allocationBookmarkIds = Hash::combine($allocations, '{n}.filter_bookmark_id', '{n}');
 
         $allBookmarkAllocations = $FilterBookmarkAllocationsTable->getAllBookmarkAllocations($User,$plugin, $controller, $action);
-        $userBookmarkAllocations = $FilterBookmarkAllocationsTable->getAllDashboardAllocationsByUser($User,$plugin, $controller, $action);
+        $userBookmarkAllocations = $FilterBookmarkAllocationsTable->getAllBookmarkAllocationsByUser($User,$plugin, $controller, $action);
         $userBookmarkAllocationsIds = Hash::combine($userBookmarkAllocations, '{n}.filter_bookmark_id', '{n}');
         $allBookmarkAllocationsIds = Hash::combine($allBookmarkAllocations, '{n}.filter_bookmark_id', '{n}');
 
 
-        // Get all Filter Bokkmarks from the user
+        // Get all Filter Bookmarks from the user
         $where = [
             'FilterBookmarks.user_id'    => $User->getId(),
             'FilterBookmarks.plugin'     => $plugin,

@@ -89,9 +89,7 @@ class FilterBookmarksController extends AppController {
             }
         }
         $this->set('bookmark', $bookmark ?? null);
-        //$filterBookmarks = $FilterBookmarksTable->getFilterByUser($User->getId(), $plugin, $controller, $action);
         $allFilterBookmarks = $FilterBookmarksTable->getAllBookmarksByUser($User, $plugin, $controller, $action);
-       // $this->set('bookmarks', $filterBookmarks);
         $this->set('bookmarks', $allFilterBookmarks);
         $this->viewBuilder()->setOption('serialize', ['bookmarks', 'bookmark']);
     }

@@ -207,17 +207,8 @@ class AclDependencies {
             ->allow('FilterBookmarks', 'edit')
             ->allow('FilterBookmarks', 'delete');
 
-
-
         $this
             ->dependency('FilterBookmarks', 'index', 'Users', 'loadContainersForAngular');
-
-        $this
-            ->allow('FilterBookmarksAllocations', 'index')
-            ->allow('FilterBookmarksAllocations', 'add')
-            ->allow('FilterBookmarksAllocations', 'edit')
-            ->allow('FilterBookmarksAllocations', 'delete');
-
         $this
             ->dependency('FilterBookmarksAllocations', 'add', 'FilterBookmarksAllocations', 'loadElementsByContainerId')
             ->dependency('FilterBookmarksAllocations', 'add', 'Users', 'loadContainersForAngular')
