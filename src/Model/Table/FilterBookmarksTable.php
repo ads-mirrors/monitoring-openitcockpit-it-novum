@@ -263,7 +263,7 @@ class FilterBookmarksTable extends Table {
                     'name'                     => $row['name'],
                     'filter'                     => $row['filter'],
                     'ownership'                  => $isOwner,
-                    'Filter_bookmark_allocation' => $allBookmarkAllocationsIds[$row['id']] ?? null
+                    'filter_bookmark_allocation' => $allBookmarkAllocationsIds[$row['id']] ?? null
                 ];
             } else {
                 // This dashboard tab got allocated to the user
