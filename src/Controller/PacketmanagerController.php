@@ -36,6 +36,7 @@ namespace App\Controller;
 use App\Model\Table\ProxiesTable;
 use App\Model\Table\RegistersTable;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\DnfRepositoryChecker;
 use itnovum\openITCOCKPIT\Core\Http;
 use itnovum\openITCOCKPIT\Core\PackagemanagerRequestBuilder;
@@ -123,6 +124,7 @@ class PacketmanagerController extends AppController {
                     }
                 }
             }
+            $result['data']['modules'] = Hash::sort($result['data']['modules'], '{n}.Module.name', 'asc');
 
             $LsbRelease = new LsbRelease();
             $Logo = new Logo();

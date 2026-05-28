@@ -883,7 +883,8 @@ class HostgroupsTable extends Table {
             ->select([
                 'Hostgroups.id',
                 'Hostgroups.description',
-                'Containers.name'
+                'Containers.name',
+                'Containers.parent_id'
             ])
             ->contain([
                 'Containers',
