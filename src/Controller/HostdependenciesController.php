@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lib\Interfaces\HoststatusTableInterface;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\HostdependenciesTable;
 use App\Model\Table\HostgroupsTable;
@@ -45,6 +46,7 @@ use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Core\UUID;
+use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\HostdependenciesFilter;
 
@@ -324,6 +326,35 @@ class HostdependenciesController extends AppController {
 
         $this->set('containers', Api::makeItJavaScriptAble($containers));
         $this->viewBuilder()->setOption('serialize', ['containers']);
+    }
+
+    /**
+     * @param null $id
+     */
+    public function loadHostdependenciesTree($hostId) {
+        if (!$this->isApiRequest()) {
+            throw new \Cake\Http\Exception\MethodNotAllowedException();
+        }
+
+        $User = new User($this->getUser());
+        $UserTime = $User->getUserTime();
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+        /** @var HostdependenciesTable $HostdependenciesTable */
+        $HostdependenciesTable = TableRegistry::getTableLocator()->get('Hostdependencies');
+        /** @var HoststatusTableInterface $HoststatusTable */
+        $HoststatusTable = $this->DbBackend->getHoststatusTable();
+
+        if (!$HostsTable->existsById($hostId)) {
+            throw new NotFoundException(__('Host not found'));
+        }
+
+        $hostdependenciesTree = $HostdependenciesTable->getHostDependenciesTree((int)$hostId, $HoststatusTable, $UserTime, $this->MY_RIGHTS);
+
+        $this->set('hostdependenciesTree', $hostdependenciesTree);
+        $this->viewBuilder()->setOption('serialize', ['hostdependenciesTree']);
+
     }
 
 }
