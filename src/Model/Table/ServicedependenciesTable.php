@@ -25,7 +25,6 @@
 
 namespace App\Model\Table;
 
-use App\Lib\Interfaces\ServicestatusTableInterface;
 use App\Lib\Traits\Cake2ResultTableTrait;
 use App\Lib\Traits\CustomValidationTrait;
 use App\Lib\Traits\PaginationAndScrollIndexTrait;
@@ -37,10 +36,6 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Utility\Hash;
 use Cake\Validation\Validator;
-use itnovum\openITCOCKPIT\Core\DbBackend;
-use itnovum\openITCOCKPIT\Core\Servicestatus;
-use itnovum\openITCOCKPIT\Core\ServicestatusFields;
-use itnovum\openITCOCKPIT\Core\Views\UserTime;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\ServicedependenciesFilter;
 
@@ -602,14 +597,10 @@ class ServicedependenciesTable extends Table {
 
     /**
      * @param int $serviceId
-     * @param ServicestatusTableInterface $ServicestatusTable
-     * @param UserTime $UserTime
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getServiceDependenciesTree(int $serviceId, ServicestatusTableInterface $ServicestatusTable, UserTime $UserTime, array $MY_RIGHTS = []) {
-        $dependenciesTree = [];
-
+    public function getServiceDependenciesTree(int $serviceId, array $MY_RIGHTS = []) {
         $query = $this->find()
             ->select(
                 [
@@ -709,84 +700,7 @@ class ServicedependenciesTable extends Table {
         }
         $query->all();
 
-        $queryResult = $query->toArray();
-
-        //get servicestatus for each service
-        $ServicestatusFields = new ServicestatusFields(new DbBackend());
-        $ServicestatusFields->wildcard();
-
-        foreach ($queryResult as $servicedependency) {
-
-            $parentIds = [];
-
-            foreach ($servicedependency['services'] as $service) {
-                // add services from dependency as parents, because dependent services are the children of the services
-                $parentIds[] = $service['id'];
-                // create for each service an item to display a node in frontend
-                if (!isset($dependenciesTree[$service['id']])) {
-
-                    $servicestatus = $ServicestatusTable->byUuid($service['uuid'], $ServicestatusFields);
-                    $Servicestatus = new Servicestatus($servicestatus['Servicestatus'], $UserTime);
-                    $servicestatus = $Servicestatus->toArrayForBrowser();
-
-                    $dependenciesTree[$service['id']] = [
-                        'id'            => $service['id'],
-                        'servicename'   => $service['servicename'],
-                        'servicestatus' => $servicestatus,
-                    ];
-                }
-            }
-
-            // create a connection based on the service dependency
-            $connectionData = [
-                'parentIds'                     => $parentIds,
-                'dependency_id'                 => $servicedependency['id'],
-                'inherits_parent'               => $servicedependency['inherits_parent'],
-                'timeperiod_id'                 => $servicedependency['timeperiod_id'],
-                'execution_fail_on_pending'     => $servicedependency['execution_fail_on_pending'],
-                'execution_none'                => $servicedependency['execution_none'],
-                'notification_fail_on_pending'  => $servicedependency['notification_fail_on_pending'],
-                'notification_none'             => $servicedependency['notification_none'],
-                'execution_fail_on_ok'          => $servicedependency['execution_fail_on_ok'],
-                'execution_fail_on_warning'     => $servicedependency['execution_fail_on_warning'],
-                'execution_fail_on_unknown'     => $servicedependency['execution_fail_on_unknown'],
-                'execution_fail_on_critical'    => $servicedependency['execution_fail_on_critical'],
-                'notification_fail_on_ok'       => $servicedependency['notification_fail_on_ok'],
-                'notification_fail_on_warning'  => $servicedependency['notification_fail_on_warning'],
-                'notification_fail_on_unknown'  => $servicedependency['notification_fail_on_unknown'],
-                'notification_fail_on_critical' => $servicedependency['notification_fail_on_critical'],
-                'timeperiod'                    => $servicedependency['timeperiod']
-            ];
-
-            // create for each dependent service an item and add the service dependency as connectionData to the item
-            // or add the new service dependency as connectionData if dependent service is already an item in the tree
-            foreach ($servicedependency['services_dependent'] as $dependentService) {
-
-                if (isset($dependenciesTree[$dependentService['id']])) {
-                    $dependenciesTree[$dependentService['id']]['connectionData'][] = $connectionData;
-                } else {
-
-                    $servicestatus = $ServicestatusTable->byUuid($dependentService['uuid'], $ServicestatusFields);
-                    $Servicestatus = new Servicestatus($servicestatus['Servicestatus'], $UserTime);
-                    $servicestatus = $Servicestatus->toArrayForBrowser();
-
-                    $dependenciesTree[$dependentService['id']] = [
-                        'id'             => $dependentService['id'],
-                        'servicename'    => $dependentService['servicename'],
-                        'connectionData' => [$connectionData],
-                        'servicestatus'  => $servicestatus,
-                    ];
-
-                }
-
-            }
-
-        }
-
-        //reindex value to have sequential keys for frontend
-        $dependenciesTree = array_values($dependenciesTree);
-
-        return $dependenciesTree;
+        return $query->toArray();
 
     }
 

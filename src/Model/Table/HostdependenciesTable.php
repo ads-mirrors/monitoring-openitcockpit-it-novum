@@ -25,7 +25,6 @@
 
 namespace App\Model\Table;
 
-use App\Lib\Interfaces\HoststatusTableInterface;
 use App\Lib\Traits\Cake2ResultTableTrait;
 use App\Lib\Traits\CustomValidationTrait;
 use App\Lib\Traits\PaginationAndScrollIndexTrait;
@@ -36,10 +35,6 @@ use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Utility\Hash;
 use Cake\Validation\Validator;
-use itnovum\openITCOCKPIT\Core\DbBackend;
-use itnovum\openITCOCKPIT\Core\Hoststatus;
-use itnovum\openITCOCKPIT\Core\HoststatusFields;
-use itnovum\openITCOCKPIT\Core\Views\UserTime;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\HostdependenciesFilter;
 
@@ -612,14 +607,10 @@ class HostdependenciesTable extends Table {
 
     /**
      * @param int $hostId
-     * @param HoststatusTableInterface $HoststatusTable
-     * @param UserTime $UserTime
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getHostDependenciesTree(int $hostId, HoststatusTableInterface $HoststatusTable, UserTime $UserTime, array $MY_RIGHTS = []) {
-        $dependenciesTree = [];
-
+    public function getHostDependenciesTree(int $hostId, array $MY_RIGHTS = []) {
         $query = $this->find()
             ->select(
                 [
@@ -655,7 +646,7 @@ class HostdependenciesTable extends Table {
                             'Timeperiods.name'
                         ]);
                 },
-                'Hosts'               => function (Query $q) use ($hostId) {
+                'Hosts'               => function (Query $q) {
                     return $q->enableAutoFields(false)
                         ->where([
                             'HostdependenciesHostMemberships.dependent' => 0,
@@ -665,7 +656,7 @@ class HostdependenciesTable extends Table {
                             'Hosts.uuid'
                         ]);
                 },
-                'HostsDependent'      => function (Query $q) use ($hostId) {
+                'HostsDependent'      => function (Query $q) {
                     return $q->enableAutoFields(false)
                         ->where([
                             'HostdependenciesHostMemberships.dependent' => 1,
@@ -711,82 +702,7 @@ class HostdependenciesTable extends Table {
         }
         $query->all();
 
-        $queryResult = $query->toArray();
-
-        //get hoststatus for each host
-        $HoststatusFields = new HoststatusFields(new DbBackend());
-        $HoststatusFields->wildcard();
-
-        foreach ($queryResult as $hostdependency) {
-
-            $parentIds = [];
-
-            foreach ($hostdependency['hosts'] as $host) {
-                // add hosts from dependency as parents, because dependent hosts are the children of the hosts
-                $parentIds[] = $host['id'];
-                // create for each host an item to display a node in frontend
-                if (!isset($dependenciesTree[$host['id']])) {
-
-                    $hoststatus = $HoststatusTable->byUuid($host['uuid'], $HoststatusFields);
-                    $Hoststatus = new Hoststatus($hoststatus['Hoststatus'], $UserTime);
-                    $hoststatus = $Hoststatus->toArrayForBrowser();
-
-                    $dependenciesTree[$host['id']] = [
-                        'id'         => $host['id'],
-                        'name'       => $host['name'],
-                        'hoststatus' => $hoststatus,
-                    ];
-                }
-            }
-
-            // create a connection based on the host dependency
-            $connectionData = [
-                'parentIds'                        => $parentIds,
-                'dependency_id'                    => $hostdependency['id'],
-                'inherits_parent'                  => $hostdependency['inherits_parent'],
-                'timeperiod_id'                    => $hostdependency['timeperiod_id'],
-                'execution_fail_on_pending'        => $hostdependency['execution_fail_on_pending'],
-                'execution_none'                   => $hostdependency['execution_none'],
-                'notification_fail_on_pending'     => $hostdependency['notification_fail_on_pending'],
-                'notification_none'                => $hostdependency['notification_none'],
-                'execution_fail_on_up'             => $hostdependency['execution_fail_on_up'],
-                'execution_fail_on_down'           => $hostdependency['execution_fail_on_down'],
-                'execution_fail_on_unreachable'    => $hostdependency['execution_fail_on_unreachable'],
-                'notification_fail_on_up'          => $hostdependency['notification_fail_on_up'],
-                'notification_fail_on_down'        => $hostdependency['notification_fail_on_down'],
-                'notification_fail_on_unreachable' => $hostdependency['notification_fail_on_unreachable'],
-                'timeperiod'                       => $hostdependency['timeperiod']
-            ];
-
-            // create for each dependent host an item and add the host dependency as connectionData to the item
-            // or add the new host dependency as connectionData if dependent host is already an item in the tree
-            foreach ($hostdependency['hosts_dependent'] as $dependentHost) {
-
-                if (isset($dependenciesTree[$dependentHost['id']])) {
-                    $dependenciesTree[$dependentHost['id']]['connectionData'][] = $connectionData;
-                } else {
-
-                    $hoststatus = $HoststatusTable->byUuid($dependentHost['uuid'], $HoststatusFields);
-                    $Hoststatus = new Hoststatus($hoststatus['Hoststatus'], $UserTime);
-                    $hoststatus = $Hoststatus->toArrayForBrowser();
-
-                    $dependenciesTree[$dependentHost['id']] = [
-                        'id'             => $dependentHost['id'],
-                        'name'           => $dependentHost['name'],
-                        'connectionData' => [$connectionData],
-                        'hoststatus'     => $hoststatus,
-                    ];
-
-                }
-
-            }
-
-        }
-
-        //reindex value to have sequential keys for frontend
-        $dependenciesTree = array_values($dependenciesTree);
-
-        return $dependenciesTree;
+        return $query->toArray();
 
     }
 
