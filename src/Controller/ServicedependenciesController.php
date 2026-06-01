@@ -33,9 +33,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lib\Interfaces\ServicestatusTableInterface;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\ServicedependenciesTable;
 use App\Model\Table\ServicegroupsTable;
+use App\Model\Table\ServicesTable;
 use App\Model\Table\TimeperiodsTable;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
@@ -44,6 +46,7 @@ use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Core\UUID;
+use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\ServicedependenciesFilter;
 
@@ -307,4 +310,34 @@ class ServicedependenciesController extends AppController {
         $this->set('containers', Api::makeItJavaScriptAble($containers));
         $this->viewBuilder()->setOption('serialize', ['containers']);
     }
+
+    /**
+     * @param null $id
+     */
+    public function loadServicedependenciesTree($serviceId) {
+        if (!$this->isApiRequest()) {
+            throw new \Cake\Http\Exception\MethodNotAllowedException();
+        }
+
+        $User = new User($this->getUser());
+        $UserTime = $User->getUserTime();
+
+        /** @var $ServicesTable ServicesTable */
+        $ServicesTable = TableRegistry::getTableLocator()->get('Services');
+        /** @var ServicedependenciesTable $ServicedependenciesTable */
+        $ServicedependenciesTable = TableRegistry::getTableLocator()->get('Servicedependencies');
+        /** @var $ServicestatusTable ServicestatusTableInterface */
+        $ServicestatusTable = $this->DbBackend->getServicestatusTable();
+
+        if (!$ServicesTable->existsById($serviceId)) {
+            throw new NotFoundException(__('Service not found'));
+        }
+
+        $servicedependenciesTree = $ServicedependenciesTable->getServiceDependenciesTree((int)$serviceId, $ServicestatusTable, $UserTime, $this->MY_RIGHTS);
+
+        $this->set('servicedependenciesTree', $servicedependenciesTree);
+        $this->viewBuilder()->setOption('serialize', ['servicedependenciesTree']);
+
+    }
+
 }
