@@ -530,7 +530,7 @@ class MapUploadsTable extends Table {
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getMapUploadsByTypeIndex(GenericFilter $GenericFilter, array $types = [], PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
+    public function getMapUploadsByTypeIndex(GenericFilter $GenericFilter, array $types = [], ?PaginateOMat $PaginateOMat = null, array $MY_RIGHTS = []): array {
         if (!is_array($MY_RIGHTS)) {
             $MY_RIGHTS = [$MY_RIGHTS];
         }
