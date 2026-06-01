@@ -201,7 +201,7 @@ class FilterBookmarkAllocationsTable extends Table {
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getBookmarkAllocationsIndex(BookmarkAllocationsFilter $BookmarkAllocationsFilter, ?PaginateOMat $PaginateOMat, array $MY_RIGHTS = []) {
+    public function getBookmarkAllocationsIndex(BookmarkAllocationsFilter $BookmarkAllocationsFilter, ?PaginateOMat $PaginateOMat, $User, array $MY_RIGHTS = []) {
         $query = $this->find()
             ->contain([
                 'Author'        => function (Query $query) {
@@ -238,6 +238,7 @@ class FilterBookmarkAllocationsTable extends Table {
         $where = $BookmarkAllocationsFilter->indexFilter();
         if (!empty($MY_RIGHTS)) {
             $where['FilterBookmarkAllocations.container_id IN'] = $MY_RIGHTS;
+            $where['FilterBookmarkAllocations.user_id'] = $User->getId();
         }
         $query->where($where);
 

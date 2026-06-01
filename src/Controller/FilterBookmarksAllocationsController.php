@@ -70,11 +70,14 @@ class FilterBookmarksAllocationsController extends AppController {
             $MY_RIGHTS = [];
         }
 
+        $User = new User($this->getUser());
+
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $BookmarkAllocationsFilter->getPage());
         $all_filterbookmark_allocations = $FilterBookmarkAllocationsTable->getBookmarkAllocationsIndex(
             $BookmarkAllocationsFilter,
             $PaginateOMat,
-            $MY_RIGHTS
+            $User,
+            $MY_RIGHTS,
         );
         foreach ($all_filterbookmark_allocations as $key => $all_filterbookmark_allocation) {
             $all_filterbookmark_allocations[$key]['allowEdit'] = $this->isWritableContainer($all_filterbookmark_allocation['container_id']);
@@ -143,15 +146,8 @@ class FilterBookmarksAllocationsController extends AppController {
         if ($this->request->is('post')) {
             $allocation = $FilterBookmarkAllocationsTable->get($id);
 
-            $AAA = $this->request->getData('BookmarkAllocation');
-
             //$allocation->setAccess('author', false); //Otherwise CakePHP will try to create a new user
             $allocation = $FilterBookmarkAllocationsTable->patchEntity($allocation, $this->request->getData('BookmarkAllocation', []));
-
-            // Set the author of the allocation
-            //$User = new User($this->getUser());
-            //$allocation->set('user_id', $User->getId());
-
             $FilterBookmarkAllocationsTable->save($allocation);
 
             if ($allocation->hasErrors()) {
