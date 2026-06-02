@@ -44,7 +44,7 @@ use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\BookmarkAllocationsFilter;
 
 /**
- * DashboardTabAllocations Model
+ * FilterBookmarkAllocations Model
  *
  * @property \App\Model\Table\FilterBookmarksTable&\Cake\ORM\Association\BelongsTo $FilterBookmarks
  * @property \App\Model\Table\ContainersTable&\Cake\ORM\Association\BelongsTo $Containers
@@ -262,8 +262,8 @@ class FilterBookmarkAllocationsTable extends Table {
     public function getFilterBookmarkAllocationForEdit($id) {
         $query = $this->find()
             ->contain([
-                'Users',     // Users who are forced to use this dashboard
-                'Usergroups' // User groups who are forced to use this dashboard
+                'Users',
+                'Usergroups'
             ])
             ->where([
                 'FilterBookmarkAllocations.id' => $id

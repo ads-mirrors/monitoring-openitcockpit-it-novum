@@ -127,7 +127,7 @@ class FilterBookmarksAllocationsController extends AppController {
         $FilterBookmarkAllocationsTable = TableRegistry::getTableLocator()->get('FilterBookmarkAllocations');
 
         if (!$FilterBookmarkAllocationsTable->existsById($id)) {
-            throw new NotFoundException('Dashboard Allocation not found');
+            throw new NotFoundException('Bookmark Allocation not found');
         }
 
         $allocation = $FilterBookmarkAllocationsTable->getFilterBookmarkAllocationForEdit($id);
