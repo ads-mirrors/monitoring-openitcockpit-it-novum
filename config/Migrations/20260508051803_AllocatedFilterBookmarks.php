@@ -54,6 +54,22 @@ class AllocatedFilterBookmarks extends BaseMigration
                     'limit'   => null,
                     'null'    => false,
                 ])
+                ->addIndex(
+                    [
+                        'name',
+                    ]
+                )
+                ->addIndex(
+                    [
+                        'filter_bookmark_id',
+                    ]
+                )
+                ->addIndex(
+                    [
+                        'user_id',
+                    ]
+                )
+
                 ->create();
         }
         if (!$this->hasTable('usergroups_to_filter_bookmark_allocations')) {
@@ -75,6 +91,16 @@ class AllocatedFilterBookmarks extends BaseMigration
                     'limit'   => 11,
                     'null'    => false,
                 ])
+                ->addIndex(
+                    [
+                        'usergroup_id',
+                    ]
+                )
+                ->addIndex(
+                    [
+                        'filter_bookmark_allocation_id',
+                    ]
+                )
                 ->create();
         }
         if (!$this->hasTable('users_to_filter_bookmark_allocations')) {
@@ -96,6 +122,16 @@ class AllocatedFilterBookmarks extends BaseMigration
                     'limit'   => 11,
                     'null'    => false,
                 ])
+                ->addIndex(
+                    [
+                        'user_id',
+                    ]
+                )
+                ->addIndex(
+                    [
+                        'filter_bookmark_allocation_id',
+                    ]
+                )
                 ->create();
         }
     }
