@@ -90,6 +90,12 @@ class FilterBookmarksController extends AppController {
         }
         $this->set('bookmark', $bookmark ?? null);
         $allFilterBookmarks = $FilterBookmarksTable->getAllBookmarksByUser($User, $plugin, $controller, $action);
+
+        foreach ($allFilterBookmarks as $key => $filterbookmark) {
+            if($filterbookmark['ownership']  && $filterbookmark['filter_bookmark_allocation'] && $filterbookmark['filter_bookmark_allocation'] !== null) {
+                $allFilterBookmarks[$key]['filter_bookmark_allocation']['allowEdit'] =  $this->isWritableContainer($filterbookmark['filter_bookmark_allocation']['container_id']);
+            }
+        }
         $this->set('bookmarks', $allFilterBookmarks);
         $this->viewBuilder()->setOption('serialize', ['bookmarks', 'bookmark']);
     }
