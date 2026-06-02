@@ -33,9 +33,11 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lib\Interfaces\ServicestatusTableInterface;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\ServicedependenciesTable;
 use App\Model\Table\ServicegroupsTable;
+use App\Model\Table\ServicesTable;
 use App\Model\Table\TimeperiodsTable;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
@@ -43,7 +45,11 @@ use Cake\ORM\Query;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
+use itnovum\openITCOCKPIT\Core\FileDebugger;
+use itnovum\openITCOCKPIT\Core\Servicestatus;
+use itnovum\openITCOCKPIT\Core\ServicestatusFields;
 use itnovum\openITCOCKPIT\Core\UUID;
+use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\ServicedependenciesFilter;
 
@@ -307,4 +313,122 @@ class ServicedependenciesController extends AppController {
         $this->set('containers', Api::makeItJavaScriptAble($containers));
         $this->viewBuilder()->setOption('serialize', ['containers']);
     }
+
+    /**
+     * @param null $id
+     */
+    public function loadServicedependenciesTree($serviceId) {
+        if (!$this->isApiRequest()) {
+            throw new \Cake\Http\Exception\MethodNotAllowedException();
+        }
+
+        $User = new User($this->getUser());
+        $UserTime = $User->getUserTime();
+
+        /** @var $ServicesTable ServicesTable */
+        $ServicesTable = TableRegistry::getTableLocator()->get('Services');
+        /** @var ServicedependenciesTable $ServicedependenciesTable */
+        $ServicedependenciesTable = TableRegistry::getTableLocator()->get('Servicedependencies');
+        /** @var $ServicestatusTable ServicestatusTableInterface */
+        $ServicestatusTable = $this->DbBackend->getServicestatusTable();
+
+        if (!$ServicesTable->existsById($serviceId)) {
+            throw new NotFoundException(__('Service not found'));
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $servicedependenciesTree = $ServicedependenciesTable->getServiceDependenciesTree((int)$serviceId, $MY_RIGHTS);
+        $dependenciesTree = [];
+
+        $serviceUuids = [];
+
+        foreach ($servicedependenciesTree as $servicedependency) {
+
+            $parentIds = [];
+
+            foreach ($servicedependency['services'] as $service) {
+                // add services from dependency as parents, because dependent services are the children of the services
+                $parentIds[] = $service['id'];
+                // create for each service an item to display a node in frontend
+                if (!isset($dependenciesTree[$service['uuid']])) {
+
+                    $serviceUuids[] = $service['uuid'];
+
+                    $dependenciesTree[$service['uuid']] = [
+                        'id'          => $service['id'],
+                        'servicename' => $service['servicename'],
+                    ];
+                }
+            }
+
+            // create a connection based on the service dependency
+            $connectionData = [
+                'parentIds'                     => $parentIds,
+                'dependency_id'                 => $servicedependency['id'],
+                'inherits_parent'               => $servicedependency['inherits_parent'],
+                'timeperiod_id'                 => $servicedependency['timeperiod_id'],
+                'execution_fail_on_pending'     => $servicedependency['execution_fail_on_pending'],
+                'execution_none'                => $servicedependency['execution_none'],
+                'notification_fail_on_pending'  => $servicedependency['notification_fail_on_pending'],
+                'notification_none'             => $servicedependency['notification_none'],
+                'execution_fail_on_ok'          => $servicedependency['execution_fail_on_ok'],
+                'execution_fail_on_warning'     => $servicedependency['execution_fail_on_warning'],
+                'execution_fail_on_unknown'     => $servicedependency['execution_fail_on_unknown'],
+                'execution_fail_on_critical'    => $servicedependency['execution_fail_on_critical'],
+                'notification_fail_on_ok'       => $servicedependency['notification_fail_on_ok'],
+                'notification_fail_on_warning'  => $servicedependency['notification_fail_on_warning'],
+                'notification_fail_on_unknown'  => $servicedependency['notification_fail_on_unknown'],
+                'notification_fail_on_critical' => $servicedependency['notification_fail_on_critical'],
+                'timeperiod'                    => $servicedependency['timeperiod']
+            ];
+
+            // create for each dependent service an item and add the service dependency as connectionData to the item
+            // or add the new service dependency as connectionData if dependent service is already an item in the tree
+            foreach ($servicedependency['services_dependent'] as $dependentService) {
+
+                if (isset($dependenciesTree[$dependentService['uuid']])) {
+                    $dependenciesTree[$dependentService['uuid']]['connectionData'][] = $connectionData;
+                } else {
+
+                    $serviceUuids[] = $dependentService['uuid'];
+
+                    $dependenciesTree[$dependentService['uuid']] = [
+                        'id'             => $dependentService['id'],
+                        'servicename'    => $dependentService['servicename'],
+                        'connectionData' => [$connectionData],
+                    ];
+
+                }
+
+            }
+
+        }
+
+        //get servicestatus for each service
+        $ServicestatusFields = new ServicestatusFields($this->DbBackend);
+        $ServicestatusFields->currentState()->isHardstate()->isFlapping();
+        $servicestatusByUuids = $ServicestatusTable->byUuid($serviceUuids, $ServicestatusFields);
+        FileDebugger::dump($dependenciesTree);
+
+        // adding servicestatus to array items
+        foreach ($servicestatusByUuids as $uuid => $servicestatusByUuid) {
+            if (isset($dependenciesTree[$uuid])) {
+                $Servicestatus = new Servicestatus($servicestatusByUuid['Servicestatus'], $UserTime);
+                $servicestatus = $Servicestatus->toArrayForBrowser();
+                $dependenciesTree[$uuid]['servicestatus'] = $servicestatus;
+            }
+        }
+
+        //reindex value to have normal index keys keys for frontend
+        $dependenciesTree = array_values($dependenciesTree);
+
+        $this->set('servicedependenciesTree', $dependenciesTree);
+        $this->viewBuilder()->setOption('serialize', ['servicedependenciesTree']);
+
+    }
+
 }

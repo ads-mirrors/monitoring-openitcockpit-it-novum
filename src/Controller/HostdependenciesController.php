@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lib\Interfaces\HoststatusTableInterface;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\HostdependenciesTable;
 use App\Model\Table\HostgroupsTable;
@@ -44,7 +45,10 @@ use Cake\ORM\Query;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
+use itnovum\openITCOCKPIT\Core\Hoststatus;
+use itnovum\openITCOCKPIT\Core\HoststatusFields;
 use itnovum\openITCOCKPIT\Core\UUID;
+use itnovum\openITCOCKPIT\Core\ValueObjects\User;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\HostdependenciesFilter;
 
@@ -324,6 +328,120 @@ class HostdependenciesController extends AppController {
 
         $this->set('containers', Api::makeItJavaScriptAble($containers));
         $this->viewBuilder()->setOption('serialize', ['containers']);
+    }
+
+    /**
+     * @param null $id
+     */
+    public function loadHostdependenciesTree($hostId) {
+        if (!$this->isApiRequest()) {
+            throw new \Cake\Http\Exception\MethodNotAllowedException();
+        }
+
+        $User = new User($this->getUser());
+        $UserTime = $User->getUserTime();
+
+        /** @var $HostsTable HostsTable */
+        $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
+        /** @var HostdependenciesTable $HostdependenciesTable */
+        $HostdependenciesTable = TableRegistry::getTableLocator()->get('Hostdependencies');
+        /** @var HoststatusTableInterface $HoststatusTable */
+        $HoststatusTable = $this->DbBackend->getHoststatusTable();
+
+        if (!$HostsTable->existsById($hostId)) {
+            throw new NotFoundException(__('Host not found'));
+        }
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            $MY_RIGHTS = [];
+        }
+
+        $hostdependenciesTree = $HostdependenciesTable->getHostDependenciesTree((int)$hostId, $MY_RIGHTS);
+        $dependenciesTree = [];
+
+        $hostsUuids = [];
+
+        foreach ($hostdependenciesTree as $hostdependency) {
+
+            $parentIds = [];
+
+            foreach ($hostdependency['hosts'] as $host) {
+                // add hosts from dependency as parents, because dependent hosts are the children of the hosts
+                $parentIds[] = $host['id'];
+                // create for each host an item to display a node in frontend
+                if (!isset($dependenciesTree[$host['uuid']])) {
+
+                    $hostsUuids[] = $host['uuid'];
+
+                    $dependenciesTree[$host['uuid']] = [
+                        'id'   => $host['id'],
+                        'name' => $host['name'],
+                    ];
+                }
+            }
+
+            // create a connection based on the host dependency
+            $connectionData = [
+                'parentIds'                        => $parentIds,
+                'dependency_id'                    => $hostdependency['id'],
+                'inherits_parent'                  => $hostdependency['inherits_parent'],
+                'timeperiod_id'                    => $hostdependency['timeperiod_id'],
+                'execution_fail_on_pending'        => $hostdependency['execution_fail_on_pending'],
+                'execution_none'                   => $hostdependency['execution_none'],
+                'notification_fail_on_pending'     => $hostdependency['notification_fail_on_pending'],
+                'notification_none'                => $hostdependency['notification_none'],
+                'execution_fail_on_up'             => $hostdependency['execution_fail_on_up'],
+                'execution_fail_on_down'           => $hostdependency['execution_fail_on_down'],
+                'execution_fail_on_unreachable'    => $hostdependency['execution_fail_on_unreachable'],
+                'notification_fail_on_up'          => $hostdependency['notification_fail_on_up'],
+                'notification_fail_on_down'        => $hostdependency['notification_fail_on_down'],
+                'notification_fail_on_unreachable' => $hostdependency['notification_fail_on_unreachable'],
+                'timeperiod'                       => $hostdependency['timeperiod']
+            ];
+
+            // create for each dependent host an item and add the host dependency as connectionData to the item
+            // or add the new host dependency as connectionData if dependent host is already an item in the tree
+            foreach ($hostdependency['hosts_dependent'] as $dependentHost) {
+
+                if (isset($dependenciesTree[$dependentHost['uuid']])) {
+                    $dependenciesTree[$dependentHost['uuid']]['connectionData'][] = $connectionData;
+                } else {
+
+                    $hostsUuids[] = $dependentHost['uuid'];
+
+                    $dependenciesTree[$dependentHost['uuid']] = [
+                        'id'             => $dependentHost['id'],
+                        'name'           => $dependentHost['name'],
+                        'connectionData' => [$connectionData],
+                    ];
+
+                }
+
+            }
+
+        }
+
+        //get hoststatus for each host
+        $HoststatusFields = new HoststatusFields($this->DbBackend);
+        $HoststatusFields->currentState()->isHardstate()->isFlapping();
+        $hoststatusByUuids = $HoststatusTable->byUuid($hostsUuids, $HoststatusFields);
+
+        // adding hoststatus to array items
+        foreach ($hoststatusByUuids as $uuid => $hoststatusByUuid) {
+            if (isset($dependenciesTree[$uuid])) {
+                $Hoststatus = new Hoststatus($hoststatusByUuid['Hoststatus'], $UserTime);
+                $hoststatus = $Hoststatus->toArrayForBrowser();
+                $dependenciesTree[$uuid]['hoststatus'] = $hoststatus;
+            }
+        }
+
+        //reindex value to have normal index keys for frontend
+        $dependenciesTree = array_values($dependenciesTree);
+
+        $this->set('hostdependenciesTree', $dependenciesTree);
+        $this->viewBuilder()->setOption('serialize', ['hostdependenciesTree']);
+
     }
 
 }

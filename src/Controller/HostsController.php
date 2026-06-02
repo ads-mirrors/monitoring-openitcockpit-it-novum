@@ -2532,6 +2532,12 @@ class HostsController extends AppController {
             $checkCommand = 'Removed due to insufficient permissions';
         }
 
+        $HostdependenciesTable = TableRegistry::getTableLocator()->get('Hostdependencies');
+        $hasHostDependencies = $HostdependenciesTable->getHostHostDependenciesCount(
+            (int)$id,
+            Hash::extract($mergedHost, 'hostgroups.{n}.id')
+        );
+
         $MY_RIGHTS = $this->MY_RIGHTS;
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];
@@ -2598,6 +2604,7 @@ class HostsController extends AppController {
         $this->set('username', $User->getFullName());
         $this->set('blurryCommandLine', $blurryCommandLine);
         $this->set('masterInstanceName', $masterInstanceName);
+        $this->set('hasHostDependencies', $hasHostDependencies);
 
         $this->viewBuilder()->setOption('serialize', [
             'mergedHost',
@@ -2622,7 +2629,8 @@ class HostsController extends AppController {
             'mapModule',
             'username',
             'blurryCommandLine',
-            'masterInstanceName'
+            'masterInstanceName',
+            'hasHostDependencies'
         ]);
     }
 
