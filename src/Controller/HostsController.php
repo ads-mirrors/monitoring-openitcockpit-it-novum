@@ -2537,7 +2537,7 @@ class HostsController extends AppController {
             (int)$id,
             Hash::extract($mergedHost, 'hostgroups.{n}.id')
         );
-
+        //dd($hasHostDependencies);
         $MY_RIGHTS = $this->MY_RIGHTS;
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];

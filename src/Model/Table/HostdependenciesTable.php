@@ -576,8 +576,8 @@ class HostdependenciesTable extends Table {
      */
     public function getHostHostDependenciesCount(int $hostId, array $hostgroupIds = [], array $MY_RIGHTS = []): int {
         $query = $this->find()
-            ->innerJoinWith('Hosts')
-            ->innerJoinWith('Hostgroups');
+            ->leftJoinWith('Hosts')
+            ->leftJoinWith('Hostgroups');
 
         if (!empty($MY_RIGHTS)) {
             $query->andWhere([
@@ -586,7 +586,7 @@ class HostdependenciesTable extends Table {
         }
 
         if (!empty($hostgroupIds)) {
-            $query->innerJoinWith('Hostgroups')
+            $query->leftJoinWith('Hostgroups')
                 ->andWhere([
                     'OR' => [
                         'Hosts.id'         => $hostId,

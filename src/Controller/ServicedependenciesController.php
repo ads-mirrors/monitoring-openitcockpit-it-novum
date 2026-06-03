@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lib\Exceptions\MissingDbBackendException;
 use App\Lib\Interfaces\ServicestatusTableInterface;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\ServicedependenciesTable;
@@ -61,7 +62,7 @@ class ServicedependenciesController extends AppController {
 
     public function index() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var ServicedependenciesTable $ServicedependenciesTable */
@@ -115,7 +116,7 @@ class ServicedependenciesController extends AppController {
 
     public function add() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         if ($this->request->is('post')) {
@@ -163,7 +164,7 @@ class ServicedependenciesController extends AppController {
 
     public function edit($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var ServicedependenciesTable $ServicedependenciesTable */
@@ -315,11 +316,13 @@ class ServicedependenciesController extends AppController {
     }
 
     /**
-     * @param null $id
+     * @param $serviceId
+     * @return void
+     * @throws MissingDbBackendException
      */
-    public function loadServicedependenciesTree($serviceId) {
+    public function dependencyTree($serviceId): void {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());

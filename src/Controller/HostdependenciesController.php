@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Lib\Exceptions\MissingDbBackendException;
 use App\Lib\Interfaces\HoststatusTableInterface;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\HostdependenciesTable;
@@ -60,7 +61,7 @@ class HostdependenciesController extends AppController {
 
     public function index() {
         if (!$this->isAngularJsRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var $HostdependenciesTable HostdependenciesTable */
@@ -115,7 +116,7 @@ class HostdependenciesController extends AppController {
 
     public function add() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         if ($this->request->is('post')) {
@@ -167,7 +168,7 @@ class HostdependenciesController extends AppController {
      */
     public function edit($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var HostdependenciesTable $HostdependenciesTable */
@@ -331,11 +332,13 @@ class HostdependenciesController extends AppController {
     }
 
     /**
-     * @param null $id
+     * @param $hostId
+     * @return void
+     * @throws MissingDbBackendException
      */
-    public function loadHostdependenciesTree($hostId) {
+    public function dependencyTree($hostId) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
