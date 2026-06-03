@@ -46,7 +46,6 @@ use Cake\ORM\Query;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
-use itnovum\openITCOCKPIT\Core\FileDebugger;
 use itnovum\openITCOCKPIT\Core\Servicestatus;
 use itnovum\openITCOCKPIT\Core\ServicestatusFields;
 use itnovum\openITCOCKPIT\Core\UUID;
@@ -362,39 +361,50 @@ class ServicedependenciesController extends AppController {
                     $serviceUuids[] = $service['uuid'];
 
                     $dependenciesTree[$service['uuid']] = [
-                        'id'          => $service['id'],
-                        'servicename' => $service['servicename'],
+                        'id'            => $service['id'],
+                        'servicename'   => $service['servicename'],
+                        'servicestatus' => []
                     ];
                 }
             }
 
             // create a connection based on the service dependency
             $connectionData = [
-                'parentIds'                     => $parentIds,
-                'dependency_id'                 => $servicedependency['id'],
-                'inherits_parent'               => $servicedependency['inherits_parent'],
-                'timeperiod_id'                 => $servicedependency['timeperiod_id'],
-                'execution_fail_on_pending'     => $servicedependency['execution_fail_on_pending'],
-                'execution_none'                => $servicedependency['execution_none'],
-                'notification_fail_on_pending'  => $servicedependency['notification_fail_on_pending'],
-                'notification_none'             => $servicedependency['notification_none'],
-                'execution_fail_on_ok'          => $servicedependency['execution_fail_on_ok'],
-                'execution_fail_on_warning'     => $servicedependency['execution_fail_on_warning'],
-                'execution_fail_on_unknown'     => $servicedependency['execution_fail_on_unknown'],
-                'execution_fail_on_critical'    => $servicedependency['execution_fail_on_critical'],
-                'notification_fail_on_ok'       => $servicedependency['notification_fail_on_ok'],
-                'notification_fail_on_warning'  => $servicedependency['notification_fail_on_warning'],
-                'notification_fail_on_unknown'  => $servicedependency['notification_fail_on_unknown'],
-                'notification_fail_on_critical' => $servicedependency['notification_fail_on_critical'],
-                'timeperiod'                    => $servicedependency['timeperiod']
+                'parentIds'  => $parentIds,
+                'dependency' => [
+                    'id'                            => $servicedependency['id'],
+                    'inherits_parent'               => $servicedependency['inherits_parent'],
+                    'timeperiod_id'                 => $servicedependency['timeperiod_id'],
+                    'execution_fail_on_pending'     => $servicedependency['execution_fail_on_pending'],
+                    'execution_none'                => $servicedependency['execution_none'],
+                    'notification_fail_on_pending'  => $servicedependency['notification_fail_on_pending'],
+                    'notification_none'             => $servicedependency['notification_none'],
+                    'execution_fail_on_ok'          => $servicedependency['execution_fail_on_ok'],
+                    'execution_fail_on_warning'     => $servicedependency['execution_fail_on_warning'],
+                    'execution_fail_on_unknown'     => $servicedependency['execution_fail_on_unknown'],
+                    'execution_fail_on_critical'    => $servicedependency['execution_fail_on_critical'],
+                    'notification_fail_on_ok'       => $servicedependency['notification_fail_on_ok'],
+                    'notification_fail_on_warning'  => $servicedependency['notification_fail_on_warning'],
+                    'notification_fail_on_unknown'  => $servicedependency['notification_fail_on_unknown'],
+                    'notification_fail_on_critical' => $servicedependency['notification_fail_on_critical'],
+                    'timeperiod'                    => $servicedependency['timeperiod']
+                ]
             ];
+
+            $dependencyAlreadyAddedToTree = false;
 
             // create for each dependent service an item and add the service dependency as connectionData to the item
             // or add the new service dependency as connectionData if dependent service is already an item in the tree
+            // add service dependency data only once for the whole tree to avoid duplicate information node for same dependency
             foreach ($servicedependency['services_dependent'] as $dependentService) {
+
+                if ($dependencyAlreadyAddedToTree) {
+                    $connectionData = ['parentIds' => $parentIds];
+                }
 
                 if (isset($dependenciesTree[$dependentService['uuid']])) {
                     $dependenciesTree[$dependentService['uuid']]['connectionData'][] = $connectionData;
+                    $dependencyAlreadyAddedToTree = true;
                 } else {
 
                     $serviceUuids[] = $dependentService['uuid'];
@@ -403,7 +413,9 @@ class ServicedependenciesController extends AppController {
                         'id'             => $dependentService['id'],
                         'servicename'    => $dependentService['servicename'],
                         'connectionData' => [$connectionData],
+                        'servicestatus'  => []
                     ];
+                    $dependencyAlreadyAddedToTree = true;
 
                 }
 
@@ -415,7 +427,6 @@ class ServicedependenciesController extends AppController {
         $ServicestatusFields = new ServicestatusFields($this->DbBackend);
         $ServicestatusFields->currentState()->isHardstate()->isFlapping();
         $servicestatusByUuids = $ServicestatusTable->byUuid($serviceUuids, $ServicestatusFields);
-        FileDebugger::dump($dependenciesTree);
 
         // adding servicestatus to array items
         foreach ($servicestatusByUuids as $uuid => $servicestatusByUuid) {
