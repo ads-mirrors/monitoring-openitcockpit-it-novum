@@ -28,6 +28,9 @@ namespace itnovum\openITCOCKPIT\Core;
 
 use Cake\Utility\Hash;
 
+/**
+ * @deprecated Use Guzzle instead
+ */
 class Http {
 
     private $curlOptions = [];

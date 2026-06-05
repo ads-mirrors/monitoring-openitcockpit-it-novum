@@ -25,6 +25,9 @@
 
 namespace itnovum\openITCOCKPIT\Core;
 
+/**
+ * @deprecated Use PackagemanagerRequestHandler
+ */
 class PackagemanagerRequestBuilder {
 
     /**
