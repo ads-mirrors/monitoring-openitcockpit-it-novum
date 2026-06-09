@@ -63,7 +63,7 @@ class PacketmanagerController extends AppController {
 
             $PackagemanagerRequestHandler = new PackagemanagerRequestHandler($License->getLicense());
             $result = $PackagemanagerRequestHandler->loadModulesWithChangelog();
-            
+
             if (!isset($result['data']['modules'])) {
                 $result['data']['modules'] = [];
             }
@@ -118,6 +118,8 @@ class PacketmanagerController extends AppController {
             $result['data']['RepositoryChecker'] = new RepositoryChecker();
             $result['data']['DnfRepositoryChecker'] = new DnfRepositoryChecker();
             $result['data']['LsbRelease'] = $LsbRelease->getCodename();
+            $result['data']['isContainer'] = IS_CONTAINER;
+            $result['data']['php_version'] = PHP_VERSION;
             $result['data']['isDebianBased'] = $LsbRelease->isDebianBased();
             $result['data']['isRhelBased'] = $LsbRelease->isRhelBased();
             $result['data']['logoUrl'] = $Logo->getLogoForHtml();
