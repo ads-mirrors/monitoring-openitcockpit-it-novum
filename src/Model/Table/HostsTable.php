@@ -525,6 +525,38 @@ class HostsTable extends Table {
             ->first();
     }
 
+    public function getHostWithHostgroupsById($id) {
+        return $this->find()
+            ->select([
+                'Hosts.id'
+            ])
+            ->where([
+                'Hosts.id' => $id
+            ])
+            ->contain([
+                'HostsToContainersSharing',
+                'Hostgroups'    => function (Query $query) {
+                    return $query
+                        ->disableAutoFields()
+                        ->select(['id']);
+                },
+                'Hosttemplates' => function (Query $query) {
+                    return $query
+                        ->disableAutoFields()
+                        ->select(['id'])
+                        ->contain([
+                            'Hostgroups' => function (Query $query) {
+                                return $query
+                                    ->disableAutoFields()
+                                    ->select(['id']);
+                            }
+                        ]);
+                }
+            ])
+            ->disableAutoFields()
+            ->first();
+    }
+
     /**
      * @param int $id
      * @return array|EntityInterface

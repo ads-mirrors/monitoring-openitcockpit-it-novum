@@ -1017,7 +1017,7 @@ class HostgroupsTable extends Table {
      * @param int $id
      * @return array
      */
-    public function getHostIdsByHostgroupId($id) {
+    public function getHostIdsByHostgroupId($id): array {
         $hostgroup = $this->find()
             ->contain([
                 // Get all hosts that are in this host group through the host template AND
@@ -1067,6 +1067,111 @@ class HostgroupsTable extends Table {
         ));
 
         return $hostIds;
+    }
+
+    /**
+     * @param array $ids
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getHostsByHostgroupIds(array $ids, array $MY_RIGHTS = []): array {
+        if (empty($ids)) {
+            return [];
+        }
+        $query = $this->find()
+            ->contain([
+                // Get all hosts that are in this host group through the host template AND
+                // which does NOT have any own host groups
+                'Hosttemplates' => function (Query $query) use ($MY_RIGHTS) {
+                    $query->disableAutoFields()
+                        ->select([
+                            'id',
+                        ])
+                        ->contain([
+                            'Hosts' => function (Query $query) use ($MY_RIGHTS) {
+                                $query->disableAutoFields()
+                                    ->select([
+                                        'Hosts.id',
+                                        'Hosts.uuid',
+                                        'Hosts.name',
+                                        'Hosts.hosttemplate_id',
+                                        'Hostgroups.id'
+                                    ])->leftJoinWith('Hostgroups');
+                                if (!empty($MY_RIGHTS)) {
+                                    $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                                        'HostsToContainersSharing.host_id = Hosts.id'
+                                    ]);
+                                    $query->where([
+                                        'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                                    ]);
+                                }
+                                $query->whereNull('Hostgroups.id');
+                                return $query;
+                            }
+                        ]);
+                    return $query;
+                },
+
+                // Get all hosts from this host group
+                'Hosts'         => function (Query $query) use ($MY_RIGHTS) {
+                    $query->disableAutoFields()
+                        ->select([
+                            'Hosts.id',
+                            'Hosts.uuid',
+                            'Hosts.name'
+                        ]);
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    return $query;
+                }
+            ])
+            ->where([
+                'Hostgroups.id IN' => $ids
+            ])
+            ->disableHydration()
+            ->all();
+
+        $query = $query->toArray();
+
+        if (empty($query)) {
+            return [];
+        }
+
+        $hosts = [];
+        foreach ($query as $row) {
+            if (!empty($row['hosts'])) {
+                foreach ($row['hosts'] as $host) {
+                    $hosts[$host['id']] = [
+                        'id'   => $host['id'],
+                        'uuid' => $host['uuid'],
+                        'name' => $host['name'],
+                        'type' => 'host'
+                    ];
+                }
+            }
+            if (!empty($row['hosttemplates'])) {
+                foreach ($row['hosttemplates'] as $hosttemplate) {
+                    if (!empty($hosttemplate['hosts'])) {
+                        foreach ($hosttemplate['hosts'] as $host) {
+                            $hosts[$host['id']] = [
+                                'id'   => $host['id'],
+                                'uuid' => $host['uuid'],
+                                'name' => $host['name'],
+                                'type' => 'host'
+                            ];
+                        }
+                    }
+                }
+            }
+
+        }
+        return $hosts;
     }
 
     /**

@@ -607,6 +607,76 @@ class HostdependenciesTable extends Table {
 
     /**
      * @param int $hostId
+     * @param array $hostgroupIds
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getHostHostDependencies(int $hostId, array $hostgroupIds = [], array $MY_RIGHTS = []): array {
+        $query = $this->find()
+            ->contain([
+                'Hosts'      => function (Query $q) use ($MY_RIGHTS) {
+                    $query = $q->select([
+                        'Hosts.id',
+                        'Hosts.uuid',
+                        'Hosts.name'
+                    ])->disableAutoFields();
+                    if (!empty($MY_RIGHTS)) {
+                        $query->innerJoin(['HostsToContainersSharing' => 'hosts_to_containers'], [
+                            'HostsToContainersSharing.host_id = Hosts.id'
+                        ]);
+                        $query->where([
+                            'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
+                        ]);
+                    }
+                    return $query;
+                },
+                'Hostgroups' => function (Query $q) use ($MY_RIGHTS) {
+                    $query = $q->select([
+                        'Hostgroups.id'
+                    ])
+                        ->contain(['Containers'])
+                        ->disableAutoFields();
+                    if (!empty($MY_RIGHTS)) {
+                        $query->where(['Containers.parent_id IN' => $MY_RIGHTS]);
+                    }
+                    return $query;
+                },
+                'Timeperiods',
+            ])
+            ->leftJoinWith('Hosts')
+            ->leftJoinWith('Hostgroups');
+
+        if (!empty($MY_RIGHTS)) {
+            $query->andWhere([
+                'Hostdependencies.container_id IN' => $MY_RIGHTS
+            ]);
+        }
+
+        if (!empty($hostgroupIds)) {
+            $query->leftJoinWith('Hostgroups')
+                ->andWhere([
+                    'OR' => [
+                        'Hosts.id'         => $hostId,
+                        'Hostgroups.id IN' => $hostgroupIds
+                    ]
+                ]);
+        } else {
+            $query->where([
+                'Hosts.id' => $hostId
+            ]);
+        }
+        $query->groupBy([
+            'Hostdependencies.id'
+        ]);
+
+        if (empty($query)) {
+            return [];
+        }
+        return $query->toArray();
+    }
+
+    /**
+     * @param int $hostId
      * @param array $MY_RIGHTS
      * @return array
      */
