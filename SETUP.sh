@@ -53,6 +53,12 @@ PHPVersion=$(php -r "echo substr(PHP_VERSION, 0, 3);")
 OSVERSION=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2)
 OS_BASE="debian"
 
+# To be backwards compatible we assume that the system is using Redis
+HAS_VALKEY="false"
+if command -v valkey-cli &> /dev/null; then
+    HAS_VALKEY="true"
+fi
+
 if [[ -f "/etc/redhat-release" ]]; then
     echo "Detected RedHat based operating system."
     OS_BASE="RHEL"
@@ -116,11 +122,18 @@ if [[ "$OS_BASE" == "RHEL" ]]; then
 
     systemctl daemon-reload
 
+    if [[ "$HAS_VALKEY" == "true" ]]; then
+        systemctl enable valkey.service
+        systemctl start valkey.service
+    else
+        systemctl enable redis.service
+        systemctl start redis.service
+    fi
+
     systemctl enable\
      nginx.service\
      gearmand.service\
      mysqld.service\
-     redis.service\
      docker.service\
      php-fpm.service
 
@@ -128,7 +141,6 @@ if [[ "$OS_BASE" == "RHEL" ]]; then
     nginx.service\
      gearmand.service\
      mysqld.service\
-     redis.service\
      docker.service\
      php-fpm.service
 

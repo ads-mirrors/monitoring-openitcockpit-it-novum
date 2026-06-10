@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #
-# Copyright (C) <2015-present>  <it-novum GmbH>
+# Copyright (C) 2015-2025  it-novum GmbH
+# Copyright (C) 2025-today AVENDIS GmbH
 #
 # This file is dual licensed
 #
@@ -28,6 +29,12 @@
 if ! [ $(id -u) = 0 ]; then
     echo "You need to run this script as root user or via sudo!"
     exit 1
+fi
+
+# To be backwards compatible we assume that the system is using Redis
+HAS_VALKEY="false"
+if command -v valkey-cli &> /dev/null; then
+    HAS_VALKEY="true"
 fi
 
 # Enable debug mode so that CakePHP will create missing folders
@@ -436,8 +443,13 @@ oitc acl.aco_sync
 oitc roles --enable-defaults --admin
 
 echo "---------------------------------------------------------------"
-echo "Flush redis cache"
-redis-cli FLUSHALL
+if [[ "$HAS_VALKEY" == "true" ]]; then
+    echo "Flush valkey cache"
+    valkey-cli FLUSHALL
+else
+    echo "Flush redis cache"
+    redis-cli FLUSHALL
+fi
 
 oitc update3_to4 --email-config
 oitc update3_to4 --activate-users

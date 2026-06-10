@@ -158,10 +158,10 @@ class ServicetemplategroupsTable extends Table {
     }
 
     /**
-     * @param int $id
+     * @param $uuid
      * @return bool
      */
-    public function existsByUuid($uuid) {
+    public function existsByUuid($uuid): bool {
         return $this->exists(['Servicetemplategroups.uuid' => $uuid]);
     }
 
@@ -177,6 +177,48 @@ class ServicetemplategroupsTable extends Table {
             ->contain([
                 'Containers'
             ])
+            ->disableHydration();
+        $where = $ServicetemplategroupsFilter->indexFilter();
+        if (!empty($MY_RIGHTS)) {
+            $where['Containers.parent_id IN'] = $MY_RIGHTS;
+        }
+
+        $query->where($where);
+        $query->orderBy($ServicetemplategroupsFilter->getOrderForPaginator('Containers.name', 'asc'));
+
+
+        if ($PaginateOMat === null) {
+            //Just execute query
+            $result = $this->emptyArrayIfNull($query->toArray());
+        } else {
+            if ($PaginateOMat->useScroll()) {
+                $result = $this->scrollCake4($query, $PaginateOMat->getHandler());
+            } else {
+                $result = $this->paginateCake4($query, $PaginateOMat->getHandler());
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param ServicetemplategroupsFilter $ServicetemplategroupsFilter
+     * @param null|PaginateOMat $PaginateOMat
+     * @param array $MY_RIGHTS
+     * @return array
+     */
+    public function getServicetemplategroupsCsv(ServicetemplategroupsFilter $ServicetemplategroupsFilter, $PaginateOMat = null, $MY_RIGHTS = []) {
+        $query = $this->find('all');
+        $query->contain([
+            'Containers',
+            'Servicetemplates' => function (Query $query) {
+                return $query->select([
+                    'Servicetemplates.id',
+                    'Servicetemplates.template_name',
+                    'Servicetemplates.description',
+                ]);
+            }
+        ])
             ->disableHydration();
         $where = $ServicetemplategroupsFilter->indexFilter();
         if (!empty($MY_RIGHTS)) {
@@ -399,7 +441,8 @@ class ServicetemplategroupsTable extends Table {
                         ->select([
                             'Servicetemplates.id',
                             'Servicetemplates.name',
-                            'Servicetemplates.description'
+                            'Servicetemplates.description',
+                            'Servicetemplates.servicetemplatetype_id'
                         ])
                         ->orderBy([
                             'Servicetemplates.name' => 'ASC'

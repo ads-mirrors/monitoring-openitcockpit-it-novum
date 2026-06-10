@@ -148,6 +148,15 @@ plugins/NextcloudModule
 plugins/KubernetesModule
 plugins/RedfishModule
 plugins/MSWindowsAgentlessModule
+plugins/ArubaModule
+plugins/BroadcomModule
+plugins/CheckpointModule
+plugins/FortinetModule
+plugins/FujitsuModule
+plugins/GudeModule
+plugins/PaloAltoModule
+plugins/RaritanModule
+plugins/SonicWallModule
 
 # NFS mounts
 .nfs.*
