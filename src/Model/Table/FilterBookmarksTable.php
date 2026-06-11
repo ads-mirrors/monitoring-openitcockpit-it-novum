@@ -151,10 +151,10 @@ class FilterBookmarksTable extends Table {
                 'FilterBookmarks.action'     => $action,
                 'FilterBookmarks.user_id'    => $userId
             ])
-        ->orderBy([
-            'FilterBookmarks.favorite' => 'asc',
-            'FilterBookmarks.name'     => 'asc',
-        ]);
+            ->orderBy([
+                'FilterBookmarks.favorite' => 'asc',
+                'FilterBookmarks.name'     => 'asc',
+            ]);
         $result = $query->all();
         if (empty($result)) {
             return [];
@@ -207,8 +207,8 @@ class FilterBookmarksTable extends Table {
         //$allocations = $FilterBookmarksAllocationsTable->getAllBookmarksAllocationsByUser($User);
         //$allocationBookmarkIds = Hash::combine($allocations, '{n}.filter_bookmark_id', '{n}');
 
-        $allBookmarkAllocations = $FilterBookmarkAllocationsTable->getAllBookmarkAllocations($User,$plugin, $controller, $action);
-        $userBookmarkAllocations = $FilterBookmarkAllocationsTable->getAllBookmarkAllocationsByUser($User,$plugin, $controller, $action);
+        $allBookmarkAllocations = $FilterBookmarkAllocationsTable->getAllBookmarkAllocations($User, $plugin, $controller, $action);
+        $userBookmarkAllocations = $FilterBookmarkAllocationsTable->getAllBookmarkAllocationsByUser($User, $plugin, $controller, $action);
         $userBookmarkAllocationsIds = Hash::combine($userBookmarkAllocations, '{n}.filter_bookmark_id', '{n}');
         $allBookmarkAllocationsIds = Hash::combine($allBookmarkAllocations, '{n}.filter_bookmark_id', '{n}');
 
@@ -226,10 +226,10 @@ class FilterBookmarksTable extends Table {
             $where = [
                 'OR' => [
                     [
-                        'FilterBookmarks.user_id' => $User->getId(),
-                        'FilterBookmarks.plugin' => $plugin,
+                        'FilterBookmarks.user_id'    => $User->getId(),
+                        'FilterBookmarks.plugin'     => $plugin,
                         'FilterBookmarks.controller' => $controller,
-                        'FilterBookmarks.action' => $action,
+                        'FilterBookmarks.action'     => $action,
                     ],
                     [
                         'FilterBookmarks.id IN' => array_keys($userBookmarkAllocationsIds),
@@ -255,15 +255,16 @@ class FilterBookmarksTable extends Table {
             if ($isOwner) {
                 // This dashboard tab is from the user itself
                 $forJs[] = [
-                    'id'                       => (int)$row['id'],
-                    'uuid'                     => $row['uuid'],
-                    'plugin'                   => $row['plugin'],
-                    'controller'               => $row['controller'],
-                    'action'                   => $row['action'],
-                    'name'                     => $row['name'],
+                    'id'                         => (int)$row['id'],
+                    'uuid'                       => $row['uuid'],
+                    'plugin'                     => $row['plugin'],
+                    'controller'                 => $row['controller'],
+                    'action'                     => $row['action'],
+                    'name'                       => $row['name'],
                     'filter'                     => $row['filter'],
                     'ownership'                  => $isOwner,
-                    'filter_bookmark_allocation' => $allBookmarkAllocationsIds[$row['id']] ?? null
+                    'filter_bookmark_allocation' => $allBookmarkAllocationsIds[$row['id']] ?? null,
+                    'fav_group'                  => $row['favorite'] ? __('Favorites') : __('Filters'),
                 ];
             } else {
                 // This dashboard tab got allocated to the user
@@ -276,14 +277,15 @@ class FilterBookmarksTable extends Table {
                 $allocation = $allBookmarkAllocationsIds[$row['id']];
 
                 $forJs[] = [
-                    'id'                => (int)$row['id'],
-                    'uuid'                     => $row['uuid'],
-                    'plugin'                   => $row['plugin'],
-                    'controller'               => $row['controller'],
-                    'action'                   => $row['action'],
-                    'name'                     => $row['name'],
-                'filter'                        => $row['filter'],
-                'ownership'                       => $isOwner,
+                    'id'         => (int)$row['id'],
+                    'uuid'       => $row['uuid'],
+                    'plugin'     => $row['plugin'],
+                    'controller' => $row['controller'],
+                    'action'     => $row['action'],
+                    'name'       => $row['name'],
+                    'filter'     => $row['filter'],
+                    'ownership'  => $isOwner,
+                    'fav_group'  => $row['favorite'] ? __('Favorites') : __('Filters'),
                     //'source'            => 'ALLOCATED'
                 ];
             }

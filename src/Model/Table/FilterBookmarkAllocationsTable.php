@@ -204,7 +204,7 @@ class FilterBookmarkAllocationsTable extends Table {
     public function getBookmarkAllocationsIndex(BookmarkAllocationsFilter $BookmarkAllocationsFilter, ?PaginateOMat $PaginateOMat, $User, array $MY_RIGHTS = []) {
         $query = $this->find()
             ->contain([
-                'Author'        => function (Query $query) {
+                'Author'          => function (Query $query) {
                     return $query->select([
                         'author' => $query->func()->concat([
                             'Author.firstname' => 'literal',
@@ -213,7 +213,7 @@ class FilterBookmarkAllocationsTable extends Table {
                         ])
                     ]);
                 },
-                'Users'         => function (Query $query) {
+                'Users'           => function (Query $query) {
                     return $query->select([
                         'full_name' => $query->func()->concat([
                             'Users.firstname' => 'literal',
@@ -222,7 +222,7 @@ class FilterBookmarkAllocationsTable extends Table {
                         ])
                     ]);
                 },
-                'Usergroups'    => function (Query $query) {
+                'Usergroups'      => function (Query $query) {
                     return $query->select([
                         'Usergroups.name'
                     ]);
@@ -238,9 +238,18 @@ class FilterBookmarkAllocationsTable extends Table {
         $where = $BookmarkAllocationsFilter->indexFilter();
         if (!empty($MY_RIGHTS)) {
             $where['FilterBookmarkAllocations.container_id IN'] = $MY_RIGHTS;
-            $where['FilterBookmarkAllocations.user_id'] = $User->getId();
+
+            $query->leftJoinWith('Users')
+                ->leftJoinWith('Usergroups')
+                ->where([
+                    'OR' => [
+                        'Users.id'      => $User->getId(),
+                        'Usergroups.id' => $User->getUsergroupId()
+                    ]
+                ]);
+
         }
-        $query->where($where);
+        $query->andWhere($where);
 
         $query->orderBy($BookmarkAllocationsFilter->getOrderForPaginator('FilterBookmarkAllocations.name', 'asc'));
 
@@ -330,7 +339,6 @@ class FilterBookmarkAllocationsTable extends Table {
                 'Users',
                 'Usergroups'
             ])
-
             ->matching('FilterBookmarks', function (Query $q) use ($plugin, $controller, $action) {
                 return $q->where([
                     'FilterBookmarks.plugin'     => $plugin,
