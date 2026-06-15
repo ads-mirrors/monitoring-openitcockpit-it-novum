@@ -664,6 +664,14 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'sonicwall.svg',
                 'category'    => ['cloud', 'network'],
                 'active'      => true
+            ],
+            'symantec-mail-gateway'        => [
+                'type_id'     => 'symantec-mail-gateway',
+                'title'       => __('Symantec Mail Gateway'),
+                'description' => __('Monitor your Symantec Mail Gateway via SNMP.'),
+                'image'       => 'symantec.svg',
+                'category'    => ['network', 'mail'],
+                'active'      => true
             ]
         ];
 
