@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\itnovum\openITCOCKPIT\Core\PushrelayRequestHandler;
 use App\Model\Table\PushNotificationsRelayTable;
 use Cake\Http\Exception\BadRequestException;
 use Cake\Http\Exception\MethodNotAllowedException;
@@ -100,6 +101,11 @@ class NotificationsrelayController extends AppController {
         }
 
 
+        $PushrelayRequestHandler = new PushrelayRequestHandler();
+        $result = $PushrelayRequestHandler->registerAndTestAtRelay($relayAddress, $port);
+
+        $this->set('result', $result);
+        $this->viewBuilder()->setOption('serialize', ['result']);
     }
 
 }
