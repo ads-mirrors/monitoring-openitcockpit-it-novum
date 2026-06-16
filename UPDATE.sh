@@ -45,6 +45,12 @@ INIFILE=/opt/openitc/etc/mysql/mysql.cnf
 DUMPINIFILE=/opt/openitc/etc/mysql/dump.cnf
 BASHCONF=/opt/openitc/etc/mysql/bash.conf
 
+# To be backwards compatible we assume that the system is using Redis
+HAS_VALKEY="false"
+if command -v valkey-cli &> /dev/null; then
+    HAS_VALKEY="true"
+fi
+
 if [[ ! -f "$BASHCONF" ]]; then
   MYSQL_USER=openitcockpit
   MYSQL_DATABASE=openitcockpit
@@ -375,8 +381,13 @@ for i in "$@"; do
   esac
 done
 
-echo "Flush redis cache"
-redis-cli FLUSHALL
+if [[ "$HAS_VALKEY" == "true" ]]; then
+    echo "Flush valkey cache"
+    valkey-cli FLUSHALL
+else
+    echo "Flush redis cache"
+    redis-cli FLUSHALL
+fi
 echo ""
 
 if [[ "$NORESTART" == "true" ]]; then

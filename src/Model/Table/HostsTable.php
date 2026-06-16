@@ -2371,6 +2371,7 @@ class HostsTable extends Table {
                 'Hostgroups',
                 'Customvariables',
                 'Parenthosts',
+                'ChildHosts',
                 'HostsToContainersSharing',
                 'Hostcommandargumentvalues' => [
                     'Commandarguments'
@@ -5865,6 +5866,28 @@ class HostsTable extends Table {
                 'Hosts.id IN' => $hostIds,
                 'IF(Hosts.sla_id IS NULL, Hosttemplates.sla_id, Hosts.sla_id) > 0'
             ])->count();
+    }
+
+    /**
+     * @param array $hostIds
+     * @return \Cake\Datasource\ResultSetInterface
+     */
+    public function getAllHostsWithFilter(array $hostIds = []) {
+        $query = $this->find();
+        $query->select([
+            'Hosts.id',
+            'Hosts.name',
+            'Hosts.address',
+            'Hosts.satellite_id',
+        ]);
+
+        if (!empty($hostIds)) {
+            $query->where([
+                'Hosts.id IN' => $hostIds
+            ]);
+        }
+
+        return $query->all();
     }
 
 }
