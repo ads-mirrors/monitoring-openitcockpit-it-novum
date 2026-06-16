@@ -691,6 +691,8 @@ class AclDependencies {
             ->dependency('Packages', 'index', 'Packages', 'host_macos_updates')
             ->dependency('Packages', 'index', 'Packages', 'host_macos_apps');
 
+        $this
+            ->dependency('Notificationsrelay', 'index', 'Notificationsrelay', 'testAndRegisterRelay');
 
         //Load Plugin ALC Dependencies
         foreach (PluginManager::getAvailablePlugins() as $pluginName) {

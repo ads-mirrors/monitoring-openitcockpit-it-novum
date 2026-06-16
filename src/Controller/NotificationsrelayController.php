@@ -34,7 +34,11 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Model\Table\PushNotificationsRelayTable;
+use Cake\Http\Exception\BadRequestException;
+use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\ORM\Locator\LocatorAwareTrait;
+use Cake\ORM\TableRegistry;
+use itnovum\openITCOCKPIT\Core\System\Health\SystemId;
 
 /**
  * Class NotificationsRelayController
@@ -44,20 +48,20 @@ class NotificationsrelayController extends AppController {
 
     use LocatorAwareTrait;
 
-    function index() {
+    public function index() {
         if (!$this->isAngularJsRequest()) {
             throw new \Cake\Http\Exception\MethodNotAllowedException();
         }
 
-        $TableLocator = $this->getTableLocator();
+        $SystemId = new SystemId();
 
         /** @var PushNotificationsRelayTable $PushNotificationsRelayTable */
-        $PushNotificationsRelayTable = $TableLocator->get('PushNotificationsRelay');
+        $PushNotificationsRelayTable = TableRegistry::getTableLocator()->get('PushNotificationsRelay');
 
         if ($this->request->is('post') && $this->isAngularJsRequest()) {
             $entity = $PushNotificationsRelayTable->find()->first();
             if (is_null($entity)) {
-                //No proxy configuration found
+                //No relay configuration found
                 $entity = $PushNotificationsRelayTable->newEmptyEntity();
             }
 
@@ -75,7 +79,27 @@ class NotificationsrelayController extends AppController {
 
         $settings = $PushNotificationsRelayTable->getSettings();
         $this->set('relay', $settings);
-        $this->viewBuilder()->setOption('serialize', ['relay']);
+        $this->set('systemId', $SystemId->getSystemId());
+        $this->viewBuilder()->setOption('serialize', ['relay', 'systemId']);
+    }
+
+    /****************************
+     *       AJAX METHODS       *
+     ****************************/
+
+    public function testAndRegisterRelay() {
+        if (!$this->request->is('post') || !$this->isJsonRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $relayAddress = $this->request->getData('address', null);
+        $port = $this->request->getData('port', null);
+
+        if (empty($relayAddress) || empty($port) || !is_numeric($port)) {
+            throw new BadRequestException('Relay address or port cannot be empty');
+        }
+
+
     }
 
 }
