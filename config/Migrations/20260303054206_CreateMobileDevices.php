@@ -27,8 +27,7 @@ declare(strict_types=1);
 
 use Migrations\BaseMigration;
 
-class CreateMobileDevices extends BaseMigration
-{
+class CreateMobileDevices extends BaseMigration {
     /**
      * Change Method.
      *
@@ -37,8 +36,7 @@ class CreateMobileDevices extends BaseMigration
      *
      * @return void
      */
-    public function change(): void
-    {
+    public function change(): void {
         if (!$this->hasTable('mobile_devices')) {
             $this->table('mobile_devices')
                 ->addColumn('user_id', 'integer', [
@@ -51,24 +49,26 @@ class CreateMobileDevices extends BaseMigration
                     'limit'   => 255,
                     'null'    => false,
                 ])
-                ->addIndex(
-                    [
-                        'device_id',
-                        'user_id',
-                    ]
-                )
+                ->addColumn('modified', 'datetime', [
+                    'default' => null,
+                    'limit'   => null,
+                    'null'    => false,
+                ])
+                ->addColumn('created', 'datetime', [
+                    'default' => null,
+                    'limit'   => null,
+                    'null'    => false,
+                ])
                 ->addIndex(
                     ['device_id', 'user_id'],
                     [
                         'unique' => true,
-                        'name' => 'unique_device_user'
+                        'name'   => 'unique_device_user'
                     ]
                 )
                 ->create();
         }
     }
-
-
 
 
 }

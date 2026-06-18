@@ -33,10 +33,11 @@ use Cake\ORM\Entity;
  * @property int $id
  * @property int $user_id
  * @property string $device_id
+ * @property \Cake\I18n\DateTime $created
+ * @property \Cake\I18n\DateTime $modified
  *
  * @property \App\Model\Entity\User $user
  */
-
 class MobileDevice extends Entity {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
@@ -48,9 +49,11 @@ class MobileDevice extends Entity {
      * @var array
      */
     protected array $_accessible = [
-        'user_id'     => true,
-        'device_id'      => true,
-        'user'        => true
+        'user_id'   => true,
+        'device_id' => true,
+        'created'   => true,
+        'modified'  => true,
+        'user'      => true
     ];
 
 }

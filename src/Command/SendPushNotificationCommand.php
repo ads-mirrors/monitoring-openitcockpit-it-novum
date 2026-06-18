@@ -366,13 +366,13 @@ class SendPushNotificationCommand extends Command {
 
         $RelayTable = TableRegistry::getTableLocator()->get('PushNotificationsRelay');
         $relay = $RelayTable->getSettings();
-        if($relay['enabled']) {
+        if ($relay['enabled']) {
             $this->pushMobile($title, $message, $icon, $relay);
         }
         return true;
     }
 
-    private function pushMobile(String $title, String $message, String $icon, array  $relay) {
+    private function pushMobile(string $title, string $message, string $icon, array $relay) {
         $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
         $devices = $DeviceTable->find()->where(['user_id' => $this->userId])->all();
         //$http = new Client();
@@ -380,7 +380,7 @@ class SendPushNotificationCommand extends Command {
         $url = $relay['address'] ?? '';
         $port = $relay['port'] ?? '';
         //$endpoint = sprintf('%s:%s/send-notification', $url, $port);
-        $endpoint = sprintf('%s:%d/send-notification', rtrim($url, '/'), (int)$port);
+        $endpoint = sprintf('%s:%d/notifications/send-notification.json', rtrim($url, '/'), (int)$port);
         $http = new Client([
             'ssl_verify_peer' => false,      // ← for self-signed cert testing
             'ssl_verify_host' => false,      // ← for self-signed cert testing
@@ -388,15 +388,15 @@ class SendPushNotificationCommand extends Command {
         foreach ($devices as $device) {
 
             $data = [
-                'title'       => $title,
-                'body'        => $message,
-                'token'       => $device->device_id,
-                'icon'        => $icon ?? '',
-                'type'        => $this->type ?? '',
-                'hostUuid'    => $this->hostUuid ?? '',
-                'serviceUuid' => $this->serviceUuid ?? '',
-                'userId'      => $this->userId,
-                'auth'        => $authKey
+                'title'         => $title,
+                'body'          => $message,
+                'token'         => $device->device_id,
+                'type'          => $this->type ?? '',
+                'current_state' => $this->state ?? -1,
+                'host_uuid'     => $this->hostUuid ?? null,
+                'service_uuid'  => $this->serviceUuid ?? null,
+                'user_id'       => $this->userId,
+                'auth_key'      => $authKey
             ];
             $response = $http->post(
                 $endpoint,
