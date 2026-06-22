@@ -388,15 +388,16 @@ class SendPushNotificationCommand extends Command {
         foreach ($devices as $device) {
 
             $data = [
-                'title'         => $title,
-                'body'          => $message,
-                'token'         => $device->device_id,
-                'type'          => $this->type ?? '',
-                'current_state' => $this->state ?? -1,
-                'host_uuid'     => $this->hostUuid ?? null,
-                'service_uuid'  => $this->serviceUuid ?? null,
-                'user_id'       => $this->userId,
-                'auth_key'      => $authKey
+                'title'             => $title,
+                'body'              => $message,
+                'token'             => $device->device_id,
+                'type'              => $this->type ?? '',
+                'notification_type' => $this->notificationtype ?? '',
+                'current_state'     => $this->state ?? -1,
+                'host_uuid'         => $this->hostUuid ?? null,
+                'service_uuid'      => $this->serviceUuid ?? null,
+                'user_id'           => $this->userId,
+                'auth_key'          => $authKey
             ];
             $response = $http->post(
                 $endpoint,
