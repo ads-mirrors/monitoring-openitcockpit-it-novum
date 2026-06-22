@@ -5890,4 +5890,26 @@ class HostsTable extends Table {
             ])->count();
     }
 
+    /**
+     * @param array $hostIds
+     * @return \Cake\Datasource\ResultSetInterface
+     */
+    public function getAllHostsWithFilter(array $hostIds = []) {
+        $query = $this->find();
+        $query->select([
+            'Hosts.id',
+            'Hosts.name',
+            'Hosts.address',
+            'Hosts.satellite_id',
+        ]);
+
+        if (!empty($hostIds)) {
+            $query->where([
+                'Hosts.id IN' => $hostIds
+            ]);
+        }
+
+        return $query->all();
+    }
+
 }
