@@ -29,6 +29,7 @@
 //	License agreement and license key will be shipped with the order
 //	confirmation.;
 use itnovum\openITCOCKPIT\Core\Views\Logo;
+use Cake\I18n\DateTime;
 
 /**
  * @var \App\View\AppView $this
@@ -73,6 +74,9 @@ $logo = new Logo();
                         </h4>
                         <div class="m-0 l-h-n">
                             <?= h($statuspage['statuspage']['description']); ?>
+                        </div>
+                        <div class="small mt-1">
+                            <?= __('Last refresh') ?>: <?= h((new DateTime())->format('Y-m-d H:i:s')) ?> <?= __('(Servertime)') ?>
                         </div>
                     </div>
 
