@@ -611,13 +611,14 @@ class HostdependenciesTable extends Table {
      * @param array $MY_RIGHTS
      * @return array
      */
-    public function getHostHostDependencies(int $hostId, array $hostgroupIds = [], array $MY_RIGHTS = []): array {
+    public function getHostDependenciesHosts(int $hostId, array $hostgroupIds = [], array $MY_RIGHTS = []): array {
         $query = $this->find()
             ->contain([
                 'Hosts'      => function (Query $q) use ($MY_RIGHTS) {
                     $query = $q->select([
                         'Hosts.id',
                         'Hosts.uuid',
+                        'Hosts.address',
                         'Hosts.name'
                     ])->disableAutoFields();
                     if (!empty($MY_RIGHTS)) {

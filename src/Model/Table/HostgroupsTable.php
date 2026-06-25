@@ -1093,6 +1093,7 @@ class HostgroupsTable extends Table {
                                     ->select([
                                         'Hosts.id',
                                         'Hosts.uuid',
+                                        'Hosts.address',
                                         'Hosts.name',
                                         'Hosts.hosttemplate_id',
                                         'Hostgroups.id'
@@ -1118,6 +1119,7 @@ class HostgroupsTable extends Table {
                         ->select([
                             'Hosts.id',
                             'Hosts.uuid',
+                            'Hosts.address',
                             'Hosts.name'
                         ]);
                     if (!empty($MY_RIGHTS)) {
@@ -1148,10 +1150,11 @@ class HostgroupsTable extends Table {
             if (!empty($row['hosts'])) {
                 foreach ($row['hosts'] as $host) {
                     $hosts[$host['id']] = [
-                        'id'   => $host['id'],
-                        'uuid' => $host['uuid'],
-                        'name' => $host['name'],
-                        'type' => 'host'
+                        'id'      => $host['id'],
+                        'uuid'    => $host['uuid'],
+                        'address' => $host['address'],
+                        'name'    => $host['name'],
+                        'type'    => 'host'
                     ];
                 }
             }
@@ -1160,10 +1163,11 @@ class HostgroupsTable extends Table {
                     if (!empty($hosttemplate['hosts'])) {
                         foreach ($hosttemplate['hosts'] as $host) {
                             $hosts[$host['id']] = [
-                                'id'   => $host['id'],
-                                'uuid' => $host['uuid'],
-                                'name' => $host['name'],
-                                'type' => 'host'
+                                'id'      => $host['id'],
+                                'uuid'    => $host['uuid'],
+                                'address' => $host['address'],
+                                'name'    => $host['name'],
+                                'type'    => 'host'
                             ];
                         }
                     }

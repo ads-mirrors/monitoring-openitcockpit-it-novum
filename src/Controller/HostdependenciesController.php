@@ -34,7 +34,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Lib\Exceptions\MissingDbBackendException;
-use App\Lib\Interfaces\HoststatusTableInterface;
 use App\Model\Entity\Host;
 use App\Model\Table\ContainersTable;
 use App\Model\Table\HostdependenciesTable;
@@ -337,7 +336,7 @@ class HostdependenciesController extends AppController {
      * @return void
      * @throws MissingDbBackendException
      */
-    public function dependencyTree($hostId) {
+    public function dependencyTree($hostId): void {
         if (!$this->isApiRequest()) {
             throw new MethodNotAllowedException();
         }
@@ -353,7 +352,6 @@ class HostdependenciesController extends AppController {
 
         /** @var HostdependenciesTable $HostdependenciesTable */
         $HostdependenciesTable = TableRegistry::getTableLocator()->get('Hostdependencies');
-        /** @var HoststatusTableInterface $HoststatusTable */
         $HoststatusTable = $this->DbBackend->getHoststatusTable();
         $hostId = (int)$hostId;
 
@@ -377,16 +375,15 @@ class HostdependenciesController extends AppController {
         if (empty($hostGroupIds)) {
             $hostGroupIds = Hash::extract($host['hosttemplate']['hostgroups'], '{n}.id');
         }
-
-        $hostDependencies = $HostdependenciesTable->getHostHostDependencies($hostId, $hostGroupIds, $MY_RIGHTS);
-
-
+        $hostDependencies = $HostdependenciesTable->getHostDependenciesHosts($hostId, $hostGroupIds, $MY_RIGHTS);
         $hostDependencyNodes = [];
         $hostDependencyConnections = [];
+        $connectionIndex = 1;
         foreach ($hostDependencies as $hostdependency) {
             $hostDependencyUuid = $hostdependency['uuid'];
             $hostDependencyNodes[$hostDependencyUuid] = [
-                'hostdepency_id'                   => $hostdependency['id'],
+                'id'                               => $hostDependencyUuid, //just for foblex
+                'hostdependency_id'                => $hostdependency['id'],
                 'uuid'                             => $hostDependencyUuid,
                 'type'                             => 'dependency',
                 'inherits_parent'                  => $hostdependency['inherits_parent'],
@@ -405,25 +402,6 @@ class HostdependenciesController extends AppController {
                 'notification_fail_on_pending'     => $hostdependency['notification_fail_on_pending'],
                 'notification_none'                => $hostdependency['notification_none'],
             ];
-            $dependencyHosts = [
-                'hosts'           => [],
-                'dependent_hosts' => []
-            ];
-            foreach ($hostdependency->get('hosts') as $host) {
-                if ($host['_joinData']['dependent'] === 0) {
-                    $dependencyHosts['hosts'][$host['id']] = [
-                        'host_id' => $host['id'],
-                        'name'    => $host['name'],
-                        'uuid'    => $host['uuid'],
-                    ];
-                } else {
-                    $dependencyHosts['dependent_hosts'][$host['id']] = [
-                        'host_id' => $host['id'],
-                        'name'    => $host['name'],
-                        'uuid'    => $host['uuid'],
-                    ];
-                }
-            }
 
             $dependencyHostgroupsIds = [
                 'hostgroups'           => [],
@@ -437,7 +415,6 @@ class HostdependenciesController extends AppController {
                 }
             }
 
-
             $hostsByHostgroupIds = $HostgroupsTable->getHostsByHostgroupIds(
                 $dependencyHostgroupsIds['hostgroups'],
                 $MY_RIGHTS
@@ -447,88 +424,109 @@ class HostdependenciesController extends AppController {
                 $MY_RIGHTS
             );
 
+            $dependencyHosts = [
+                'hosts'           => [],
+                'dependent_hosts' => []
+            ];
+            foreach ($hostdependency->get('hosts') as $host) {
+                if ($host['_joinData']['dependent'] === 0) {
+                    $dependencyHosts['hosts'][$host['id']] = [
+                        'host_id' => $host['id'],
+                        'address' => $host['address'],
+                        'name'    => $host['name'],
+                        'uuid'    => $host['uuid'],
+                    ];
+
+                } else {
+                    $dependencyHosts['dependent_hosts'][$host['id']] = [
+                        'host_id' => $host['id'],
+                        'address' => $host['address'],
+                        'name'    => $host['name'],
+                        'uuid'    => $host['uuid'],
+                    ];
+                }
+            }
+
+            foreach ($hostsByHostgroupIds as $host) {
+                $dependencyHosts['hosts'][$host['id']] = [
+                    'host_id' => $host['id'],
+                    'address' => $host['address'],
+                    'name'    => $host['name'],
+                    'uuid'    => $host['uuid'],
+                ];
+            }
+
+            foreach ($dependentHostsByHostgroupIds as $dependentHost) {
+                $dependencyHosts['dependent_hosts'][$dependentHost['id']] = [
+                    'host_id' => $dependentHost['id'],
+                    'address' => $dependentHost['address'],
+                    'name'    => $dependentHost['name'],
+                    'uuid'    => $dependentHost['uuid'],
+                ];
+            }
+
             $dependentHost = Hash::extract($hostdependency->get('hosts'), '{n}[id=' . $hostId . ']._joinData.dependent');
             if (!empty($dependentHost)) { // dependency via host
                 if ($dependentHost[0]) {
                     // hostIsDependsOn => true;
                     $hostDependencyNodes[$dependencyHosts['dependent_hosts'][$hostId]['uuid']] = [
+                        'id'      => $dependencyHosts['dependent_hosts'][$hostId]['uuid'],
                         'host_id' => $hostId,
+                        'address' => $dependencyHosts['dependent_hosts'][$hostId]['address'],
                         'uuid'    => $dependencyHosts['dependent_hosts'][$hostId]['uuid'],
                         'type'    => 'host',
                         'name'    => $dependencyHosts['dependent_hosts'][$hostId]['name']
                     ];
                     $hostDependencyConnections[] = [
-                        'from' => $hostDependencyUuid,
-                        'to'   => $dependencyHosts['dependent_hosts'][$hostId]['uuid']
+                        'id'     => 'conn-' . $connectionIndex++,
+                        'source' => $hostDependencyUuid,
+                        'target' => $dependencyHosts['dependent_hosts'][$hostId]['uuid']
                     ];
                     foreach ($dependencyHosts['hosts'] as $host) {
                         $hostDependencyNodes[$host['uuid']] = [
+                            'id'      => $host['uuid'],
                             'host_id' => $host['host_id'],
+                            'address' => $host['address'],
                             'uuid'    => $host['uuid'],
                             'type'    => 'host',
                             'name'    => $host['name']
 
                         ];
                         $hostDependencyConnections[] = [
-                            'from' => $host['uuid'],
-                            'to'   => $hostDependencyUuid
-                        ];
-                    }
-                    foreach ($hostsByHostgroupIds as $host) {
-                        if ($hostId === $host['id']) {
-                            continue;
-                        }
-                        $hostDependencyNodes[$host['uuid']] = [
-                            'host_id' => $host['id'],
-                            'uuid'    => $host['uuid'],
-                            'type'    => 'host',
-                            'name'    => $host['name']
-
-                        ];
-                        $hostDependencyConnections[] = [
-                            'from' => $host['uuid'],
-                            'to'   => $hostDependencyUuid
+                            'id'     => 'conn-' . $connectionIndex++,
+                            'source' => $host['uuid'],
+                            'target' => $hostDependencyUuid
                         ];
                     }
                 } else {
-                    // hostIsDependsOn => true;
+                    // hostIsDependsOn => false;
                     $hostDependencyNodes[$dependencyHosts['hosts'][$hostId]['uuid']] = [
+                        'id'      => $dependencyHosts['hosts'][$hostId]['uuid'],
                         'host_id' => $hostId,
+                        'address' => $dependencyHosts['hosts'][$hostId]['address'],
                         'uuid'    => $dependencyHosts['hosts'][$hostId]['uuid'],
                         'type'    => 'host',
                         'name'    => $dependencyHosts['hosts'][$hostId]['name']
                     ];
                     $hostDependencyConnections[] = [
-                        'from' => $dependencyHosts['hosts'][$hostId]['uuid'],
-                        'to'   => $hostDependencyUuid
+                        'id'     => 'conn-' . $connectionIndex++,
+                        'source' => $dependencyHosts['hosts'][$hostId]['uuid'],
+                        'target' => $hostDependencyUuid
                     ];
 
                     foreach ($dependencyHosts['dependent_hosts'] as $host) {
                         $hostDependencyNodes[$host['uuid']] = [
+                            'id'      => $host['uuid'],
                             'host_id' => $host['host_id'],
+                            'address' => $host['address'],
                             'uuid'    => $host['uuid'],
                             'type'    => 'host',
                             'name'    => $host['name']
                         ];
                         $hostDependencyConnections[] = [
-                            'from' => $hostDependencyUuid,
-                            'to'   => $host['uuid']
-                        ];
-                    }
-                    foreach ($dependentHostsByHostgroupIds as $host) {
-                        if ($hostId === $host['id']) {
-                            continue;
-                        }
-                        $hostDependencyNodes[$host['uuid']] = [
-                            'host_id' => $host['id'],
-                            'uuid'    => $host['uuid'],
-                            'type'    => 'host',
-                            'name'    => $host['name']
-
-                        ];
-                        $hostDependencyConnections[] = [
-                            'from' => $hostDependencyUuid,
-                            'to'   => $host['uuid']
+                            'id'     => 'conn-' . $connectionIndex++,
+                            'source' => $hostDependencyUuid,
+                            'target' => $host['uuid']
                         ];
                     }
                 }
@@ -536,153 +534,88 @@ class HostdependenciesController extends AppController {
                 $dependencyHostgroupOptions = [];
                 foreach ($hostdependency->get('hostgroups') as $hostgroup) {
                     if (in_array($hostgroup['id'], $hostGroupIds, true)) {
-                        // debug('Host group ID: ' . $hostgroup['id'] . ' Depends on ' . $hostgroup['_joinData']['dependent']);
                         $dependencyHostgroupOptions[] = (bool)$hostgroup['_joinData']['dependent'];
                     }
                 }
                 if (sizeof(array_unique($dependencyHostgroupOptions)) === 1) {
                     // if size of unique values is 1, then all values are the same, and we can determine if host is dependent or not based on the value
                     if ($dependencyHostgroupOptions[0]) {
-                        debug($hostId . ' DEPENDENT');
-                        debug($dependentHostsByHostgroupIds);
-                        if (!empty($dependentHostsByHostgroupIds[$hostId])) {
-                            if (!isset($hostDependencyNodes[$dependentHostsByHostgroupIds[$hostId]['uuid']])) {
-                                $hostDependencyNodes[$dependentHostsByHostgroupIds[$hostId]['uuid']] = [
-                                    'host_id' => $hostId,
-                                    'uuid'    => $dependentHostsByHostgroupIds[$hostId]['uuid'],
+                        foreach ($dependencyHosts['hosts'] as $host) {
+                            if (!isset($hostDependencyNodes[$host['uuid']])) {
+                                $hostDependencyNodes[$host['uuid']] = [
+                                    'id'      => $host['uuid'],
+                                    'host_id' => $host['host_id'],
+                                    'address' => $host['address'],
+                                    'uuid'    => $host['uuid'],
                                     'type'    => 'host',
-                                    'name'    => $dependentHostsByHostgroupIds[$hostId]['name']
-                                ];
-                                $hostDependencyConnections[] = [
-                                    'from' => $hostDependencyUuid,
-                                    'to'   => $dependentHostsByHostgroupIds[$hostId]['uuid']
+                                    'name'    => $host['name']
                                 ];
                             }
+                            $hostDependencyConnections[] = [
+                                'id'     => 'conn-' . $connectionIndex++,
+                                'source' => $hostDependencyUuid,
+                                'target' => $host['uuid']
+                            ];
                         }
                     } else {
-                        debug($hostId . ' NOT DEPENDENT');
-                        if (!empty($hostsByHostgroupIds[$hostId])) {
-                            if (!isset($hostDependencyNodes[$hostsByHostgroupIds[$hostId]['uuid']])) {
-                                $hostDependencyNodes[$hostsByHostgroupIds[$hostId]['uuid']] = [
-                                    'host_id' => $hostId,
-                                    'uuid'    => $hostsByHostgroupIds[$hostId]['uuid'],
+                        foreach ($dependencyHosts['dependent_hosts'] as $dependentHost) {
+                            if (!isset($hostDependencyNodes[$dependentHost['uuid']])) {
+                                $hostDependencyNodes[$dependentHost['uuid']] = [
+                                    'id'      => $dependentHost['uuid'],
+                                    'host_id' => $dependentHost['host_id'],
+                                    'address' => $dependentHost['address'],
+                                    'uuid'    => $dependentHost['uuid'],
                                     'type'    => 'host',
-                                    'name'    => $hostsByHostgroupIds[$hostId]['name']
-                                ];
-                                $hostDependencyConnections[] = [
-                                    'from' => $hostsByHostgroupIds[$hostId]['uuid'],
-                                    'to'   => $hostDependencyUuid
+                                    'name'    => $dependentHost['name']
                                 ];
                             }
+                            $hostDependencyConnections[] = [
+                                'id'     => 'conn-' . $connectionIndex++,
+                                'source' => $hostDependencyUuid,
+                                'target' => $dependentHost['uuid']
+                            ];
                         }
                     }
                 }
-
             }
-
-        }
-        return;
-
-        $hostdependenciesTree = $HostdependenciesTable->getHostDependenciesTree((int)$hostId, $MY_RIGHTS);
-        $dependenciesTree = [];
-
-        $hostsUuids = [];
-
-        foreach ($hostdependenciesTree as $hostdependency) {
-
-            $parentIds = [];
-
-            foreach ($hostdependency['hosts'] as $host) {
-                // add hosts from dependency as parents, because dependent hosts are the children of the hosts
-                $parentIds[] = $host['id'];
-                // create for each host an item to display a node in frontend
-                if (!isset($dependenciesTree[$host['uuid']])) {
-
-                    $hostsUuids[] = $host['uuid'];
-
-                    $dependenciesTree[$host['uuid']] = [
-                        'id'         => $host['id'],
-                        'name'       => $host['name'],
-                        'hoststatus' => [],
-                    ];
-                }
-            }
-
-            // create a connection based on the host dependency
-            $connectionData = [
-                'parentIds'  => $parentIds, // necessary to connect the hosts
-                'dependency' => [
-                    'id'                               => $hostdependency['id'],
-                    'inherits_parent'                  => $hostdependency['inherits_parent'],
-                    'timeperiod_id'                    => $hostdependency['timeperiod_id'],
-                    'execution_fail_on_pending'        => $hostdependency['execution_fail_on_pending'],
-                    'execution_none'                   => $hostdependency['execution_none'],
-                    'notification_fail_on_pending'     => $hostdependency['notification_fail_on_pending'],
-                    'notification_none'                => $hostdependency['notification_none'],
-                    'execution_fail_on_up'             => $hostdependency['execution_fail_on_up'],
-                    'execution_fail_on_down'           => $hostdependency['execution_fail_on_down'],
-                    'execution_fail_on_unreachable'    => $hostdependency['execution_fail_on_unreachable'],
-                    'notification_fail_on_up'          => $hostdependency['notification_fail_on_up'],
-                    'notification_fail_on_down'        => $hostdependency['notification_fail_on_down'],
-                    'notification_fail_on_unreachable' => $hostdependency['notification_fail_on_unreachable'],
-                    'timeperiod'                       => $hostdependency['timeperiod']
-                ]
-            ];
-
-            $dependencyAlreadyAddedToTree = false;
-
-            // create for each dependent host an item and add the host dependency as connectionData to the item
-            // or add the new host dependency as connectionData if dependent host is already an item in the tree
-            // add host dependency data only once for the whole tree to avoid duplicate information node for same dependency
-            foreach ($hostdependency['hosts_dependent'] as $dependentHost) {
-
-                if ($dependencyAlreadyAddedToTree) {
-                    $connectionData = ['parentIds' => $parentIds];
-                }
-
-                if (isset($dependenciesTree[$dependentHost['uuid']])) {
-
-                    $dependenciesTree[$dependentHost['uuid']]['connectionData'][] = $connectionData;
-                    $dependencyAlreadyAddedToTree = true;
-                } else {
-
-                    $hostsUuids[] = $dependentHost['uuid'];
-
-                    $dependenciesTree[$dependentHost['uuid']] = [
-                        'id'             => $dependentHost['id'],
-                        'name'           => $dependentHost['name'],
-                        'connectionData' => [$connectionData],
-                        'hoststatus'     => [],
-                    ];
-
-                    $dependencyAlreadyAddedToTree = true;
-
-                }
-
-            }
-
         }
 
-        //get hoststatus for each host
-        $HoststatusFields = new HoststatusFields($this->DbBackend);
-        $HoststatusFields->currentState()->isHardstate()->isFlapping();
-        $hoststatusByUuids = $HoststatusTable->byUuid($hostsUuids, $HoststatusFields);
-
-        // adding hoststatus to array items
-        foreach ($hoststatusByUuids as $uuid => $hoststatusByUuid) {
-            if (isset($dependenciesTree[$uuid])) {
-                $Hoststatus = new Hoststatus($hoststatusByUuid['Hoststatus'], $UserTime);
-                $hoststatus = $Hoststatus->toArrayForBrowser();
-                $dependenciesTree[$uuid]['hoststatus'] = $hoststatus;
+        $hostsUuids = Hash::extract($hostDependencyNodes, '{s}[type=host].uuid');
+        $hoststatusByUuids = $HoststatusTable->byUuids(
+            $hostsUuids,
+            (new HoststatusFields($this->DbBackend))
+                ->currentState()
+                ->isHardstate()
+                ->isFlapping()
+                ->problemHasBeenAcknowledged()
+                ->scheduledDowntimeDepth()
+                ->lastCheck()
+                ->currentCheckAttempt()
+                ->maxCheckAttempts()
+        );
+        //debug($hoststatusByUuids);
+        foreach ($hostDependencyNodes as $hostDependencyUuid => $hostDependencyNode) {
+            if ($hostDependencyNode['type'] === 'dependency') {
+                continue;
             }
+            $Hoststatus = new Hoststatus([]);
+            if (isset($hoststatusByUuids[$hostDependencyUuid])) {
+                $Hoststatus = new Hoststatus(
+                    $hoststatusByUuids[$hostDependencyUuid]['Hoststatus'],
+                    $UserTime
+                );
+            }
+            $hostDependencyNodes[$hostDependencyUuid]['Hoststatus'] = $Hoststatus->toArray();
         }
 
         //reindex value to have normal index keys for frontend
-        $dependenciesTree = array_values($dependenciesTree);
+        $dependenciesTree = [
+            'nodes'       => array_values($hostDependencyNodes),
+            'connections' => array_filter($hostDependencyConnections)
+        ];
 
         $this->set('hostdependenciesTree', $dependenciesTree);
         $this->viewBuilder()->setOption('serialize', ['hostdependenciesTree']);
 
     }
-
 }
