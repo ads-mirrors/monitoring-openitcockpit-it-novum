@@ -23,8 +23,35 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-if (!defined('OPENITCOCKPIT_VERSION')) {
-    define('OPENITCOCKPIT_VERSION', '5.6.1');
-}
+namespace App\Model\Entity;
 
-return [];
+use Cake\ORM\Entity;
+
+/**
+ * Proxy Entity
+ *
+ * @property int $id
+ * @property string $address
+ * @property int $port
+ * @property  string $auth_key
+ * @property bool $enabled
+ */
+class PushNotificationsRelay extends Entity
+{
+
+    /**
+     * Fields that can be mass assigned using newEntity() or patchEntity().
+     *
+     * Note that when '*' is set to true, this allows all unspecified fields to
+     * be mass assigned. For security purposes, it is advised to set '*' to false
+     * (or remove it), and explicitly make individual fields accessible as needed.
+     *
+     * @var array
+     */
+    protected array $_accessible = [
+        'address' => true,
+        'port' => true,
+        'auth_key' => true,
+        'enabled' => true
+    ];
+}
