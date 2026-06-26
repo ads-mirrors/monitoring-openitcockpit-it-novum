@@ -378,7 +378,6 @@ class HostdependenciesController extends AppController {
         $hostDependencies = $HostdependenciesTable->getHostDependenciesHosts($hostId, $hostGroupIds, $MY_RIGHTS);
         $hostDependencyNodes = [];
         $hostDependencyConnections = [];
-        $connectionIndex = 1;
         foreach ($hostDependencies as $hostdependency) {
             $hostDependencyUuid = $hostdependency['uuid'];
             $hostDependencyNodes[$hostDependencyUuid] = [
@@ -477,8 +476,7 @@ class HostdependenciesController extends AppController {
                         'type'    => 'host',
                         'name'    => $dependencyHosts['dependent_hosts'][$hostId]['name']
                     ];
-                    $hostDependencyConnections[] = [
-                        'id'     => 'conn-' . $connectionIndex++,
+                    $hostDependencyConnections[$hostDependencyUuid . $dependencyHosts['dependent_hosts'][$hostId]['uuid']] = [
                         'source' => $hostDependencyUuid,
                         'target' => $dependencyHosts['dependent_hosts'][$hostId]['uuid']
                     ];
@@ -492,8 +490,7 @@ class HostdependenciesController extends AppController {
                             'name'    => $host['name']
 
                         ];
-                        $hostDependencyConnections[] = [
-                            'id'     => 'conn-' . $connectionIndex++,
+                        $hostDependencyConnections[$host['uuid'] . $hostDependencyUuid] = [
                             'source' => $host['uuid'],
                             'target' => $hostDependencyUuid
                         ];
@@ -508,8 +505,7 @@ class HostdependenciesController extends AppController {
                         'type'    => 'host',
                         'name'    => $dependencyHosts['hosts'][$hostId]['name']
                     ];
-                    $hostDependencyConnections[] = [
-                        'id'     => 'conn-' . $connectionIndex++,
+                    $hostDependencyConnections[$dependencyHosts['hosts'][$hostId]['uuid'] . $hostDependencyUuid] = [
                         'source' => $dependencyHosts['hosts'][$hostId]['uuid'],
                         'target' => $hostDependencyUuid
                     ];
@@ -523,8 +519,7 @@ class HostdependenciesController extends AppController {
                             'type'    => 'host',
                             'name'    => $host['name']
                         ];
-                        $hostDependencyConnections[] = [
-                            'id'     => 'conn-' . $connectionIndex++,
+                        $hostDependencyConnections[$hostDependencyUuid . $host['uuid']] = [
                             'source' => $hostDependencyUuid,
                             'target' => $host['uuid']
                         ];
@@ -537,27 +532,25 @@ class HostdependenciesController extends AppController {
                         $dependencyHostgroupOptions[] = (bool)$hostgroup['_joinData']['dependent'];
                     }
                 }
+
                 if (sizeof(array_unique($dependencyHostgroupOptions)) === 1) {
                     // if size of unique values is 1, then all values are the same, and we can determine if host is dependent or not based on the value
-                    if ($dependencyHostgroupOptions[0]) {
-                        foreach ($dependencyHosts['hosts'] as $host) {
-                            if (!isset($hostDependencyNodes[$host['uuid']])) {
-                                $hostDependencyNodes[$host['uuid']] = [
-                                    'id'      => $host['uuid'],
-                                    'host_id' => $host['host_id'],
-                                    'address' => $host['address'],
-                                    'uuid'    => $host['uuid'],
-                                    'type'    => 'host',
-                                    'name'    => $host['name']
-                                ];
-                            }
-                            $hostDependencyConnections[] = [
-                                'id'     => 'conn-' . $connectionIndex++,
-                                'source' => $hostDependencyUuid,
-                                'target' => $host['uuid']
+                    foreach ($dependencyHosts['hosts'] as $host) {
+                        if (!isset($hostDependencyNodes[$host['uuid']])) {
+                            $hostDependencyNodes[$host['uuid']] = [
+                                'id'      => $host['uuid'],
+                                'host_id' => $host['host_id'],
+                                'address' => $host['address'],
+                                'uuid'    => $host['uuid'],
+                                'type'    => 'host',
+                                'name'    => $host['name']
                             ];
                         }
-                    } else {
+                        $hostDependencyConnections[$hostDependencyUuid . $host['uuid']] = [
+                            'source' => $hostDependencyUuid,
+                            'target' => $host['uuid']
+                        ];
+
                         foreach ($dependencyHosts['dependent_hosts'] as $dependentHost) {
                             if (!isset($hostDependencyNodes[$dependentHost['uuid']])) {
                                 $hostDependencyNodes[$dependentHost['uuid']] = [
@@ -569,8 +562,7 @@ class HostdependenciesController extends AppController {
                                     'name'    => $dependentHost['name']
                                 ];
                             }
-                            $hostDependencyConnections[] = [
-                                'id'     => 'conn-' . $connectionIndex++,
+                            $hostDependencyConnections[$hostDependencyUuid . $dependentHost['uuid']] = [
                                 'source' => $hostDependencyUuid,
                                 'target' => $dependentHost['uuid']
                             ];
@@ -607,11 +599,16 @@ class HostdependenciesController extends AppController {
             }
             $hostDependencyNodes[$hostDependencyUuid]['Hoststatus'] = $Hoststatus->toArray();
         }
-
+        $hostDependencyConnections = array_values($hostDependencyConnections);
+        $connectionIndex = 1;
+        //add unique index id for Foblex Flow <f-connection></f-connection>
+        foreach ($hostDependencyConnections as $index => $connection) {
+            $hostDependencyConnections[$index]['id'] = 'conn-' . $connectionIndex++;
+        }
         //reindex value to have normal index keys for frontend
         $dependenciesTree = [
             'nodes'       => array_values($hostDependencyNodes),
-            'connections' => array_filter($hostDependencyConnections)
+            'connections' => $hostDependencyConnections
         ];
 
         $this->set('hostdependenciesTree', $dependenciesTree);

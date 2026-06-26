@@ -1106,7 +1106,10 @@ class HostgroupsTable extends Table {
                                         'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
                                     ]);
                                 }
-                                $query->whereNull('Hostgroups.id');
+                                $query->whereNull('Hostgroups.id')
+                                    ->where([
+                                        'Hosts.disabled' => 0
+                                    ]);
                                 return $query;
                             }
                         ]);
@@ -1130,6 +1133,9 @@ class HostgroupsTable extends Table {
                             'HostsToContainersSharing.container_id IN' => $MY_RIGHTS
                         ]);
                     }
+                    $query->where([
+                        'Hosts.disabled' => 0
+                    ]);
                     return $query;
                 }
             ])

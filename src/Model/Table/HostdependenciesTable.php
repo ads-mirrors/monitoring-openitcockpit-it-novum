@@ -595,7 +595,8 @@ class HostdependenciesTable extends Table {
                 ]);
         } else {
             $query->where([
-                'Hosts.id' => $hostId
+                'Hosts.id'       => $hostId,
+                'Hosts.disabled' => 0
             ]);
         }
         $query->groupBy([
