@@ -23,10 +23,12 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-namespace itnovum\openITCOCKPIT\Filter;
+namespace App\itnovum\openITCOCKPIT\Filter;
 
 
-class LdapgroupFilter extends Filter {
+use itnovum\openITCOCKPIT\Filter\Filter;
+
+class UserDefaultTemplatesFilter extends Filter {
 
     /**
      * @return array
@@ -34,12 +36,11 @@ class LdapgroupFilter extends Filter {
     public function indexFilter() {
         $filters = [
             'like'   => [
-                'Ldapgroups.cn',
-                'Ldapgroups.dn',
-                'Ldapgroups.description',
+                'UserDefaultTemplates.name',
+                'UserDefaultTemplates.description',
             ],
             'equals' => [
-                'Ldapgroups.id'
+                'UserDefaultTemplates.usergroup_id'
             ]
         ];
 
@@ -52,16 +53,14 @@ class LdapgroupFilter extends Filter {
     public function ajaxFilter() {
         $filters = [
             'like'   => [
-                'Ldapgroups.cn',
-                'Ldapgroups.dn',
-                'Ldapgroups.description',
+                'UserDefaultTemplates.name',
+                'UserDefaultTemplates.description',
             ],
             'equals' => [
-                'Ldapgroups.id'
+                'UserDefaultTemplates.usergroup_id'
             ]
         ];
 
         return $this->getConditionsByFilters($filters);
     }
-
 }
