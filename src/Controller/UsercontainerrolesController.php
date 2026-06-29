@@ -420,7 +420,7 @@ class UsercontainerrolesController extends AppController {
 
             $usercontainerroleEntity = $UsercontainerrolesTable->get($id);
 
-            $usercontainerroleEntity->setAccess('uuid', false);
+            $usercontainerroleEntity->setAccess('id', false);
             $usercontainerroleEntity = $UsercontainerrolesTable->patchEntity($usercontainerroleEntity, [
                 'ldapgroups' => [
                     '_ids' => $ldapgroupIds

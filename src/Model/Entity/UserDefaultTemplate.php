@@ -33,6 +33,8 @@ use Cake\ORM\Entity;
  * UserDefaultTemplate Entity
  *
  * @property int $id
+ * @property string $name
+ * @property string $description
  * @property int $usergroup_id
  * @property string|null $timezone
  * @property string $i18n
@@ -46,6 +48,7 @@ use Cake\ORM\Entity;
  * @property \Cake\I18n\DateTime|null $modified
  *
  * @property \App\Model\Entity\Usergroup $usergroup
+ * @property \App\Model\Entity\UserDefaultTemplatesToContainer[] $user_default_templates_to_containers
  */
 class UserDefaultTemplate extends Entity {
     /**
@@ -59,6 +62,8 @@ class UserDefaultTemplate extends Entity {
      */
     protected array $_accessible = [
         'usergroup_id'           => true,
+        'name'                   => true,
+        'description'            => true,
         'timezone'               => true,
         'i18n'                   => true,
         'dateformat'             => true,
@@ -70,5 +75,7 @@ class UserDefaultTemplate extends Entity {
         'created'                => true,
         'modified'               => true,
         'usergroup'              => true,
+        'containers'             => true,
+        'ldapgroups'             => true,
     ];
 }

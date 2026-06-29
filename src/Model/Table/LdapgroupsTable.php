@@ -269,4 +269,21 @@ class LdapgroupsTable extends Table {
         return $result;
     }
 
+    /**
+     * @param $id
+     * @return array
+     */
+    public function getLdapgroupById($id) {
+        $query = $this->find('all')
+            ->where([
+                'Ldapgroups.id' => $id
+            ]);
+        
+        $result = $query->first();
+        if (empty($result)) {
+            return [];
+        }
+        return $result->toArray();
+    }
+
 }

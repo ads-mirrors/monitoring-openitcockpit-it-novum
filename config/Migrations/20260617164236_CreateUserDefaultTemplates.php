@@ -85,10 +85,10 @@ class CreateUserDefaultTemplates extends BaseMigration {
                     'length'  => 100,
                     'null'    => false
                 ])
-                ->addColumn('is_oauth', 'boolean', [
-                    'default' => '0',
-                    'length'  => null,
-                    'null'    => false
+                ->addColumn('dateformat', 'string', [
+                    'default' => 'H:i:s - d.m.Y',
+                    'limit'   => 100,
+                    'null'    => true,
                 ])
                 ->addColumn('showstatsinmenu', 'boolean', [
                     'default' => false,
@@ -109,6 +109,11 @@ class CreateUserDefaultTemplates extends BaseMigration {
                     'default' => '0',
                     'limit'   => 1,
                     'null'    => false,
+                ])
+                ->addColumn('is_oauth', 'boolean', [
+                    'default' => '0',
+                    'length'  => null,
+                    'null'    => false
                 ])
                 ->addColumn('created', 'datetime', [
                     'default' => null,
