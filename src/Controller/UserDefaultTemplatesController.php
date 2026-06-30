@@ -27,10 +27,16 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\itnovum\openITCOCKPIT\Filter\UserDefaultTemplatesFilter;
+use App\Model\Entity\Changelog;
+use App\Model\Table\ChangelogsTable;
 use App\Model\Table\UserDefaultTemplatesTable;
 use Cake\Cache\Cache;
+use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
+use itnovum\openITCOCKPIT\Database\PaginateOMat;
 
 /**
  * UserDefaultTemplates Controller
@@ -40,18 +46,36 @@ use Cake\ORM\TableRegistry;
  */
 class UserDefaultTemplatesController extends AppController {
 
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|null|void Renders view
-     */
     public function index() {
-        $query = $this->UserDefaultTemplates->find()
-            ->contain(['Usergroups']);
-        $query = $this->Authorization->applyScope($query);
-        $userDefaultTemplates = $this->paginate($query);
 
-        $this->set(compact('userDefaultTemplates'));
+        /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
+        $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
+        $UserDefaultTemplatesFilter = new UserDefaultTemplatesFilter($this->request);
+        $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $UserDefaultTemplatesFilter->getPage());
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            // root users can see all users
+            $MY_RIGHTS = [];
+        }
+        $all_userdefaulttemplates = $UserDefaultTemplatesTable->getUserDefaultTemplatesIndex($UserDefaultTemplatesFilter, $PaginateOMat, $MY_RIGHTS);
+
+        foreach ($all_userdefaulttemplates as $index => $user_default_template) {
+            $allowEdit = $this->hasRootPrivileges;
+            if ($this->hasRootPrivileges === false) {
+                $allowEdit = false;
+                foreach ($user_default_template['containers'] as $container) {
+                    if ($this->isWritableContainer($container['id'])) {
+                        $allowEdit = true;
+                        break;
+                    }
+                }
+            }
+            $all_userdefaulttemplates[$index]['allow_edit'] = $allowEdit;
+        }
+
+        $this->set('all_userdefaulttemplates', $all_userdefaulttemplates);
+        $this->viewBuilder()->setOption('serialize', ['all_userdefaulttemplates']);
     }
 
     public function add() {
@@ -198,22 +222,66 @@ class UserDefaultTemplatesController extends AppController {
     }
 
     /**
-     * Delete method
-     *
-     * @param string|null $id Ldap Import Setting id.
-     * @return \Cake\Http\Response|null Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
+     * @param int|null $id
      */
     public function delete($id = null) {
-        $this->request->allowMethod(['post', 'delete']);
-        $ldapImportSetting = $this->UserDefaultTemplates->get($id);
-        $this->Authorization->authorize($ldapImportSetting);
-        if ($this->UserDefaultTemplates->delete($ldapImportSetting)) {
-            $this->Flash->success(__('The ldap import setting has been deleted.'));
-        } else {
-            $this->Flash->error(__('The ldap import setting could not be deleted. Please, try again.'));
+        if (!$this->request->is('post')) {
+            throw new MethodNotAllowedException();
         }
 
-        return $this->redirect(['action' => 'index']);
+        $User = new \itnovum\openITCOCKPIT\Core\ValueObjects\User($this->getUser());
+
+        /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
+        $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
+
+        if (!$UserDefaultTemplatesTable->existsById($id)) {
+            throw new NotFoundException(__('User Default Template not found'));
+        }
+
+        $userDefaultTemplate = $UserDefaultTemplatesTable->getUserDefaultTemplateById($id);
+        $userDefaultTemplateForLog = $userDefaultTemplate;
+        $containersToCheck = $userDefaultTemplate['containers']['_ids']; //Containers defined by the user itself
+
+        if (!$this->allowedByContainerId($containersToCheck)) {
+            $this->render403();
+            return;
+        }
+
+        $userDefaultTemplate = $UserDefaultTemplatesTable->get($id);
+
+        if ($UserDefaultTemplatesTable->delete($userDefaultTemplate)) {
+
+            $containerIds = Hash::extract($userDefaultTemplateForLog, 'containers.{n}.id');
+
+            /** @var  ChangelogsTable $ChangelogsTable */
+            $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
+
+            $changelog_data = $ChangelogsTable->parseDataForChangelog(
+                'delete',
+                'UserDefaultTemplates',
+                $id,
+                OBJECT_USER_DEFAULT_TEMPLATES,
+                $containerIds,
+                $User->getId(),
+                $userDefaultTemplateForLog['name'],
+                $userDefaultTemplateForLog
+            );
+            if ($changelog_data) {
+                /** @var Changelog $changelogEntry */
+                $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
+                $ChangelogsTable->save($changelogEntry);
+
+            }
+
+            $this->set('success', true);
+            $this->viewBuilder()->setOption('serialize', ['success']);
+
+            return;
+        }
+
+        $this->response = $this->response->withStatus(400);
+        $this->set('success', false);
+        $this->viewBuilder()->setOption('serialize', ['success']);
+        return;
     }
 }

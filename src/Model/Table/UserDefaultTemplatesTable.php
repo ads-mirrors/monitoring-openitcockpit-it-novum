@@ -203,44 +203,6 @@ class UserDefaultTemplatesTable extends Table {
      * @return array
      */
     public function getUserDefaultTemplatesIndex(UserDefaultTemplatesFilter $UserDefaultTemplatesFilter, $PaginateOMat = null, $MY_RIGHTS = []) {
-        //Get all user ids where container assigned are made directly at the user
-        $query = $this->find()
-            ->select([
-                'UserDefaultTemplates.id'
-            ])
-            ->matching('Containers')
-            ->groupBy([
-                'UserDefaultTemplates.id'
-            ])
-            ->disableHydration();
-
-        if (!empty($MY_RIGHTS)) {
-            $query->where([
-                'UserDefaultTemplatesToContainers.container_id IN' => $MY_RIGHTS
-            ]);
-        }
-        $userDefaultTemplatesIds = Hash::extract($query->toArray(), '{n}.id');
-
-        //Get all userDefaultTemplates ids where container assigned are made through an user container role
-        $query = $this->find()
-            ->select([
-                'UserDefaultTemplates.id'
-            ])
-            ->matching('Usercontainerroles.Containers')
-            ->groupBy([
-                'UserDefaultTemplates.id'
-            ])
-            ->disableHydration();
-
-        if (!empty($MY_RIGHTS)) {
-            $query->where([
-                'Containers.id IN' => $MY_RIGHTS
-            ]);
-        }
-
-        $userIdsThroughContainerRoles = Hash::extract($query->toArray(), '{n}.id');
-
-        $userDefaultTemplatesIds = array_unique(array_merge($userDefaultTemplatesIds, $userIdsThroughContainerRoles));
 
         $where = $UserDefaultTemplatesFilter->indexFilter();
 
@@ -258,9 +220,9 @@ class UserDefaultTemplatesTable extends Table {
                 'Containers',
             ]);
 
-        if (!empty($userDefaultTemplatesIds)) {
+        if (!empty($MY_RIGHTS)) {
             $query->where([
-                'UserDefaultTemplates.id IN' => $userDefaultTemplatesIds
+                'UserDefaultTemplatesToContainers.container_id IN' => $MY_RIGHTS
             ]);
         }
 
@@ -396,24 +358,24 @@ class UserDefaultTemplatesTable extends Table {
 
             if (isset($dataToParse['UserDefaultTemplates']['containers']['_ids']) && !empty($dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToContainers'])) {
                 foreach ($dataToParse['User']['containers']['_ids'] as $id) {
-                    $ldapgroupWithName = $ContainersTable->getContainerById($id);
-                    if (!empty($ldapgroupWithName)) {
+                    $containerWithName = $ContainersTable->getContainerById($id);
+                    if (!empty($containerWithName)) {
                         $extDataForChangelog['Containers'][] = [
                             'id'               => $id,
-                            'name'             => $ldapgroupWithName['name'],
+                            'name'             => $containerWithName['name'],
                             'permission_level' => $dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToContainers'][$id],
                         ];
                     }
                 }
             } else {
                 foreach ($dataToParse['UserDefaultTemplates']['containers'] as $container) {
-                    $ldapgroupWithName = [];
+                    $containerWithName = [];
                     if (!isset($dataToParse['UserDefaultTemplates']['containers']['name'])) {
-                        $ldapgroupWithName = $ContainersTable->getContainerById($container['id']);
+                        $containerWithName = $ContainersTable->getContainerById($container['id']);
                     }
                     $extDataForChangelog['Containers'][] = [
                         'id'               => $container['id'],
-                        'name'             => (!empty($ldapgroupWithName)) ? $ldapgroupWithName['name'] : $container['name'],
+                        'name'             => (!empty($containerWithName)) ? $containerWithName['name'] : $container['name'],
                         'permission_level' => $container['_joinData']['permission_level'],
                     ];
                 }
@@ -558,6 +520,26 @@ class UserDefaultTemplatesTable extends Table {
         return [
             'UserDefaultTemplate' => $userDefaultTemplate
         ];
+    }
+
+    /**
+     * May deprecated functions after fully moving to cakephp 4
+     * @param $id
+     * @return array|\Cake\Datasource\EntityInterface|null
+     */
+    public function getUserDefaultTemplateById($id) {
+        $query = $this->find('all')
+            ->disableHydration()
+            ->contain([
+                'Containers'
+            ])
+            ->where([
+                'UserDefaultTemplates.id' => $id
+            ]);
+        if (is_null($query)) {
+            return [];
+        }
+        return $query->first();
     }
 
 }
