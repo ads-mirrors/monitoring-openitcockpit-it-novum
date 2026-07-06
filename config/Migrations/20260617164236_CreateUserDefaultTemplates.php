@@ -128,8 +128,8 @@ class CreateUserDefaultTemplates extends BaseMigration {
                 ->create();
         }
 
-        if (!$this->hasTable('user_default_templates_to_containers')) {
-            $this->table('user_default_templates_to_containers')
+        if (!$this->hasTable('user_default_templates_to_user_containers')) {
+            $this->table('user_default_templates_to_user_containers')
                 ->addColumn('id', 'integer', [
                     'autoIncrement' => true,
                     'default'       => null,
@@ -184,6 +184,38 @@ class CreateUserDefaultTemplates extends BaseMigration {
                     'limit'   => 11,
                     'null'    => false,
                 ])
+                ->create();
+        }
+
+        if (!$this->hasTable('user_default_templates_to_containers')) {
+            $this->table('user_default_templates_to_containers')
+                ->addColumn('id', 'integer', [
+                    'autoIncrement' => true,
+                    'default'       => null,
+                    'limit'         => 11,
+                    'null'          => false,
+                ])
+                ->addPrimaryKey(['id'])
+                ->addColumn('user_default_template_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addColumn('container_id', 'integer', [
+                    'default' => null,
+                    'limit'   => 11,
+                    'null'    => false,
+                ])
+                ->addIndex(
+                    [
+                        'user_default_template_id',
+                    ]
+                )
+                ->addIndex(
+                    [
+                        'container_id',
+                    ]
+                )
                 ->create();
         }
 

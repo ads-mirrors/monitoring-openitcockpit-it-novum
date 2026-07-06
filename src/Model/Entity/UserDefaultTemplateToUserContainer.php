@@ -30,28 +30,17 @@ namespace App\Model\Entity;
 use Cake\ORM\Entity;
 
 /**
- * UserDefaultTemplate Entity
+ * UserDefaultTemplateToUserContainer Entity
  *
  * @property int $id
- * @property string $name
- * @property string $description
- * @property int $usergroup_id
- * @property string|null $timezone
- * @property string $i18n
- * @property string|null $dateformat
- * @property bool $showstatsinmenu
- * @property int $dashboard_tab_rotation
- * @property int $paginatorlength
- * @property int $recursive_browser
- * @property bool $is_oauth
- * @property \Cake\I18n\DateTime|null $created
- * @property \Cake\I18n\DateTime|null $modified
+ * @property int $user_default_template_id
+ * @property int $container_id
+ * @property int $permission_level
  *
- * @property \App\Model\Entity\Usergroup $usergroup
- * @property \App\Model\Entity\UserDefaultTemplateToUserContainer[] $user_default_templates_to_user_containers
- * @property \App\Model\Entity\UserDefaultTemplateToContainer[] $user_default_templates_to_containers
+ * @property \App\Model\Entity\UserDefaultTemplate $user_default_template
+ * @property \App\Model\Entity\Container $container
  */
-class UserDefaultTemplate extends Entity {
+class UserDefaultTemplateToUserContainer extends Entity {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -62,22 +51,10 @@ class UserDefaultTemplate extends Entity {
      * @var array<string, bool>
      */
     protected array $_accessible = [
-        'usergroup_id'           => true,
-        'name'                   => true,
-        'description'            => true,
-        'timezone'               => true,
-        'i18n'                   => true,
-        'dateformat'             => true,
-        'showstatsinmenu'        => true,
-        'dashboard_tab_rotation' => true,
-        'paginatorlength'        => true,
-        'recursive_browser'      => true,
-        'is_oauth'               => true,
-        'created'                => true,
-        'modified'               => true,
-        'usergroup'              => true,
-        'user_containers'        => true,
-        'containers'             => true,
-        'ldapgroups'             => true,
+        'user_default_template_id' => true,
+        'container_id'             => true,
+        'permission_level'         => true,
+        'user_default_template'    => true,
+        'container'                => true,
     ];
 }

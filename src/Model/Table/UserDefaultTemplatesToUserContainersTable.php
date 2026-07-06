@@ -32,26 +32,26 @@ use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
 /**
- * UserDefaultTemplatesToContainers Model
+ * UserDefaultTemplatesToUserContainers Model
  *
  * @property \App\Model\Table\UserDefaultTemplatesTable&\Cake\ORM\Association\BelongsTo $UserDefaultTemplates
  * @property \App\Model\Table\ContainersTable&\Cake\ORM\Association\BelongsTo $Containers
  *
- * @method \App\Model\Entity\UserDefaultTemplateToContainer newEmptyEntity()
- * @method \App\Model\Entity\UserDefaultTemplateToContainer newEntity(array $data, array $options = [])
- * @method array<\App\Model\Entity\UserDefaultTemplateToContainer> newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\UserDefaultTemplateToContainer get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \App\Model\Entity\UserDefaultTemplateToContainer findOrCreate($search, ?callable $callback = null, array $options = [])
- * @method \App\Model\Entity\UserDefaultTemplateToContainer patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\App\Model\Entity\UserDefaultTemplateToContainer> patchEntities(iterable $entities, array $data, array $options = [])
- * @method \App\Model\Entity\UserDefaultTemplateToContainer|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method \App\Model\Entity\UserDefaultTemplateToContainer saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\App\Model\Entity\UserDefaultTemplateToContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToContainer>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\UserDefaultTemplateToContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToContainer> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\UserDefaultTemplateToContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToContainer>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\App\Model\Entity\UserDefaultTemplateToContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToContainer> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \App\Model\Entity\UserDefaultTemplateToUserContainer newEmptyEntity()
+ * @method \App\Model\Entity\UserDefaultTemplateToUserContainer newEntity(array $data, array $options = [])
+ * @method array<\App\Model\Entity\UserDefaultTemplateToUserContainer> newEntities(array $data, array $options = [])
+ * @method \App\Model\Entity\UserDefaultTemplateToUserContainer get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
+ * @method \App\Model\Entity\UserDefaultTemplateToUserContainer findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \App\Model\Entity\UserDefaultTemplateToUserContainer patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method array<\App\Model\Entity\UserDefaultTemplateToUserContainer> patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \App\Model\Entity\UserDefaultTemplateToUserContainer|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method \App\Model\Entity\UserDefaultTemplateToUserContainer saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
+ * @method iterable<\App\Model\Entity\UserDefaultTemplateToUserContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToUserContainer>|false saveMany(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\UserDefaultTemplateToUserContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToUserContainer> saveManyOrFail(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\UserDefaultTemplateToUserContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToUserContainer>|false deleteMany(iterable $entities, array $options = [])
+ * @method iterable<\App\Model\Entity\UserDefaultTemplateToUserContainer>|\Cake\Datasource\ResultSetInterface<\App\Model\Entity\UserDefaultTemplateToUserContainer> deleteManyOrFail(iterable $entities, array $options = [])
  */
-class UserDefaultTemplatesToContainersTable extends Table {
+class UserDefaultTemplatesToUserContainersTable extends Table {
     /**
      * Initialize method
      *
@@ -61,7 +61,7 @@ class UserDefaultTemplatesToContainersTable extends Table {
     public function initialize(array $config): void {
         parent::initialize($config);
 
-        $this->setTable('user_default_templates_to_containers');
+        $this->setTable('user_default_templates_to_user_containers');
         $this->setDisplayField('id');
         $this->setPrimaryKey('id');
 
@@ -89,6 +89,10 @@ class UserDefaultTemplatesToContainersTable extends Table {
         $validator
             ->integer('container_id')
             ->notEmptyString('container_id');
+
+        $validator
+            ->integer('permission_level')
+            ->notEmptyString('permission_level');
 
         return $validator;
     }

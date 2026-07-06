@@ -30,17 +30,16 @@ namespace App\Model\Entity;
 use Cake\ORM\Entity;
 
 /**
- * UserDefaultTemplatesToContainer Entity
+ * UserDefaultTemplateToContainer Entity
  *
  * @property int $id
- * @property int $user_default_templates_id
+ * @property int $user_default_template_id
  * @property int $container_id
- * @property int $permission_level
  *
  * @property \App\Model\Entity\UserDefaultTemplate $user_default_template
  * @property \App\Model\Entity\Container $container
  */
-class UserDefaultTemplatesToContainer extends Entity {
+class UserDefaultTemplateToContainer extends Entity {
     /**
      * Fields that can be mass assigned using newEntity() or patchEntity().
      *
@@ -51,10 +50,9 @@ class UserDefaultTemplatesToContainer extends Entity {
      * @var array<string, bool>
      */
     protected array $_accessible = [
-        'user_default_templates_id' => true,
-        'container_id'              => true,
-        'permission_level'          => true,
-        'user_default_template'     => true,
-        'container'                 => true,
+        'user_default_template_id' => true,
+        'container_id'             => true,
+        'user_default_template'    => true,
+        'container'                => true,
     ];
 }

@@ -89,11 +89,11 @@ class UserDefaultTemplatesController extends AppController {
         if ($this->request->is('post') || $this->request->is('put')) {
 
             $data = $this->request->getData('Userdefaulttemplate', []);
-            if (!isset($data['UserDefaultTemplatesToContainers'])) {
-                $data['UserDefaultTemplatesToContainers'] = [];
+            if (!isset($data['UserDefaultTemplatesToUserContainers'])) {
+                $data['UserDefaultTemplatesToUserContainers'] = [];
             }
-            $data['containers'] = $UserDefaultTemplatesTable->containerPermissionsForSave(
-                $data['UserDefaultTemplatesToContainers'],
+            $data['user_containers'] = $UserDefaultTemplatesTable->containerPermissionsForSave(
+                $data['UserDefaultTemplatesToUserContainers'],
                 $this->hasRootPrivileges,
                 $this->MY_RIGHTS_LEVEL
             );
@@ -137,10 +137,10 @@ class UserDefaultTemplatesController extends AppController {
         $userDefaultTemplateForChangelog = $userDefaultTemplate;
         $containersToCheck = $userDefaultTemplate['UserDefaultTemplate']['containers']['_ids']; //Containers defined by the user itself
 
-        $notPermittedContainerIds = [];
-        foreach ($userDefaultTemplate['UserDefaultTemplate']['UserDefaultTemplatesToContainers'] as $containerId => $rightLevel) {
+        $notPermittedUserContainerIds = [];
+        foreach ($userDefaultTemplate['UserDefaultTemplate']['UserDefaultTemplatesToUserContainers'] as $containerId => $rightLevel) {
             if (!isset($this->MY_RIGHTS_LEVEL[$containerId]) || (isset($this->MY_RIGHTS_LEVEL[$containerId]) && $this->MY_RIGHTS_LEVEL[$containerId] < $rightLevel)) {
-                $notPermittedContainerIds[] = $containerId;
+                $notPermittedUserContainerIds[] = $containerId;
             }
         }
 
@@ -154,42 +154,42 @@ class UserDefaultTemplatesController extends AppController {
         if ($this->request->is('get') && $this->isAngularJsRequest()) {
             //Return user default template information
             $this->set('userDefaultTemplate', $userDefaultTemplate['UserDefaultTemplate']);
-            $this->set('notPermittedContainerIds', array_map('intval', $notPermittedContainerIds)); // Make sure its a int array for Angular
-            $this->viewBuilder()->setOption('serialize', ['userDefaultTemplate', 'notPermittedContainerIds']);
+            $this->set('notPermittedUserContainerIds', array_map('intval', $notPermittedUserContainerIds)); // Make sure its a int array for Angular
+            $this->viewBuilder()->setOption('serialize', ['userDefaultTemplate', 'notPermittedUserContainerIds']);
             return;
         }
 
         if ($this->request->is('post') || $this->request->is('put')) {
             $data = $this->request->getData('Userdefaulttemplate', []);
-            if (!isset($data['UserDefaultTemplatesToContainers'])) {
-                $data['UserDefaultTemplatesToContainers'] = [];
+            if (!isset($data['UserDefaultTemplatesToUserContainers'])) {
+                $data['UserDefaultTemplatesToUserContainers'] = [];
             }
 
             if (!$this->hasRootPrivileges) {
                 $containerIdsWithWritePermissions = array_filter($this->MY_RIGHTS_LEVEL, function ($v) {
                     return $v == WRITE_RIGHT;
                 }, ARRAY_FILTER_USE_BOTH);
-                $userToEditContainerIdsWithWritePermissions = array_filter($data['UserDefaultTemplatesToContainers'], function ($v) {
+                $userToEditContainerIdsWithWritePermissions = array_filter($data['UserDefaultTemplatesToUserContainers'], function ($v) {
                     return $v == WRITE_RIGHT;
                 }, ARRAY_FILTER_USE_BOTH);
 
-                $notPermittedContainerIds = array_keys(
+                $notPermittedUserContainerIds = array_keys(
                     array_diff_key($userToEditContainerIdsWithWritePermissions, $containerIdsWithWritePermissions)
                 );
 
-                foreach ($data['UserDefaultTemplatesToContainers'] as $key => $value) {
+                foreach ($data['UserDefaultTemplatesToUserContainers'] as $key => $value) {
                     // do not overwrite container settings if the user does not have sufficient rights
-                    if (in_array($key, $notPermittedContainerIds, true)) {
+                    if (in_array($key, $notPermittedUserContainerIds, true)) {
                         continue;
                     }
                     // reverting write permission to read permission due to insufficient user permission rights
                     if ($key !== ROOT_CONTAINER && !array_key_exists($key, $containerIdsWithWritePermissions) && $value > 1) {
-                        $data['UserDefaultTemplatesToContainers'][$key] = READ_RIGHT;
+                        $data['UserDefaultTemplatesToUserContainers'][$key] = READ_RIGHT;
                     }
                 }
             }
-            $data['containers'] = $UserDefaultTemplatesTable->containerPermissionsForSave(
-                $data['UserDefaultTemplatesToContainers'],
+            $data['user_containers'] = $UserDefaultTemplatesTable->containerPermissionsForSave(
+                $data['UserDefaultTemplatesToUserContainers'],
                 $this->hasRootPrivileges,
                 $this->MY_RIGHTS_LEVEL
             );

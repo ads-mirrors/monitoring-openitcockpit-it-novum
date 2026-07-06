@@ -83,12 +83,22 @@ class UserDefaultTemplatesTable extends Table {
             'joinType'   => 'INNER',
         ]);
 
+        $this->belongsToMany('UserContainers', [
+            'through'          => 'UserDefaultTemplatesToUserContainers',
+            'className'        => 'Containers',
+            'foreignKey'       => 'user_default_template_id',
+            'targetForeignKey' => 'container_id',
+            'joinTable'        => 'user_default_templates_to_user_containers',
+            'propertyName'     => 'user_containers',
+        ]);
+
         $this->belongsToMany('Containers', [
             'through'          => 'UserDefaultTemplatesToContainers',
             'className'        => 'Containers',
             'foreignKey'       => 'user_default_template_id',
             'targetForeignKey' => 'container_id',
-            'joinTable'        => 'user_default_templates_to_containers'
+            'joinTable'        => 'user_default_templates_to_containers',
+            'propertyName'     => 'containers',
         ]);
 
         $this->belongsToMany('Ldapgroups', [
@@ -112,6 +122,13 @@ class UserDefaultTemplatesTable extends Table {
         $validator
             ->integer('id')
             ->allowEmptyString('id', null, 'create');
+
+        $validator
+            ->requirePresence('containers', true, __('You have to choose at least one option.'))
+            ->allowEmptyString('containers', null, false)
+            ->multipleOptions('containers', [
+                'min' => 1
+            ], __('You have to choose at least one option.'));
 
         $validator
             ->scalar('name')
@@ -257,7 +274,7 @@ class UserDefaultTemplatesTable extends Table {
      * @return array
      */
     public function containerPermissionsForSave($containerPermissions, bool $hasRootPrivileges = false, array $MY_RIGHTS_LEVEL = []) {
-        //UserDefaultTemplatesToContainers
+        //UserDefaultTemplatesToUserContainers
 
         $dataForSave = [];
         foreach ($containerPermissions as $containerId => $permissionLevel) {
@@ -341,9 +358,9 @@ class UserDefaultTemplatesTable extends Table {
      */
     public function resolveDataForChangelog($dataToParse = []) {
         $extDataForChangelog = [
-            'Containers' => [],
-            'Usergroup'  => [],
-            'Ldapgroups' => []
+            'UserContainers' => [],
+            'Usergroup'      => [],
+            'Ldapgroups'     => []
         ];
 
         /** @var UsergroupsTable $UsergroupsTable */
@@ -353,27 +370,27 @@ class UserDefaultTemplatesTable extends Table {
         /** @var $LdapgroupsTable LdapgroupsTable */
         $LdapgroupsTable = TableRegistry::getTableLocator()->get('Ldapgroups');
 
-        //containers
-        if (isset($dataToParse['UserDefaultTemplates']['containers'])) {
+        //user containers
+        if (isset($dataToParse['UserDefaultTemplates']['UserContainers'])) {
 
-            if (isset($dataToParse['UserDefaultTemplates']['containers']['_ids']) && !empty($dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToContainers'])) {
+            if (isset($dataToParse['UserDefaultTemplates']['UserContainers']['_ids']) && !empty($dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToUserContainers'])) {
                 foreach ($dataToParse['User']['containers']['_ids'] as $id) {
                     $containerWithName = $ContainersTable->getContainerById($id);
                     if (!empty($containerWithName)) {
-                        $extDataForChangelog['Containers'][] = [
+                        $extDataForChangelog['UserContainers'][] = [
                             'id'               => $id,
                             'name'             => $containerWithName['name'],
-                            'permission_level' => $dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToContainers'][$id],
+                            'permission_level' => $dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToUserContainers'][$id],
                         ];
                     }
                 }
             } else {
-                foreach ($dataToParse['UserDefaultTemplates']['containers'] as $container) {
+                foreach ($dataToParse['UserDefaultTemplates']['UserContainers'] as $container) {
                     $containerWithName = [];
-                    if (!isset($dataToParse['UserDefaultTemplates']['containers']['name'])) {
+                    if (!isset($dataToParse['UserDefaultTemplates']['UserContainers']['name'])) {
                         $containerWithName = $ContainersTable->getContainerById($container['id']);
                     }
-                    $extDataForChangelog['Containers'][] = [
+                    $extDataForChangelog['UserContainers'][] = [
                         'id'               => $container['id'],
                         'name'             => (!empty($containerWithName)) ? $containerWithName['name'] : $container['name'],
                         'permission_level' => $container['_joinData']['permission_level'],
@@ -481,6 +498,7 @@ class UserDefaultTemplatesTable extends Table {
             ])
             ->contain([
                 'Usergroups',
+                'UserContainers',
                 'Containers',
                 'Ldapgroups',
             ])
@@ -498,6 +516,9 @@ class UserDefaultTemplatesTable extends Table {
         foreach ($intCasts as $intCast) {
             $userDefaultTemplate[$intCast] = (int)$userDefaultTemplate[$intCast];
         }
+        $userDefaultTemplate['user_containers'] = [
+            '_ids' => Hash::extract($query, 'user_containers.{n}.id')
+        ];
         $userDefaultTemplate['containers'] = [
             '_ids' => Hash::extract($query, 'containers.{n}.id')
         ];
@@ -506,15 +527,15 @@ class UserDefaultTemplatesTable extends Table {
         ];
 
         //Build up data struct for radio inputs (only of user containers - NOT for container roles)
-        $userDefaultTemplate['UserDefaultTemplatesToContainers'] = [];
-        foreach ($query['containers'] as $container) {
+        $userDefaultTemplate['UserDefaultTemplatesToUserContainers'] = [];
+        foreach ($query['user_containers'] as $container) {
             //Cast permission_level to int for Angular... (AngularJS requires a string)
-            $userDefaultTemplate['UserDefaultTemplatesToContainers'][$container['id']] = (int)$container['_joinData']['permission_level'];
+            $userDefaultTemplate['UserDefaultTemplatesToUserContainers'][$container['id']] = (int)$container['_joinData']['permission_level'];
         }
 
-        if (empty($userDefaultTemplate['UserDefaultTemplatesToContainers'])) {
+        if (empty($userDefaultTemplate['UserDefaultTemplatesToUserContainers'])) {
             //Make this an empty object {} in the JSON, not an empty array []
-            $userDefaultTemplate['UserDefaultTemplatesToContainers'] = new \stdClass();
+            $userDefaultTemplate['UserDefaultTemplatesToUserContainers'] = new \stdClass();
         }
 
         return [
@@ -531,7 +552,8 @@ class UserDefaultTemplatesTable extends Table {
         $query = $this->find('all')
             ->disableHydration()
             ->contain([
-                'Containers'
+                'UserContainers',
+                'Containers',
             ])
             ->where([
                 'UserDefaultTemplates.id' => $id

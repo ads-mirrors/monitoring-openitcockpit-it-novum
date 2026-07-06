@@ -651,6 +651,18 @@ class Menu {
                     true,
                     '/DashboardAllocations/index'
                 ))
+                ->addLink(new MenuLink(
+                    __('User Default Templates'),
+                    'UserDefaultTemplatesIndex',
+                    'UserDefaultTemplates',
+                    'index',
+                    '',
+                    ['fas', 'user-plus'],
+                    [],
+                    6,
+                    true,
+                    '/userDefaultTemplates/index'
+                ))
             )
             ->addCategory((new MenuCategory(
                 'container_mgmt_category',
