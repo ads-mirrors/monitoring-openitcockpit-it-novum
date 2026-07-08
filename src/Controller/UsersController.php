@@ -41,6 +41,7 @@ use App\Model\Table\ContainersTable;
 use App\Model\Table\EventlogsTable;
 use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\UsercontainerrolesTable;
+use App\Model\Table\UserDefaultTemplatesTable;
 use App\Model\Table\UsergroupsTable;
 use App\Model\Table\UsersTable;
 use App\Template\Users\UsersXlsxExport;
@@ -1357,5 +1358,42 @@ class UsersController extends AppController {
             'download' => true,
             'name'     => 'Users_Export_Info_' . date('Y_m_d_H_i_s') . '.xlsx',
         ]);
+    }
+
+    public function getUserDefaultTemplatesForUserEdit() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        $usercontainerRoleIds = $this->request->getQuery('usercontainerRoleIds', []);
+
+        $ldapgroupIds = $this->request->getQuery('ldapgroupIds', []);
+
+        /** @var UsercontainerrolesTable $UsercontainerrolesTable */
+        $UsercontainerrolesTable = TableRegistry::getTableLocator()->get('Usercontainerroles');
+
+        $containerIds = [];
+        if (empty($ldapgroupIds) && !empty($usercontainerRoleIds)) {
+            $containerRolesWithContainerIds = $UsercontainerrolesTable->getUsercontanerRoleWithAllContainerIdsByIds($usercontainerRoleIds);
+            foreach ($containerRolesWithContainerIds as $containerRoleIds) {
+                $containerIds = array_merge($containerIds, array_values($containerRoleIds));
+            }
+        }
+
+        /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
+        $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
+
+        $MY_RIGHTS = $this->MY_RIGHTS;
+        if ($this->hasRootPrivileges) {
+            // root users can see all users
+            $MY_RIGHTS = [];
+        }
+
+        $userDefaultTemplatesAndDetails = $UserDefaultTemplatesTable->getUserDefaultTemplatesForUserEdit($ldapgroupIds, $containerIds, $MY_RIGHTS);
+
+        $this->set('userDefaultTemplates', $userDefaultTemplatesAndDetails['UserDefaultTemplates']);
+        $this->set('userDefaultTemplateDetails', $userDefaultTemplatesAndDetails['UserDefaultTemplateDetails']);
+        $this->viewBuilder()->setOption('serialize', ['userDefaultTemplates', 'userDefaultTemplateDetails']);
+
     }
 }

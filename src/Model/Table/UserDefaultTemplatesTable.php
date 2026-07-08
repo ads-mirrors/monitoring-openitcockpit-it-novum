@@ -31,11 +31,13 @@ use App\itnovum\openITCOCKPIT\Filter\UserDefaultTemplatesFilter;
 use App\Lib\Traits\PaginationAndScrollIndexTrait;
 use App\Model\Entity\Changelog;
 use App\Model\Entity\UserDefaultTemplate;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use Cake\Validation\Validator;
+use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 
 /**
@@ -562,6 +564,110 @@ class UserDefaultTemplatesTable extends Table {
             return [];
         }
         return $query->first();
+    }
+
+    /**
+     * @param array $ldapgroupIds
+     * @param array $containerIds
+     * @param array $MY_RIGHTS
+     * @return
+     */
+    public function getUserDefaultTemplatesForUserEdit(array $ldapgroupIds = [], array $containerIds = [], array $MY_RIGHTS = []) {
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+
+        if (empty($ldapgroupIds) && empty($containerIds)) {
+            return [
+                'UserDefaultTemplates'       => [],
+                'UserDefaultTemplateDetails' => []
+            ];
+        }
+
+        $query = $this->find()
+            ->select([
+                'UserDefaultTemplates.id',
+                'UserDefaultTemplates.usergroup_id',
+                'UserDefaultTemplates.name',
+                'UserDefaultTemplates.description',
+                'UserDefaultTemplates.timezone',
+                'UserDefaultTemplates.i18n',
+                'UserDefaultTemplates.dateformat',
+                'UserDefaultTemplates.showstatsinmenu',
+                'UserDefaultTemplates.dashboard_tab_rotation',
+                'UserDefaultTemplates.paginatorlength',
+                'UserDefaultTemplates.recursive_browser',
+                'UserDefaultTemplates.is_oauth'
+            ])
+            ->contain([
+                'Usergroups',
+                'UserContainers',
+                'Containers',
+                'Ldapgroups',
+            ]);
+        
+        if (!empty($MY_RIGHTS)) {
+            $query->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
+                return $query->where(['Containers.id IN' => $MY_RIGHTS]);
+            });
+        }
+        if (!empty($ldapgroupIds)) {
+            $query->innerJoinWith('Ldapgroups', function (Query $query) use ($ldapgroupIds) {
+                return $query->where(['Ldapgroups.id IN' => $ldapgroupIds]);
+            });
+        }
+        if (!empty($containerIds)) {
+            $query->innerJoinWith('UserContainers', function (Query $query) use ($containerIds) {
+                return $query->where(['UserContainers.id IN' => $containerIds]);
+            });
+        }
+
+        $query->disableHydration()
+            ->distinct(['UserDefaultTemplates.id'])
+            ->all();
+
+        $result = $query->toArray();
+        $userDefaultTemplates = $result;
+
+        $intCasts = [
+            'showstatsinmenu',
+            'dashboard_tab_rotation',
+            'paginatorlength',
+            'recursive_browser'
+        ];
+
+        foreach ($userDefaultTemplates as $userDefaultTemplateId => $userDefaultTemplate) {
+            foreach ($intCasts as $intCast) {
+                $userDefaultTemplates[$userDefaultTemplateId][$intCast] = (int)$userDefaultTemplates[$userDefaultTemplateId][$intCast];
+            }
+
+            $userDefaultTemplates[$userDefaultTemplateId]['user_containers'] = [
+                '_ids' => Hash::extract($result, '{n}.user_containers.{n}.id')
+            ];
+            $userDefaultTemplates[$userDefaultTemplateId]['containers'] = [
+                '_ids' => Hash::extract($result, '{n}.containers.{n}.id')
+            ];
+            $userDefaultTemplates[$userDefaultTemplateId]['ldapgroups'] = [
+                '_ids' => Hash::extract($result, '{n}.ldapgroups.{n}.id')
+            ];
+
+            //Build up data struct for radio inputs (only of user containers - NOT for container roles)
+            $userDefaultTemplates[$userDefaultTemplateId]['UserDefaultTemplatesToUserContainers'] = [];
+            foreach ($result[$userDefaultTemplateId]['user_containers'] as $container) {
+                //Cast permission_level to int for Angular... (AngularJS requires a string)
+                $userDefaultTemplates[$userDefaultTemplateId]['UserDefaultTemplatesToUserContainers'][$container['id']] = (int)$container['_joinData']['permission_level'];
+            }
+
+            if (empty($userDefaultTemplates[$userDefaultTemplateId]['UserDefaultTemplatesToUserContainers'])) {
+                //Make this an empty object {} in the JSON, not an empty array []
+                $userDefaultTemplates[$userDefaultTemplateId]['UserDefaultTemplatesToUserContainers'] = new \stdClass();
+            }
+        }
+
+        return [
+            'UserDefaultTemplates'       => Api::makeItJavaScriptAble(Hash::combine($userDefaultTemplates, '{n}.id', '{n}.name')),
+            'UserDefaultTemplateDetails' => Hash::combine($userDefaultTemplates, '{n}.id', '{n}')
+        ];
     }
 
 }
