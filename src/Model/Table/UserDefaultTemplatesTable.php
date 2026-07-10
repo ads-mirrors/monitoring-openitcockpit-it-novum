@@ -605,7 +605,7 @@ class UserDefaultTemplatesTable extends Table {
                 'Containers',
                 'Ldapgroups',
             ]);
-        
+
         if (!empty($MY_RIGHTS)) {
             $query->innerJoinWith('Containers', function (Query $query) use ($MY_RIGHTS) {
                 return $query->where(['Containers.id IN' => $MY_RIGHTS]);
@@ -642,13 +642,13 @@ class UserDefaultTemplatesTable extends Table {
             }
 
             $userDefaultTemplates[$userDefaultTemplateId]['user_containers'] = [
-                '_ids' => Hash::extract($result, '{n}.user_containers.{n}.id')
+                '_ids' => Hash::extract($result[$userDefaultTemplateId], 'user_containers.{n}.id')
             ];
             $userDefaultTemplates[$userDefaultTemplateId]['containers'] = [
-                '_ids' => Hash::extract($result, '{n}.containers.{n}.id')
+                '_ids' => Hash::extract($result[$userDefaultTemplateId], 'containers.{n}.id')
             ];
             $userDefaultTemplates[$userDefaultTemplateId]['ldapgroups'] = [
-                '_ids' => Hash::extract($result, '{n}.ldapgroups.{n}.id')
+                '_ids' => Hash::extract($result[$userDefaultTemplateId], 'ldapgroups.{n}.id')
             ];
 
             //Build up data struct for radio inputs (only of user containers - NOT for container roles)

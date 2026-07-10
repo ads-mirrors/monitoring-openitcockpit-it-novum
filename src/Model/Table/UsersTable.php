@@ -1944,4 +1944,19 @@ class UsersTable extends Table {
         }
         return $return;
     }
+
+    /**
+     * @return User[]
+     */
+    public function getUsersForLdapImport() {
+        $result = $this->find()
+            ->select([
+                'id',
+                'email'
+            ])
+            ->all();
+
+        return $result->toArray();
+    }
+
 }
