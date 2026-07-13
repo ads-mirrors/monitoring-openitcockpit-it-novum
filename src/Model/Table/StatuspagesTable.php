@@ -183,7 +183,7 @@ class StatuspagesTable extends Table {
         $validator
             ->integer('public_refresh')
             ->allowEmptyString('public_refresh', null, false)
-            ->greaterThanOrEqual('public_refresh', 1);
+            ->greaterThanOrEqual('public_refresh', 10);
 
         $validator
             ->boolean('public')
