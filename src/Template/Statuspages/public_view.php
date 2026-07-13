@@ -28,6 +28,7 @@
 //	under the terms of the openITCOCKPIT Enterprise Edition license agreement.
 //	License agreement and license key will be shipped with the order
 //	confirmation.;
+use Cake\I18n\DateTime;
 use itnovum\openITCOCKPIT\Core\Views\Logo;
 
 /**
@@ -73,6 +74,14 @@ $logo = new Logo();
                         </h4>
                         <div class="m-0 l-h-n">
                             <?= h($statuspage['statuspage']['description']); ?>
+                        </div>
+                        <div class="small mt-1">
+                            <?= __('Last refresh') ?>
+                            : <?= h((new DateTime())->format('Y-m-d H:i:s')) ?> <?= __('(Servertime)') ?>
+                        </div>
+                        <div class="small mt-1">
+                            <?= __('Refresh interval') ?>
+                            : <?= h($statuspage['statuspage']['public_refresh'] ?? 60) ?> <?= __(' seconds') ?>
                         </div>
                     </div>
 
