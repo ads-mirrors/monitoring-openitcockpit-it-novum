@@ -664,6 +664,14 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'sonicwall.svg',
                 'category'    => ['cloud', 'network'],
                 'active'      => true
+            ],
+            'arista-network'               => [
+                'type_id'     => 'arista-network',
+                'title'       => __('Arista Network'),
+                'description' => __('Monitor your Arista network via SNMP.'),
+                'image'       => 'arista-networks.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
             ]
         ];
 
