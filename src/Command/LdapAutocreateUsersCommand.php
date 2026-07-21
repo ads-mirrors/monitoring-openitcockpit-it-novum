@@ -184,7 +184,8 @@ class LdapAutocreateUsersCommand extends Command {
                 if (isset($user['ldapgroups']) && !empty($user['ldapgroups'])) {
                     foreach ($user['ldapgroups'] as $ldapgroup) {
                         if (isset($userDefaultTemplatesByLdapgroupIds[$ldapgroup['id']])) {
-                            $user['userDefaultTemplate'] = end($userDefaultTemplatesByLdapgroupIds[$ldapgroup['id']]);
+                            $user['userDefaultTemplate'] = $userDefaultTemplatesByLdapgroupIds[$ldapgroup['id']][0];
+                            break;
                         }
                     }
                 }
@@ -227,6 +228,8 @@ class LdapAutocreateUsersCommand extends Command {
                 'recursive_browser'          => $newUserFromLdap['userDefaultTemplate']['recursive_browser'],
                 'is_oauth'                   => $newUserFromLdap['userDefaultTemplate']['is_oauth'],
                 'usergroup_id'               => $newUserFromLdap['userDefaultTemplate']['usergroup_id'],
+                'container_id'               => $newUserFromLdap['userDefaultTemplate']['container_id'],
+                'user_default_template_id'   => $newUserFromLdap['userDefaultTemplate']['id'],
                 'ContainersUsersMemberships' => $newUserFromLdap['userDefaultTemplate']['UserDefaultTemplatesToUserContainers'],
                 'is_ldap'                    => true,
                 'password'                   => "",

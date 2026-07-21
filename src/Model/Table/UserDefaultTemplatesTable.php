@@ -111,6 +111,12 @@ class UserDefaultTemplatesTable extends Table {
             'saveStrategy'     => 'replace'
         ]);
 
+        $this->belongsTo('FallbackContainers', [
+            'className'  => 'Containers',
+            'foreignKey' => 'container_id',
+            'joinType'   => 'INNER'
+        ]);
+
     }
 
     /**
@@ -149,6 +155,12 @@ class UserDefaultTemplatesTable extends Table {
             ->requirePresence('usergroup_id', 'create')
             ->greaterThan('usergroup_id', 0, __('You have to select a user role.'))
             ->allowEmptyString('usergroup_id', null, false);
+
+        $validator
+            ->integer('container_id')
+            ->requirePresence('container_id', 'create')
+            ->allowEmptyString('container_id', null, false)
+            ->greaterThanOrEqual('container_id', 1);
 
         $validator
             ->scalar('timezone')
@@ -484,6 +496,7 @@ class UserDefaultTemplatesTable extends Table {
             ->select([
                 'UserDefaultTemplates.id',
                 'UserDefaultTemplates.usergroup_id',
+                'UserDefaultTemplates.container_id',
                 'UserDefaultTemplates.name',
                 'UserDefaultTemplates.description',
                 'UserDefaultTemplates.timezone',
@@ -588,6 +601,7 @@ class UserDefaultTemplatesTable extends Table {
             ->select([
                 'UserDefaultTemplates.id',
                 'UserDefaultTemplates.usergroup_id',
+                'UserDefaultTemplates.container_id',
                 'UserDefaultTemplates.name',
                 'UserDefaultTemplates.description',
                 'UserDefaultTemplates.timezone',
@@ -604,6 +618,7 @@ class UserDefaultTemplatesTable extends Table {
                 'UserContainers',
                 'Containers',
                 'Ldapgroups',
+                'FallbackContainers'
             ]);
 
         if (!empty($MY_RIGHTS)) {

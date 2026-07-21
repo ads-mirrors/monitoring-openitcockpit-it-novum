@@ -36,6 +36,8 @@ use Cake\ORM\Entity;
  * @property string $name
  * @property string $description
  * @property int $usergroup_id
+ * @property int $container_id
+ * @property int $user_default_template_id
  * @property string|null $timezone
  * @property string $i18n
  * @property string|null $dateformat
@@ -62,22 +64,24 @@ class UserDefaultTemplate extends Entity {
      * @var array<string, bool>
      */
     protected array $_accessible = [
-        'usergroup_id'           => true,
-        'name'                   => true,
-        'description'            => true,
-        'timezone'               => true,
-        'i18n'                   => true,
-        'dateformat'             => true,
-        'showstatsinmenu'        => true,
-        'dashboard_tab_rotation' => true,
-        'paginatorlength'        => true,
-        'recursive_browser'      => true,
-        'is_oauth'               => true,
-        'created'                => true,
-        'modified'               => true,
-        'usergroup'              => true,
-        'user_containers'        => true,
-        'containers'             => true,
-        'ldapgroups'             => true,
+        'usergroup_id'             => true,
+        'container_id'             => true,
+        'user_default_template_id' => true,
+        'name'                     => true,
+        'description'              => true,
+        'timezone'                 => true,
+        'i18n'                     => true,
+        'dateformat'               => true,
+        'showstatsinmenu'          => true,
+        'dashboard_tab_rotation'   => true,
+        'paginatorlength'          => true,
+        'recursive_browser'        => true,
+        'is_oauth'                 => true,
+        'created'                  => true,
+        'modified'                 => true,
+        'usergroup'                => true,
+        'user_containers'          => true,
+        'containers'               => true,
+        'ldapgroups'               => true,
     ];
 }

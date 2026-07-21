@@ -348,7 +348,7 @@ class UsersController extends AppController {
                         '{n}.id'
                     );
 
-                    $container = array_unique(array_merge($container, $containerWithWritePermissionByUserContainerRoles));
+                    $container = array_unique(array_merge($container, $containerWithWritePermissionByUserContainerRoles, [$user['container_id']]));
                     foreach ($container as $containerId) {
                         if ($this->isWritableContainer($containerId)) {
                             $user['allow_edit'] = true;
