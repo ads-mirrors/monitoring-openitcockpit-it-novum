@@ -246,6 +246,7 @@ class UserDefaultTemplatesTable extends Table {
             'Usergroups.id',
             'Usergroups.name',
         ])
+            ->matching('Containers')
             ->contain([
                 'Usergroups',
                 'Containers',
@@ -581,20 +582,12 @@ class UserDefaultTemplatesTable extends Table {
 
     /**
      * @param array $ldapgroupIds
-     * @param array $containerIds
      * @param array $MY_RIGHTS
      * @return
      */
-    public function getUserDefaultTemplatesForUserEdit(array $ldapgroupIds = [], array $containerIds = [], array $MY_RIGHTS = []) {
+    public function getUserDefaultTemplatesForUserEdit(array $ldapgroupIds = [], array $MY_RIGHTS = []) {
         if (!is_array($MY_RIGHTS)) {
             $MY_RIGHTS = [$MY_RIGHTS];
-        }
-
-        if (empty($ldapgroupIds) && empty($containerIds)) {
-            return [
-                'UserDefaultTemplates'       => [],
-                'UserDefaultTemplateDetails' => []
-            ];
         }
 
         $query = $this->find()
@@ -629,11 +622,6 @@ class UserDefaultTemplatesTable extends Table {
         if (!empty($ldapgroupIds)) {
             $query->innerJoinWith('Ldapgroups', function (Query $query) use ($ldapgroupIds) {
                 return $query->where(['Ldapgroups.id IN' => $ldapgroupIds]);
-            });
-        }
-        if (!empty($containerIds)) {
-            $query->innerJoinWith('UserContainers', function (Query $query) use ($containerIds) {
-                return $query->where(['UserContainers.id IN' => $containerIds]);
             });
         }
 

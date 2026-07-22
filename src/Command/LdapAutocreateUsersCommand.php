@@ -262,8 +262,6 @@ class LdapAutocreateUsersCommand extends Command {
             $UsersTable->getValidator()->remove('password');
             $UsersTable->getValidator()->remove('confirm_password');
 
-            debug($newUser);
-
             $user = $UsersTable->newEmptyEntity();
             $user = $UsersTable->patchEntity($user, $newUser);
 

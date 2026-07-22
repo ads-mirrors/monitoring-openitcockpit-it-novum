@@ -1365,20 +1365,7 @@ class UsersController extends AppController {
             throw new MethodNotAllowedException();
         }
 
-        $usercontainerRoleIds = $this->request->getQuery('usercontainerRoleIds', []);
-
         $ldapgroupIds = $this->request->getQuery('ldapgroupIds', []);
-
-        /** @var UsercontainerrolesTable $UsercontainerrolesTable */
-        $UsercontainerrolesTable = TableRegistry::getTableLocator()->get('Usercontainerroles');
-
-        $containerIds = [];
-        if (empty($ldapgroupIds) && !empty($usercontainerRoleIds)) {
-            $containerRolesWithContainerIds = $UsercontainerrolesTable->getUsercontanerRoleWithAllContainerIdsByIds($usercontainerRoleIds);
-            foreach ($containerRolesWithContainerIds as $containerRoleIds) {
-                $containerIds = array_merge($containerIds, array_values($containerRoleIds));
-            }
-        }
 
         /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
         $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
@@ -1389,7 +1376,7 @@ class UsersController extends AppController {
             $MY_RIGHTS = [];
         }
 
-        $userDefaultTemplatesAndDetails = $UserDefaultTemplatesTable->getUserDefaultTemplatesForUserEdit($ldapgroupIds, $containerIds, $MY_RIGHTS);
+        $userDefaultTemplatesAndDetails = $UserDefaultTemplatesTable->getUserDefaultTemplatesForUserEdit($ldapgroupIds, $MY_RIGHTS);
 
         $this->set('userDefaultTemplates', $userDefaultTemplatesAndDetails['UserDefaultTemplates']);
         $this->set('userDefaultTemplateDetails', $userDefaultTemplatesAndDetails['UserDefaultTemplateDetails']);
