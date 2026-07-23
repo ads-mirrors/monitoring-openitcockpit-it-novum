@@ -26,6 +26,8 @@
 namespace itnovum\openITCOCKPIT\Core\NodeJS;
 
 
+use App\itnovum\openITCOCKPIT\Core\Charts\AreaChart;
+use App\itnovum\openITCOCKPIT\Core\Utils\Text;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
 use GuzzleHttp\Exception\ConnectException;
@@ -53,12 +55,12 @@ class ChartRenderClient {
     /**
      * @var int
      */
-    private $width = 800;
+    private $width = 1000; //800;
 
     /**
      * @var int
      */
-    private $height = 350;
+    private $height = 400; //350;
 
     /**
      * @var int
@@ -159,9 +161,63 @@ class ChartRenderClient {
 
     /**
      * @param array $data
+     * @param bool $usePhpRenderer
      * @return string binary png image
      */
-    public function getAreaChartAsPngStream($data) {
+    public function getAreaChartAsPngStream($data, bool $usePhpRenderer = true) {
+        if ($usePhpRenderer) {
+            $Chart = new AreaChart($this->width, $this->height);
+            $Chart->setTitle($this->title);
+            $Chart->setXStart($this->startTimestamp);
+            $Chart->setXEnd($this->endTimestamp);
+            $Chart->setGapThreshold(3600); // Make a gap in the chart, if is the timespan between two data points is more than 3600 seconds
+            $Chart->setTheme('light');
+            $series1 = [];
+            $series2 = [];
+            $unit1 = !empty($data[0]['datasource']['unit']) ? $data[0]['datasource']['unit'] : '';
+            $unit2 = !empty($data[1]['datasource']['unit']) ? $data[1]['datasource']['unit'] : '';
+            $legend1 = !empty($data[0]['datasource']['label']) ? $data[0]['datasource']['label'] : '';
+            $legend2 = !empty($data[1]['datasource']['label']) ? $data[1]['datasource']['label'] : '';
+            $legend1 = Text::truncateMiddle($legend1, 70);
+            $legend2 = Text::truncateMiddle($legend2, 70);
+
+            foreach ($data[0]['data'] as $ts => $val) {
+                $series1[] = [
+                    'timestamp' => $ts,
+                    'value'     => $val,
+                ];
+            }
+            if (!empty($data[1]['data'])) {
+                foreach ($data[1]['data'] as $ts => $val) {
+                    $series2[] = [
+                        'timestamp' => $ts,
+                        'value'     => $val,
+                    ];
+                }
+            }
+
+            $Chart->setData($series1, $series2);
+            $Chart->setY1Unit($unit1);
+            $Chart->setY2Unit($unit2);
+            $Chart->setLegend($legend1, $legend2);
+
+            try {
+                return $Chart->getImageAsPngStream();
+            } catch (\Exception $e) {
+                $ErrorImage = new ErrorImage($this->width, $this->height);
+                $ErrorImage->setHeadline(sprintf(
+                    'Error: %s %s',
+                    $e->getCode(),
+                    $e->getMessage()
+                ));
+                $ErrorImage->setErrorText($e->getMessage());
+
+                return $ErrorImage->getImageAsPngStream();
+            }
+        }
+
+        // blow is the deprecated Puppeteer based ChartRender Server.
+        // This use a Chrome browser to render ChartJS Charts as PNG image - but it is super slow and CPU heavy.
         try {
             $response = $this->Client->post('/area_chart', [
                 RequestOptions::JSON => [

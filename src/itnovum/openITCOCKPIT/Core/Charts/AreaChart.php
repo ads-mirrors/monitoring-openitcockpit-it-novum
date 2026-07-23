@@ -393,8 +393,7 @@ class AreaChart {
      * @param array $series2 Second data series (optional)
      */
     public function setData(array $series1, array $series2 = []): void {
-
-        $this->validateSeries($series1, 'series1', false);
+        $this->validateSeries($series1, 'series1', true);
         $this->validateSeries($series2, 'series2', true);
 
         $series1 = $this->normalizeAndSortSeries($series1);
@@ -403,14 +402,38 @@ class AreaChart {
         $this->series1 = $series1;
         $this->series2 = $series2;
 
-        // Gather all timestamps for X axis range
-        $timestamps = array_column($series1, 'timestamp');
-        if (empty($timestamps)) {
-            throw new \InvalidArgumentException('No timestamps available in series1');
+        $timestamps = [];
+        if (!empty($series1)) {
+            $timestamps = array_merge($timestamps, array_column($series1, 'timestamp'));
         }
         if (!empty($series2)) {
             $timestamps = array_merge($timestamps, array_column($series2, 'timestamp'));
         }
+
+        if (empty($timestamps)) {
+            // Empty chart defaults
+            $now = time();
+            $this->minTime = $this->xStartOverride ?? ($now - 3600);
+            $this->maxTime = $this->xEndOverride ?? $now;
+            if ($this->minTime > $this->maxTime) {
+                [$this->minTime, $this->maxTime] = [$this->maxTime, $this->minTime];
+            }
+
+            $this->minY1 = $this->y1MinOverride ?? 0.0;
+            $this->maxY1 = $this->y1MaxOverride ?? 1.0;
+            if ($this->minY1 > $this->maxY1) {
+                [$this->minY1, $this->maxY1] = [$this->maxY1, $this->minY1];
+            }
+
+            $this->minY2 = $this->y2MinOverride;
+            $this->maxY2 = $this->y2MaxOverride;
+            if ($this->minY2 !== null && $this->maxY2 !== null && $this->minY2 > $this->maxY2) {
+                [$this->minY2, $this->maxY2] = [$this->maxY2, $this->minY2];
+            }
+
+            return;
+        }
+
         // Use override for X axis if set, otherwise use data min/max
         $this->minTime = $this->xStartOverride !== null ? $this->xStartOverride : min($timestamps);
         $this->maxTime = $this->xEndOverride !== null ? $this->xEndOverride : max($timestamps);
@@ -629,6 +652,18 @@ class AreaChart {
         $maxXTicks = 5;
         $tickCount = count($this->series1);
         $tickTimestamps = array_column($this->series1, 'timestamp');
+        if (empty($tickTimestamps) && !empty($this->series2)) {
+            $tickTimestamps = array_column($this->series2, 'timestamp');
+        }
+        if (empty($tickTimestamps)) {
+            $maxXTicks = 5;
+            $tickTimestamps = [];
+            $step = max(1, (int)(($this->maxTime - $this->minTime) / max(1, $maxXTicks - 1)));
+            for ($i = 0; $i < $maxXTicks; $i++) {
+                $tickTimestamps[] = $this->minTime + ($i * $step);
+            }
+            $tickTimestamps[$maxXTicks - 1] = $this->maxTime; // sauberer Endpunkt
+        }
 
         $ticks = $tickTimestamps;
 
@@ -850,6 +885,36 @@ class AreaChart {
     public function getImage(): \GdImage {
         $this->render();
         return $this->image;
+    }
+
+    public function getImageAsPngStream(): string {
+        $this->render();
+
+        $image = $this->image;
+
+        // In case we want to force it to be in memory 100% we can use php://memory
+        // php://temp will use memory, expect the image is to large (> 2mb, it will be written to disk)
+        $fp = fopen('php://temp', 'w+b');
+        if ($fp === false) {
+            throw new \RuntimeException('Unable to open temporary stream for PNG output.');
+        }
+
+        try {
+            if (!imagepng($image, $fp)) {
+                throw new \RuntimeException('Failed to encode PNG image.');
+            }
+
+            rewind($fp);
+            $png = stream_get_contents($fp);
+            if ($png === false) {
+                throw new \RuntimeException('Failed to read PNG stream.');
+            }
+        } finally {
+            fclose($fp);
+            imagedestroy($image);
+        }
+
+        return $png;
     }
 }
 
