@@ -1,5 +1,6 @@
 <?php
-// Copyright (C) <2015-present>  <it-novum GmbH>
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
 //
 // This file is dual licensed
 //
@@ -91,7 +92,8 @@ $routes->scope('/', function (RouteBuilder $builder) {
      */
     if (
         (!isset($_SERVER['HTTP_AUTHORIZATION']) || (isset($_SERVER['HTTP_AUTHORIZATION']) && strpos($_SERVER['HTTP_AUTHORIZATION'], 'X-OITC-API') === false)) &&
-        (!isset($_SERVER['QUERY_STRING']) || (isset($_SERVER['QUERY_STRING']) && strpos($_SERVER['QUERY_STRING'], 'apikey') === false))) {
+        (!isset($_SERVER['QUERY_STRING']) || (isset($_SERVER['QUERY_STRING']) && strpos($_SERVER['QUERY_STRING'], 'apikey') === false)) &&
+        (!isset($_SERVER['HTTP_X_OITC_API']))) {
 
         $builder->applyMiddleware('csrf');
     }
