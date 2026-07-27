@@ -54,6 +54,7 @@ use Cake\Core\Configure;
 use Cake\Core\Exception\MissingPluginException;
 use Cake\Error\Middleware\ErrorHandlerMiddleware;
 use Cake\Http\BaseApplication;
+use Cake\Http\Cookie\CookieInterface;
 use Cake\Http\Middleware\BodyParserMiddleware;
 use Cake\Http\Middleware\CsrfProtectionMiddleware;
 use Cake\Http\MiddlewareQueue;
@@ -123,7 +124,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         // Register scoped middleware for use in routes.php
         $routes->registerMiddleware('csrf', new CsrfProtectionMiddleware([
             'httponly' => true,
-            'secure'   => true
+            'secure'   => true,
+            'samesite' => CookieInterface::SAMESITE_LAX
         ]));
 
         parent::routes($routes);
