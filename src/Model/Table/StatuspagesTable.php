@@ -655,11 +655,19 @@ class StatuspagesTable extends Table {
                 if (!empty($objectGroup['_joinData']['display_alias'])) {
                     $name = $objectGroup['_joinData']['display_alias'];
                 }
+                $tags = [];
+                //$tagstring = null;
+                if (!empty($objectGroup['_joinData']['group_tags'])) {
+                    $tags = explode(',', $objectGroup['_joinData']['group_tags']);
+                    //$tagstring = $objectGroup['_joinData']['group_tags'];
+                }
+
 
                 $item = [
                     'type'                => $itemTypes[$objectType], // Legacy at its best
                     'id'                  => $objectGroup['id'],
                     'name'                => $name,
+                    'tags'                => $tags,
                     'cumulatedStateName'  => $stateNames['hosts'][-1], // State for humans
                     'cumulatedColorId'    => -1, // Numeric state representation
                     'cumulatedColor'      => 'not-monitored', // For texts, backgrounds and shadows
