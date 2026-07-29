@@ -73,6 +73,7 @@ class Statuspage extends Entity {
         'public_identifier'             => true,
         'public_refresh'                => true,
         'public'                        => true,
+        'grouped'                       => true,
         'show_downtimes'                => true,
         'show_downtime_comments'        => true,
         'show_acknowledgements'         => true,

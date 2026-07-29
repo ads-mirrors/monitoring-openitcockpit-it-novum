@@ -190,6 +190,10 @@ class StatuspagesTable extends Table {
             ->notEmptyString('public');
 
         $validator
+            ->boolean('grouped')
+            ->notEmptyString('grouped');
+
+        $validator
             ->boolean('show_downtimes')
             ->allowEmptyString('show_downtimes');
 
@@ -904,6 +908,7 @@ class StatuspagesTable extends Table {
                     'public_identifier'           => $statuspage['public_identifier'],
                     'public_refresh'              => $statuspage['public_refresh'],
                     'public'                      => $statuspage['public'],
+                    'grouped'                     => $statuspage['grouped'],
                     'showDowntimes'               => $statuspage['show_downtimes'],
                     'showDowntimeComments'        => $statuspage['show_downtime_comments'],
                     'showAcknowledgements'        => $statuspage['show_acknowledgements'],
@@ -916,8 +921,37 @@ class StatuspagesTable extends Table {
                 'items'      => [],
             ];
         }
-
         $items = Hash::sort($items, '{n}.cumulatedColorId', 'desc');
+        if(!empty($statuspage['grouped'])) {
+            $groupedItems = [];
+            $fallbackGroupName = 'Ungrouped';
+
+            foreach ($items as $item) {
+                if (!empty($item['tags'])) {
+                    foreach ($item['tags'] as $tag) {
+                        $tag = trim($tag);
+                        if ($tag !== '') {
+                            $groupedItems[$tag][] = $item;
+                        }
+                    }
+                } else {
+                    $groupedItems[$fallbackGroupName][] = $item;
+                }
+            }
+
+            foreach ($groupedItems as $groupName => &$groupContent) {
+                $groupContent = Hash::sort($groupContent, '{n}.cumulatedColorId', 'desc');
+            }
+            unset($groupContent);
+
+            if (isset($groupedItems[$fallbackGroupName])) {
+                $fallbackGroup = $groupedItems[$fallbackGroupName];
+                unset($groupedItems[$fallbackGroupName]);
+                $groupedItems[$fallbackGroupName] = $fallbackGroup;
+            }
+        }
+
+
 
         $statuspageView = [
             'statuspage' => [
@@ -928,6 +962,7 @@ class StatuspagesTable extends Table {
                 'public_identifier'           => $statuspage['public_identifier'],
                 'public_refresh'              => $statuspage['public_refresh'],
                 'public'                      => $statuspage['public'],
+                'grouped'                     => $statuspage['grouped'],
                 'showDowntimes'               => $statuspage['show_downtimes'],
                 'showDowntimeComments'        => $statuspage['show_downtime_comments'],
                 'showAcknowledgements'        => $statuspage['show_acknowledgements'],
@@ -937,8 +972,13 @@ class StatuspagesTable extends Table {
                 'cumulatedHumanStatus'        => $items[0]['cumulatedStateName'],
                 'cumulatedIcon'               => $stateIcons[$items[0]['cumulatedColorId']] ?? 'fa-solid fa-eye-low-vision',
             ],
-            'items'      => $items,
         ];
+        if (!empty($statuspage['grouped'])) {
+            $statuspageView['groupedItems'] = $groupedItems;
+        } else {
+            $statuspageView['items'] = $items;
+        }
+
         return $statuspageView;
     }
 
