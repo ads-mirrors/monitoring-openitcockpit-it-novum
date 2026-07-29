@@ -137,7 +137,6 @@ class HostsController extends AppController {
     const PARENTS_CHILDREN_TREE_CHILDREN_GROUP = "hostChildrenGroup";
 
     public function index() {
-        /** @var User $User */
         $User = new User($this->getUser());
 
         /** @var SystemsettingsTable $SystemsettingsTable */
@@ -150,7 +149,7 @@ class HostsController extends AppController {
         $satellites = [];
 
         if (Plugin::isLoaded('DistributeModule')) {
-            /** @var \DistributeModule\Model\Table\SatellitesTable $SatellitesTable */
+            /** @var SatellitesTable $SatellitesTable */
             $SatellitesTable = TableRegistry::getTableLocator()->get('DistributeModule.Satellites');
 
             $satellites = $SatellitesTable->getSatellitesAsListWithDescription($this->MY_RIGHTS);
@@ -216,6 +215,7 @@ class HostsController extends AppController {
             //$modelName = 'Hoststatus';
         }
 
+        $hosts = [];
         if ($this->DbBackend->isStatusengine3()) {
             $hosts = $HostsTable->getHostsIndexStatusengine3($HostFilter, $HostCondition, $PaginateOMat);
         }
@@ -336,6 +336,8 @@ class HostsController extends AppController {
 
             $all_hosts[] = $tmpRecord;
         }
+
+
         $this->set('all_hosts', $all_hosts);
         $this->set('username', $User->getFullName());
         $this->viewBuilder()->setOption('serialize', ['all_hosts', 'username']);
@@ -538,7 +540,7 @@ class HostsController extends AppController {
             if ($this->hasRootPrivileges === false) {
                 $MY_RIGHTS = $this->MY_RIGHTS;
             }
-            /** @var $SatellitesTable \DistributeModule\Model\Table\SatellitesTable */
+            /** @var $SatellitesTable SatellitesTable */
             $SatellitesTable = TableRegistry::getTableLocator()->get('DistributeModule.Satellites');
             $SatelliteNames = $SatellitesTable->getSatellitesAsListWithDescription($MY_RIGHTS);
             $SatelliteNames[0] = $masterInstanceName;
@@ -1486,7 +1488,7 @@ class HostsController extends AppController {
             if ($this->hasRootPrivileges === false) {
                 $MY_RIGHTS = $this->MY_RIGHTS;
             }
-            /** @var $SatellitesTable \DistributeModule\Model\Table\SatellitesTable */
+            /** @var $SatellitesTable SatellitesTable */
             $SatellitesTable = TableRegistry::getTableLocator()->get('DistributeModule.Satellites');
             $SatelliteNames = $SatellitesTable->getSatellitesAsListWithDescription($MY_RIGHTS);
             $SatelliteNames[0] = $masterInstanceName;
@@ -2537,7 +2539,6 @@ class HostsController extends AppController {
             (int)$id,
             Hash::extract($mergedHost, 'hostgroups.{n}.id')
         );
-        //dd($hasHostDependencies);
         $MY_RIGHTS = $this->MY_RIGHTS;
         if ($this->hasRootPrivileges) {
             $MY_RIGHTS = [];
@@ -2648,7 +2649,7 @@ class HostsController extends AppController {
 
         $satellites = [];
         if (Plugin::isLoaded('DistributeModule')) {
-            /** @var \DistributeModule\Model\Table\SatellitesTable $SatellitesTable */
+            /** @var SatellitesTable $SatellitesTable */
             $SatellitesTable = TableRegistry::getTableLocator()->get('DistributeModule.Satellites');
 
             $satellites = $SatellitesTable->getSatellitesAsListWithDescription($this->MY_RIGHTS);
@@ -2762,7 +2763,7 @@ class HostsController extends AppController {
 
         $satellites = [];
         if (Plugin::isLoaded('DistributeModule')) {
-            /** @var \DistributeModule\Model\Table\SatellitesTable $SatellitesTable */
+            /** @var SatellitesTable $SatellitesTable */
             $SatellitesTable = TableRegistry::getTableLocator()->get('DistributeModule.Satellites');
 
             $satellites = $SatellitesTable->getSatellitesAsListWithDescription($this->MY_RIGHTS);
