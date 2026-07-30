@@ -962,19 +962,19 @@ class StatuspagesTable extends Table {
             $groupA = $groupedMap[$keyA];
             $groupB = $groupedMap[$keyB];
 
-            // 1. primary sort by status
+            // primary sort by status
             if ($groupA['colorId'] !== $groupB['colorId']) {
                 return ($groupA['colorId'] < $groupB['colorId']) ? 1 : -1;
             }
 
-            // 2. Bei GLEICHEM Status: Echte Gruppen vor "Ungrouped"
+            // same State grouped sorted before ungrouped
             $isFallbackA = ($groupA['groupName'] === $fallbackPrefix);
             $isFallbackB = ($groupB['groupName'] === $fallbackPrefix);
 
             if ($isFallbackA && !$isFallbackB) return 1;
             if (!$isFallbackA && $isFallbackB) return -1;
 
-            // 3. Bei gleichen echten Gruppen und gleichem Status: Alphabetisch nach Gruppenname
+            // Same name, same state, order by name-
             return strnatcasecmp($groupA['groupName'], $groupB['groupName']);
         });
 
