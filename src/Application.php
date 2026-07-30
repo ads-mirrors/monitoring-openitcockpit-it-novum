@@ -22,6 +22,7 @@
 //     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
 //     License agreement and license key will be shipped with the order
 //     confirmation.
+//
 
 namespace App;
 
@@ -110,25 +111,6 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
         }
 
         $this->addPlugin('Dbml');
-    }
-
-    /**
-     * Define the routes for an application.
-     *
-     * Use the provided RouteBuilder to define an application's routing, register scoped middleware.
-     *
-     * @param \Cake\Routing\RouteBuilder $routes A route builder to add routes into.
-     * @return void
-     */
-    public function routes($routes): void {
-        // Register scoped middleware for use in routes.php
-        $routes->registerMiddleware('csrf', new CsrfProtectionMiddleware([
-            'httponly' => true,
-            'secure'   => true,
-            'samesite' => CookieInterface::SAMESITE_LAX
-        ]));
-
-        parent::routes($routes);
     }
 
     /**
@@ -253,7 +235,6 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
     public function middleware($middlewareQueue): MiddlewareQueue {
         $middlewareQueue
             //->add(new CorsMiddleware())
-
             ->add(new BodyParserMiddleware())
 
             // Catch any exceptions in the lower layers,
@@ -278,8 +259,53 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             ]))
             ->add(new LdapUsergroupIdMiddleware()) // ITC-2693
             ->add(new AuthorizationMiddleware($this))
-            ->add(new RequestAuthorizationMiddleware());
+            ->add(new RequestAuthorizationMiddleware())
+            ->add($this->buildCsrfMiddleware());
 
         return $middlewareQueue;
     }
+
+    private function buildCsrfMiddleware(): CsrfProtectionMiddleware {
+        $csrfProtectionMiddleware = new CsrfProtectionMiddleware([
+            'httponly' => true,
+            'secure'   => true,
+            'samesite' => CookieInterface::SAMESITE_LAX
+        ]);
+        $csrfProtectionMiddleware->skipCheckCallback($this->skipCsrfCheck(...));
+
+        return $csrfProtectionMiddleware;
+    }
+
+    /**
+     * Token check will be skipped when this returns `true`.
+     *
+     * @param ServerRequestInterface $request
+     * @return bool
+     */
+    private function skipCsrfCheck(ServerRequestInterface $request): bool {
+        // Controller/action pairs without CSRF protection (lowercase)
+        $skipActions = [
+            'hosts.index',    // ITC-2640
+            'services.index', // ITC-3349
+        ];
+
+        // ITC-3806: Disable CSRF check for users authenticated with API Token.
+        $service = $request->getAttribute('authentication');
+        if ($service instanceof AuthenticationServiceInterface
+            && $service->getAuthenticationProvider() instanceof ApikeyAuthenticator
+        ) {
+            return true;
+        }
+
+        $params = $request->getAttribute('params', []);
+        if (!empty($params['plugin']) || !empty($params['prefix'])) {
+            // Only exempt actions of the main application
+            return false;
+        }
+
+        $key = strtolower(sprintf('%s.%s', $params['controller'] ?? '', $params['action'] ?? ''));
+
+        return in_array($key, $skipActions, true);
+    }
+
 }
