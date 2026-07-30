@@ -902,6 +902,7 @@ class StatuspagesTable extends Table {
             return [
                 'statuspage' => [
                     'uuid'                        => $statuspage['uuid'],
+                    'id'                          => $id,
                     'name'                        => $statuspage['name'],
                     'description'                 => $statuspage['description'],
                     'public_title'                => $statuspage['public_title'],
@@ -922,47 +923,75 @@ class StatuspagesTable extends Table {
             ];
         }
         $items = Hash::sort($items, '{n}.cumulatedColorId', 'desc');
-        if(!empty($statuspage['grouped'])) {
-            $groupedItems = [];
-            $fallbackGroupName = 'Ungrouped';
 
-            foreach ($items as $item) {
-                if (!empty($item['tags'])) {
-                    foreach ($item['tags'] as $tag) {
-                        $tag = trim($tag);
-                        if ($tag !== '') {
-                            $groupedItems[$tag][] = $item;
-                        }
+        $groupedMap = [];
+        $fallbackPrefix = 'Ungrouped';
+
+// 1. Items grouped by tag and status
+        foreach ($items as $item) {
+            $colorId = $item['cumulatedColorId'] ?? 0;
+
+            if (!empty($item['tags'])) {
+                foreach ($item['tags'] as $tag) {
+                    $tag = trim($tag);
+                    if ($tag !== '') {
+                        // Key kombiniert Tag und Status (z.B. "FIOB_99" und "FIOB_0")
+                        $groupedMap[$tag . '_' . $colorId]['groupName'] = $tag;
+                        $groupedMap[$tag . '_' . $colorId]['colorId'] = $colorId;
+                        $groupedMap[$tag . '_' . $colorId]['items'][] = $item;
                     }
-                } else {
-                    $groupedItems[$fallbackGroupName][] = $item;
                 }
-            }
-
-            foreach ($groupedItems as $groupName => &$groupContent) {
-                $groupContent = Hash::sort($groupContent, '{n}.cumulatedColorId', 'desc');
-            }
-            unset($groupContent);
-
-            if (isset($groupedItems[$fallbackGroupName])) {
-                $fallbackGroup = $groupedItems[$fallbackGroupName];
-                unset($groupedItems[$fallbackGroupName]);
-                $groupedItems[$fallbackGroupName] = $fallbackGroup;
+            } else {
+                // ungrouped items sorted by status
+                $groupedMap[$fallbackPrefix . '_' . $colorId]['groupName'] = $fallbackPrefix;
+                $groupedMap[$fallbackPrefix . '_' . $colorId]['colorId'] = $colorId;
+                $groupedMap[$fallbackPrefix . '_' . $colorId]['items'][] = $item;
             }
         }
 
+        //  sort groups
+        uksort($groupedMap, function ($keyA, $keyB) use ($groupedMap, $fallbackPrefix) {
+            $groupA = $groupedMap[$keyA];
+            $groupB = $groupedMap[$keyB];
+
+            // 1. primary sort by status
+            if ($groupA['colorId'] !== $groupB['colorId']) {
+                return ($groupA['colorId'] < $groupB['colorId']) ? 1 : -1;
+            }
+
+            // 2. Bei GLEICHEM Status: Echte Gruppen vor "Ungrouped"
+            $isFallbackA = ($groupA['groupName'] === $fallbackPrefix);
+            $isFallbackB = ($groupB['groupName'] === $fallbackPrefix);
+
+            if ($isFallbackA && !$isFallbackB) return 1;
+            if (!$isFallbackA && $isFallbackB) return -1;
+
+            // 3. Bei gleichen echten Gruppen und gleichem Status: Alphabetisch nach Gruppenname
+            return strnatcasecmp($groupA['groupName'], $groupB['groupName']);
+        });
+
+        //  transform to frontrend-array
+        $groupedItems = [];
+        foreach ($groupedMap as $groupData) {
+            $groupedItems[] = [
+                'group' => $groupData['groupName'],
+                'colorId' => $groupData['colorId'],
+                'isUngrouped' => ($groupData['groupName'] === $fallbackPrefix),
+                'items' => $groupData['items']
+            ];
+        }
 
 
         $statuspageView = [
             'statuspage' => [
                 'uuid'                        => $statuspage['uuid'],
+                'id'                          => $id,
                 'name'                        => $statuspage['name'],
                 'description'                 => $statuspage['description'],
                 'public_title'                => $statuspage['public_title'],
                 'public_identifier'           => $statuspage['public_identifier'],
                 'public_refresh'              => $statuspage['public_refresh'],
                 'public'                      => $statuspage['public'],
-                'grouped'                     => $statuspage['grouped'],
                 'showDowntimes'               => $statuspage['show_downtimes'],
                 'showDowntimeComments'        => $statuspage['show_downtime_comments'],
                 'showAcknowledgements'        => $statuspage['show_acknowledgements'],
@@ -972,12 +1001,9 @@ class StatuspagesTable extends Table {
                 'cumulatedHumanStatus'        => $items[0]['cumulatedStateName'],
                 'cumulatedIcon'               => $stateIcons[$items[0]['cumulatedColorId']] ?? 'fa-solid fa-eye-low-vision',
             ],
+            'items' => $items,
+            'groupedItems' => $groupedItems,
         ];
-        if (!empty($statuspage['grouped'])) {
-            $statuspageView['groupedItems'] = $groupedItems;
-        } else {
-            $statuspageView['items'] = $items;
-        }
 
         return $statuspageView;
     }
