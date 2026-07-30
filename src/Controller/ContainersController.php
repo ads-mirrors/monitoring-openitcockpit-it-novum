@@ -607,4 +607,40 @@ class ContainersController extends AppController {
             'satellites'
         ]);
     }
+
+    public function loadContainersByContainerIds() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var $ContainersTable ContainersTable */
+        $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
+
+        $containerIds = $this->request->getQuery('containerIds', []);
+
+        foreach ($containerIds as $containerId) {
+            if (!$ContainersTable->existsById($containerId)) {
+                throw new NotFoundException(__('Invalid container'));
+            }
+        }
+
+        $removeRoot = true;
+        if (in_array(ROOT_CONTAINER, $containerIds)) {
+            $removeRoot = false;
+        }
+
+        $containerIds = $ContainersTable->resolveChildrenOfContainerIds($containerIds, true);
+
+        if ($removeRoot) {
+            unset($containerIds[0]);
+        }
+
+        //$containers = $ContainersTable->easyPath($containerIds, CT_TENANT, [], true);
+        $containers = $ContainersTable->easyPath($containerIds, OBJECT_HOST, [], $this->hasRootPrivileges, [CT_HOSTGROUP]);
+        $containers = Api::makeItJavaScriptAble($containers);
+
+        $this->set('containers', $containers);
+        $this->viewBuilder()->setOption('serialize', ['containers']);
+
+    }
 }

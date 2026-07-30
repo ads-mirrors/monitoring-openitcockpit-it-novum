@@ -663,6 +663,30 @@ class Menu {
                     true,
                     '/FilterbookmarkAllocations/index'
                 ))
+                ->addLink(new MenuLink(
+                    __('User Default Templates'),
+                    'UserDefaultTemplatesIndex',
+                    'UserDefaultTemplates',
+                    'index',
+                    '',
+                    ['fas', 'user-plus'],
+                    [],
+                    6,
+                    true,
+                    '/userDefaultTemplates/index'
+                ))
+                ->addLink(new MenuLink(
+                    __('Manage LDAP Groups'),
+                    'LdapgroupsIndex',
+                    'Ldapgroups',
+                    'index',
+                    '',
+                    ['fas', 'users-gear'],
+                    [],
+                    7,
+                    true,
+                    '/ldapgroups/index'
+                ))
             )
             ->addCategory((new MenuCategory(
                 'container_mgmt_category',
