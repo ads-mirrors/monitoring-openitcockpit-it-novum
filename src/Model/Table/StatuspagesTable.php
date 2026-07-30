@@ -924,6 +924,14 @@ class StatuspagesTable extends Table {
         }
         $items = Hash::sort($items, '{n}.cumulatedColorId', 'desc');
 
+        $colorMap = [
+            -1 => 'not-monitored',
+            0 => 'ok',
+            1 => 'warning',
+            2 => 'critical',
+            3 => 'unknown'
+        ];
+
         $groupedMap = [];
         $fallbackPrefix = 'Ungrouped';
 
@@ -973,9 +981,13 @@ class StatuspagesTable extends Table {
         //  transform to frontrend-array
         $groupedItems = [];
         foreach ($groupedMap as $groupData) {
+            $colorId = $groupData['colorId'];
+
             $groupedItems[] = [
                 'group' => $groupData['groupName'],
-                'colorId' => $groupData['colorId'],
+                'colorId' => $colorId,
+                // Liefert direkt 'ok', 'warning', 'critical', 'unknown' oder 'not-monitored'
+                'cumulatedColor' => $colorMap[$colorId] ?? 'unknown',
                 'isUngrouped' => ($groupData['groupName'] === $fallbackPrefix),
                 'items' => $groupData['items']
             ];
