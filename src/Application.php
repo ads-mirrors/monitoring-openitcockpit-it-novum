@@ -22,7 +22,6 @@
 //     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
 //     License agreement and license key will be shipped with the order
 //     confirmation.
-//
 
 namespace App;
 
@@ -271,6 +270,10 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             'secure'   => true,
             'samesite' => CookieInterface::SAMESITE_LAX
         ]);
+
+        // pass skipCsrfCheck as callback method. This is the new php 8.1 syntax. in older php versions we used to write it like so
+        // $csrfProtectionMiddleware->skipCheckCallback([$this, 'skipCsrfCheck']);
+        // but the old array method is not very IDE and type safety friendly.
         $csrfProtectionMiddleware->skipCheckCallback($this->skipCsrfCheck(...));
 
         return $csrfProtectionMiddleware;
