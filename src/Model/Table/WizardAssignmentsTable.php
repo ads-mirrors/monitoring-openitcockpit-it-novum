@@ -672,6 +672,14 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'symantec.svg',
                 'category'    => ['network', 'mail'],
                 'active'      => true
+            ],
+            'arista-network'               => [
+                'type_id'     => 'arista-network',
+                'title'       => __('Arista Network'),
+                'description' => __('Monitor your Arista network via SNMP.'),
+                'image'       => 'arista-networks.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
             ]
         ];
 
