@@ -124,90 +124,118 @@ $logo = new Logo();
                                                 </div>
                                                 <!-- end of status name -->
                                                 <!-- Handle acknowledgement comments -->
+                                                <!-- Handle acknowledgement comments -->
                                                 <?php if (!empty($item['acknowledgedProblemsText']) && $statuspage['statuspage']['showAcknowledgements'] && $item['cumulatedColorId'] > 0): ?>
-                                                    <div class="col-12">
-                                                        <div class="row">
-                                                            <div class="col-12">
-                                                                <?php if (!empty($item['acknowledgedProblemsText'])): ?>
-                                                                    <div>
-                                                                        <i class="far fa-user"></i>
-                                                                        <?= h($item['acknowledgedProblemsText']); ?>
-                                                                    </div>
-                                                                <?php endif; ?>
-                                                                <?php if (!empty($item['acknowledgeComment'])): ?>
-                                                                    <?php foreach ($item['acknowledgeComment'] as $comment): ?>
-                                                                        <div class="text-truncate">
-                                                                            <?php echo __('Comment'); ?>
-                                                                            : <?= h($comment); ?>
-                                                                        </div>
-                                                                    <?php endforeach; ?>
-                                                                <?php endif; ?>
-                                                                <!-- Handle acknowledgement comments -->
-                                                            </div>
+                                                    <?php
+                                                    // Eindeutige ID für jedes Objekt erzeugen
+                                                    $uniqueId = 'ack-comments-' . h($item['type'] ?? 'item') . '-' . h($item['id']);
+                                                    $hasComments = !empty($item['acknowledgeComment']);
+                                                    ?>
+                                                    <div class="col-12 mt-2">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="far fa-user me-2"></i>
+
+                                                            <?php if ($hasComments): ?>
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-link p-0 me-2 text-decoration-none"
+                                                                        onclick="toggleSection('<?= $uniqueId; ?>', this)"
+                                                                        title="<?= __('expand comments'); ?>">
+                                                                    <i class="far fa-plus-square fa-lg icon-toggle"></i>
+                                                                </button>
+                                                            <?php endif; ?>
+
+                                                            <span><?= h($item['acknowledgedProblemsText']); ?></span>
                                                         </div>
+
+                                                        <?php if ($hasComments): ?>
+                                                            <div id="<?= $uniqueId; ?>" class="ps-4 mt-1" style="display: none;">
+                                                                <?php foreach ($item['acknowledgeComment'] as $comment): ?>
+                                                                    <div class="text-truncate small text-muted">
+                                                                        <strong><?= __('Comment'); ?>:</strong> <?= h($comment); ?>
+                                                                    </div>
+                                                                <?php endforeach; ?>
+                                                            </div>
+                                                        <?php endif; ?>
                                                     </div>
                                                 <?php endif; ?>
-                                                <!-- handle current downtime comments -->
+                                                <!-- handle downtimes -->
                                                 <?php if ($statuspage['statuspage']['showDowntimes']): ?>
+                                                    <!-- Current Downtimes -->
                                                     <?php if (!empty($item['downtimeData']) && count($item['downtimeData']) > 0): ?>
-                                                        <div class="col-12 ">
+                                                        <?php $currentId = 'current-downtime-' . h($item['type'] ?? 'item') . '-' . h($item['id']); ?>
+                                                        <div class="col-12">
                                                             <div class="row">
-                                                                <div class="col-12 ">
-                                                                    <div class="pt-1">
-                                                                        <i class="fa fa-power-off"></i>
-                                                                        <?= __('Currently under maintenance.'); ?>
+                                                                <div class="col-12">
+                                                                    <div class="pt-1 d-flex align-items-center">
+                                                                        <i class="fa fa-power-off me-1"></i>
+                                                                        <button type="button"
+                                                                                class="btn btn-sm btn-link p-0 me-2 text-decoration-none"
+                                                                                onclick="toggleSection('<?= $currentId; ?>', this)"
+                                                                                title="<?= __('expand downtime data'); ?>">
+                                                                            <i class="far fa-plus-square fa-lg icon-toggle"></i>
+                                                                        </button>
+                                                                        <span><?= count($item['downtimeData']); ?> <?= __('current maintenances'); ?></span>
                                                                     </div>
-                                                                    <?php foreach ($item['downtimeData'] as $downtime): ?>
-                                                                        <div class="row">
-                                                                            <div class="col-xs-12 col-md-3">
-                                                                                <?= __('Start'); ?>:
-                                                                                <?= h($downtime['scheduledStartTime']); ?>
+
+                                                                    <!-- Collapsible Container (Hidden by default) -->
+                                                                    <div id="<?= $currentId; ?>" class="mt-2" style="display: none;">
+                                                                        <?php foreach ($item['downtimeData'] as $downtime): ?>
+                                                                            <div class="row mb-1">
+                                                                                <div class="col-xs-12 col-md-3">
+                                                                                    <strong><?= __('Start'); ?>:</strong> <?= h($downtime['scheduledStartTime']); ?>
+                                                                                </div>
+                                                                                <div class="col-xs-12 col-md-3">
+                                                                                    <strong><?= __('End'); ?>:</strong> <?= h($downtime['scheduledEndTime']); ?>
+                                                                                </div>
+                                                                                <div class="col-xs-12 col-md-3">
+                                                                                    <strong><?= __('Comment'); ?>:</strong> <?= h($downtime['comment']); ?>
+                                                                                </div>
                                                                             </div>
-                                                                            <div class="col-xs-12 col-md-3">
-                                                                                <?= __('End'); ?>:
-                                                                                <?= h($downtime['scheduledEndTime']); ?>
-                                                                            </div>
-                                                                            <div class="col-xs-12 col-md-3">
-                                                                                <?= __('Comment'); ?>:
-                                                                                <?= h($downtime['comment']); ?>
-                                                                            </div>
-                                                                        </div>
-                                                                    <?php endforeach; ?>
+                                                                        <?php endforeach; ?>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     <?php endif; ?>
                                                     <!-- end of current downtimes -->
-                                                    <!-- handle plant downtime comments -->
+                                                    <!-- Planned Downtimes -->
                                                     <?php if (!empty($item['plannedDowntimeData']) && count($item['plannedDowntimeData']) > 0): ?>
-                                                        <div class="col-12 ">
+                                                        <?php $plannedId = 'planned-downtime-' . h($item['type'] ?? 'item') . '-' . h($item['id']); ?>
+                                                        <div class="col-12 mt-2">
                                                             <div class="row">
-                                                                <div class="col-12 ">
-                                                                    <div class="pt-1">
-                                                                        <i class="fa fa-power-off"></i>
-                                                                        <?= __('Scheduled maintenance for the next 10 days:'); ?>
+                                                                <div class="col-12">
+                                                                    <div class="pt-1 d-flex align-items-center">
+                                                                        <i class="fa fa-power-off me-1"></i>
+                                                                        <button type="button"
+                                                                                class="btn btn-sm btn-link p-0 me-2 text-decoration-none"
+                                                                                onclick="toggleSection('<?= $plannedId; ?>', this)"
+                                                                                title="<?= __('expand downtime data'); ?>">
+                                                                            <i class="far fa-plus-square fa-lg icon-toggle"></i>
+                                                                        </button>
+                                                                        <span><?= count($item['plannedDowntimeData']); ?> <?= __('scheduled maintenances for the next 10 days'); ?></span>
                                                                     </div>
-                                                                    <?php foreach ($item['plannedDowntimeData'] as $downtime): ?>
-                                                                        <div class="row">
-                                                                            <div class="col-xs-12 col-md-3">
-                                                                                <?= __('Start'); ?>:
-                                                                                <?= h($downtime['scheduledStartTime']); ?>
+
+                                                                    <!-- Collapsible Container (Hidden by default) -->
+                                                                    <div id="<?= $plannedId; ?>" class="mt-2" style="display: none;">
+                                                                        <?php foreach ($item['plannedDowntimeData'] as $downtime): ?>
+                                                                            <div class="row mb-1">
+                                                                                <div class="col-xs-12 col-md-3">
+                                                                                    <strong><?= __('Start'); ?>:</strong> <?= h($downtime['scheduledStartTime']); ?>
+                                                                                </div>
+                                                                                <div class="col-xs-12 col-md-3">
+                                                                                    <strong><?= __('End'); ?>:</strong> <?= h($downtime['scheduledEndTime']); ?>
+                                                                                </div>
+                                                                                <div class="col-xs-12 col-md-3">
+                                                                                    <strong><?= __('Comment'); ?>:</strong> <?= h($downtime['comment']); ?>
+                                                                                </div>
                                                                             </div>
-                                                                            <div class="col-xs-12 col-md-3">
-                                                                                <?= __('End'); ?>:
-                                                                                <?= h($downtime['scheduledEndTime']); ?>
-                                                                            </div>
-                                                                            <div class="col-xs-12 col-md-3">
-                                                                                <?= __('Comment'); ?>:
-                                                                                <?= h($downtime['comment']); ?>
-                                                                            </div>
-                                                                        </div>
-                                                                    <?php endforeach; ?>
+                                                                        <?php endforeach; ?>
+                                                                    </div>
                                                                 </div>
                                                             </div>
                                                         </div>
                                                     <?php endif; ?>
-                                                    <!-- end of planed downtimes -->
+                                                    <!-- end of planned downtimes -->
                                                 <?php endif; ?>
                                             </div>
                                         </div>
@@ -228,3 +256,27 @@ $logo = new Logo();
         </div>
     </div>
 </div>
+
+<script>
+    function toggleSection(elementId, btn) {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        const icon = btn.querySelector('.icon-toggle');
+
+        if (container.style.display === 'none') {
+            container.style.display = 'block';
+            if (icon) {
+                icon.classList.remove('fa-plus-square');
+                icon.classList.add('fa-minus-square');
+            }
+        } else {
+            container.style.display = 'none';
+            if (icon) {
+                icon.classList.remove('fa-minus-square');
+                icon.classList.add('fa-plus-square');
+            }
+        }
+    }
+
+</script>
