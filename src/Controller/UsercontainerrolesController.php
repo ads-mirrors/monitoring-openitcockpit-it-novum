@@ -406,9 +406,11 @@ class UsercontainerrolesController extends AppController {
             }
 
             $usercontainerrole = $UsercontainerrolesTable->getUserContainerRoleForEdit($id);
-            if (!$this->allowedByContainerId($usercontainerrole['Usercontainerrole']['container']['parent_id'])) {
-                $this->render403();
-                return;
+            if (!empty($usercontainerrole['containers']['_ids'])) {
+                if (!$this->allowedByContainerId($usercontainerrole['containers']['_ids'])) {
+                    $this->render403();
+                    return;
+                }
             }
 
             //Merge new ldapgroups with existing ldapgroups from usercontainerrole
