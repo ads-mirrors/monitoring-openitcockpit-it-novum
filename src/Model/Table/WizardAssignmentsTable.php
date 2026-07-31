@@ -664,6 +664,22 @@ class WizardAssignmentsTable extends Table {
                 'image'       => 'sonicwall.svg',
                 'category'    => ['cloud', 'network'],
                 'active'      => true
+            ],
+            'symantec-mail-gateway'        => [
+                'type_id'     => 'symantec-mail-gateway',
+                'title'       => __('Symantec Mail Gateway'),
+                'description' => __('Monitor your Symantec Mail Gateway via SNMP.'),
+                'image'       => 'symantec.svg',
+                'category'    => ['network', 'mail'],
+                'active'      => true
+            ],
+            'arista-network'               => [
+                'type_id'     => 'arista-network',
+                'title'       => __('Arista Network'),
+                'description' => __('Monitor your Arista network via SNMP.'),
+                'image'       => 'arista-networks.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
             ]
         ];
 
