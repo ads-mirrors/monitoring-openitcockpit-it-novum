@@ -124,7 +124,6 @@ $logo = new Logo();
                                                 </div>
                                                 <!-- end of status name -->
                                                 <!-- Handle acknowledgement comments -->
-                                                <!-- Handle acknowledgement comments -->
                                                 <?php if (!empty($item['acknowledgedProblemsText']) && $statuspage['statuspage']['showAcknowledgements'] && $item['cumulatedColorId'] > 0): ?>
                                                     <?php
                                                     // Eindeutige ID für jedes Objekt erzeugen
@@ -136,12 +135,12 @@ $logo = new Logo();
                                                             <i class="far fa-user me-2"></i>
 
                                                             <?php if ($hasComments): ?>
-                                                                <button type="button"
-                                                                        class="btn btn-sm btn-link p-0 me-2 text-decoration-none"
+                                                                <span
+                                                                        class="p-0 me-2 text-decoration-none"
                                                                         onclick="toggleSection('<?= $uniqueId; ?>', this)"
                                                                         title="<?= __('expand comments'); ?>">
                                                                     <i class="far fa-plus-square fa-lg icon-toggle"></i>
-                                                                </button>
+                                                                </span>
                                                             <?php endif; ?>
 
                                                             <span><?= h($item['acknowledgedProblemsText']); ?></span>
@@ -150,7 +149,7 @@ $logo = new Logo();
                                                         <?php if ($hasComments): ?>
                                                             <div id="<?= $uniqueId; ?>" class="ps-4 mt-1" style="display: none;">
                                                                 <?php foreach ($item['acknowledgeComment'] as $comment): ?>
-                                                                    <div class="text-truncate small text-muted">
+                                                                    <div class="text-truncate small">
                                                                         <strong><?= __('Comment'); ?>:</strong> <?= h($comment); ?>
                                                                     </div>
                                                                 <?php endforeach; ?>
@@ -168,12 +167,12 @@ $logo = new Logo();
                                                                 <div class="col-12">
                                                                     <div class="pt-1 d-flex align-items-center">
                                                                         <i class="fa fa-power-off me-1"></i>
-                                                                        <button type="button"
-                                                                                class="btn btn-sm btn-link p-0 me-2 text-decoration-none"
+                                                                        <span
+                                                                                class="p-0 me-2 text-decoration-none"
                                                                                 onclick="toggleSection('<?= $currentId; ?>', this)"
                                                                                 title="<?= __('expand downtime data'); ?>">
                                                                             <i class="far fa-plus-square fa-lg icon-toggle"></i>
-                                                                        </button>
+                                                                        </span>
                                                                         <span><?= count($item['downtimeData']); ?> <?= __('current maintenances'); ?></span>
                                                                     </div>
 
@@ -206,12 +205,12 @@ $logo = new Logo();
                                                                 <div class="col-12">
                                                                     <div class="pt-1 d-flex align-items-center">
                                                                         <i class="fa fa-power-off me-1"></i>
-                                                                        <button type="button"
-                                                                                class="btn btn-sm btn-link p-0 me-2 text-decoration-none"
+                                                                        <span
+                                                                                class="p-0 me-2 text-decoration-none"
                                                                                 onclick="toggleSection('<?= $plannedId; ?>', this)"
                                                                                 title="<?= __('expand downtime data'); ?>">
                                                                             <i class="far fa-plus-square fa-lg icon-toggle"></i>
-                                                                        </button>
+                                                                        </span>
                                                                         <span><?= count($item['plannedDowntimeData']); ?> <?= __('scheduled maintenances for the next 10 days'); ?></span>
                                                                     </div>
 
@@ -278,5 +277,4 @@ $logo = new Logo();
             }
         }
     }
-
 </script>
