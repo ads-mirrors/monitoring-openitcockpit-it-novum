@@ -410,6 +410,20 @@ fi
 
 PHPVersion=$(php -r "echo substr(PHP_VERSION, 0, 3);")
 
+if [[ "$OS_BASE" == "RHEL" ]]; then
+    # did a php version upgrade happen like form 8.1 to 8.3?
+    if [ ! -d "/etc/php/${PHPVersion}/fpm" ]; then
+        echo "Detected php version update"
+
+        mkdir -p "/etc/php/${PHPVersion}/fpm"
+
+        # Link RedHat config to where they are on Debian
+        ln -s /etc/php-fpm.conf "/etc/php/${PHPVersion}/fpm/php-fpm.conf"
+        ln -s /etc/php.d "/etc/php/${PHPVersion}/fpm/conf.d"
+        ln -s /etc/php-fpm.d "/etc/php/${PHPVersion}/fpm/pool.d"
+    fi
+fi
+
 if [[ "$NOSYSTEMFILES" == "false" ]]; then
   echo "Copy required system files"
   rsync -K -a ${APPDIR}/system/etc/. /etc/
