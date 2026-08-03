@@ -77,6 +77,12 @@ class ChartRenderClient {
      */
     private $endTimestamp = 0;
 
+    /**
+     * 'light' or 'dark'
+     * @var string
+     */
+    private $theme = 'light';
+
     public function __construct() {
         $address = env('OITC_PUPPETEER_ADDRESS', null);
         if (!empty($address)) {
@@ -129,6 +135,10 @@ class ChartRenderClient {
         $this->endTimestamp = $timestamp;
     }
 
+    public function setTheme(string $theme) {
+        $this->theme = $theme;
+    }
+
     /**
      * This timezone will be sent to the ChartRenderServer
      * The ChartRenderServer itself is responsible for timezone handlin !
@@ -170,8 +180,8 @@ class ChartRenderClient {
             $Chart->setTitle($this->title);
             $Chart->setXStart($this->startTimestamp);
             $Chart->setXEnd($this->endTimestamp);
-            $Chart->setGapThreshold(3600); // Make a gap in the chart, if is the timespan between two data points is more than 3600 seconds
-            $Chart->setTheme('light');
+            $Chart->setGapThreshold((3600 * 5)); // Make a gap in the chart, if is the timespan between two data points is more than 5 hours
+            $Chart->setTheme($this->theme);
             $series1 = [];
             $series2 = [];
             $unit1 = !empty($data[0]['datasource']['unit']) ? $data[0]['datasource']['unit'] : '';

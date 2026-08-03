@@ -834,8 +834,8 @@ class NagiosNotificationCommand extends Command {
                 $PuppeteerChartRenderClient = new ChartRenderClient();
                 $PuppeteerChartRenderClient->setGraphStartTimestamp($graphStart);
                 $PuppeteerChartRenderClient->setGraphEndTimestamp(time());
-                $PuppeteerChartRenderClient->setHeight(180);
-                $PuppeteerChartRenderClient->setWidth(560);
+                //$PuppeteerChartRenderClient->setHeight(180);
+                //$PuppeteerChartRenderClient->setWidth(560);
                 $PuppeteerChartRenderClient->setTimezone(date_default_timezone_get());
                 $PuppeteerChartRenderClient->setTitle(
                     sprintf(
