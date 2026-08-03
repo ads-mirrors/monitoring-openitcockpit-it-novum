@@ -30,6 +30,9 @@ use App\Model\Table\LdapgroupsTable;
 use Cake\Log\Log;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
+use FreeDSx\Ldap\Exception\ConnectionException;
+use FreeDSx\Ldap\Operations;
+use FreeDSx\Ldap\Search\Filters;
 
 class LdapClient {
 
@@ -81,6 +84,8 @@ class LdapClient {
 
     const ENCRYPTION_TLS = 2;
 
+    public string $baseDn;
+
     /**
      * LdapClient constructor.
      * @param string $username
@@ -105,6 +110,7 @@ class LdapClient {
         ];
 
         $options = Hash::merge($_options, $options);
+        $this->baseDn = $options['base_dn'];
         $this->isOpenLdap = $isOpenLdap;
         $this->openLdapGroupSchema = $openLdapGroupSchema;
 
@@ -253,38 +259,33 @@ class LdapClient {
 
 
     /**
-     * @param string $searchString (sAMAccountName or mail)
+     * @param string $sAMAccountName
      * @param bool $exactMatch match the exact sAMAccountName (if true sAMAccountName=foo else sAMAccountName=*foo* [very slow on large LDAP trees])
      * @return \FreeDSx\Ldap\Search\Filter\AndFilter|\FreeDSx\Ldap\Search\Filter\FilterInterface|\FreeDSx\Ldap\Search\Filter\SubstringFilter
      */
-    private function getUsersFilter($searchString = '', $exactMatch = false, $isMailFilter = false) {
-        $attribute = 'uid';
-        if ($isMailFilter) {
-            $attribute = 'mail';
-        }
-
+    private function getUsersFilter($sAMAccountName = '', $exactMatch = false) {
         if ($this->isOpenLdap) {
-            if ($searchString != '' && $this->rawFilter == '') {
-                $filter = \FreeDSx\Ldap\Search\Filters::startsWith($attribute, $searchString);
+            if ($sAMAccountName != '' && $this->rawFilter == '') {
+                $filter = \FreeDSx\Ldap\Search\Filters::startsWith('uid', $sAMAccountName);
             }
 
-            if ($this->rawFilter != '' && $searchString == '') {
+            if ($this->rawFilter != '' && $sAMAccountName == '') {
                 $filter = \FreeDSx\Ldap\Search\Filters::raw($this->rawFilter);
             }
 
             //Use filters for OpenLDAP
             //$filter = \FreeDSx\Ldap\Search\Filters::contains('uid', $sAMAccountName);
 
-            if ($this->rawFilter != '' && $searchString != '') {
+            if ($this->rawFilter != '' && $sAMAccountName != '') {
                 if ($exactMatch === false) {
                     $filter = \FreeDSx\Ldap\Search\Filters::and(
                         \FreeDSx\Ldap\Search\Filters::raw($this->rawFilter),
-                        \FreeDSx\Ldap\Search\Filters::startsWith($attribute, $searchString)
+                        \FreeDSx\Ldap\Search\Filters::startsWith('uid', $sAMAccountName)
                     );
                 } else {
                     $filter = \FreeDSx\Ldap\Search\Filters::and(
                         \FreeDSx\Ldap\Search\Filters::raw($this->rawFilter),
-                        \FreeDSx\Ldap\Search\Filters::equal($attribute, $searchString)
+                        \FreeDSx\Ldap\Search\Filters::equal('uid', $sAMAccountName)
                     );
                 }
             }
@@ -292,37 +293,32 @@ class LdapClient {
             return $filter;
         }
 
-        $attribute = 'sAMAccountName';
-        if ($isMailFilter) {
-            $attribute = 'mail';
-        }
-
         //MS AD filters
-        if ($searchString != '' && $this->rawFilter == '') {
+        if ($sAMAccountName != '' && $this->rawFilter == '') {
             if ($exactMatch === false) {
-                $filter = \FreeDSx\Ldap\Search\Filters::startsWith($attribute, $searchString);
+                $filter = \FreeDSx\Ldap\Search\Filters::startsWith('sAMAccountName', $sAMAccountName);
             } else {
-                $filter = \FreeDSx\Ldap\Search\Filters::equal($attribute, $searchString);
+                $filter = \FreeDSx\Ldap\Search\Filters::equal('sAMAccountName', $sAMAccountName);
             }
         }
 
-        if ($this->rawFilter != '' && $searchString == '') {
+        if ($this->rawFilter != '' && $sAMAccountName == '') {
             $filter = \FreeDSx\Ldap\Search\Filters::raw($this->rawFilter);
         }
 
-        if ($this->rawFilter != '' && $searchString != '') {
+        if ($this->rawFilter != '' && $sAMAccountName != '') {
             if ($exactMatch === false) {
                 // Filters::contains() == sAMAccountName=*foo* (very slow)
                 // Filters::startsWith() == sAMAccountName=foo* (mutch faster)
                 $filter = \FreeDSx\Ldap\Search\Filters::and(
                     \FreeDSx\Ldap\Search\Filters::raw($this->rawFilter),
-                    \FreeDSx\Ldap\Search\Filters::startsWith($attribute, $searchString)
+                    \FreeDSx\Ldap\Search\Filters::startsWith('sAMAccountName', $sAMAccountName)
                 );
             } else {
                 // sAMAccountName=foo
                 $filter = \FreeDSx\Ldap\Search\Filters::and(
                     \FreeDSx\Ldap\Search\Filters::raw($this->rawFilter),
-                    \FreeDSx\Ldap\Search\Filters::equal($attribute, $searchString)
+                    \FreeDSx\Ldap\Search\Filters::equal('sAMAccountName', $sAMAccountName)
                 );
             }
         }
@@ -423,100 +419,6 @@ class LdapClient {
     }
 
     /**
-     * @param string $mailAddress
-     * @return array
-     */
-    public function getUserByMailAddress($mailAddress, bool $includeMember = true) {
-
-        if ($this->isOpenLdap === false) {
-            //MS AD
-            $filter = $this->getUsersFilter($mailAddress, true, true);
-            $search = \FreeDSx\Ldap\Operations::search($filter, 'samaccountname', 'mail', 'sn', 'givenname', 'displayname', 'dn', 'memberOf', 'company', 'department');
-        } else {
-            //OpenLDAP
-            $filter = $this->getUsersFilter($mailAddress, true, true);
-            $search = \FreeDSx\Ldap\Operations::search($filter, 'uid', 'mail', 'sn', 'givenname', 'displayname', 'dn', 'memberOf', 'o', 'businessCategory');
-
-        }
-
-        //debug($filter->toString());
-        $paging = $this->ldap->paging($search, 1);
-
-        foreach ($paging->getEntries() as $entry) {
-            $userDn = (string)$entry->getDn();
-            if (empty($userDn)) {
-                continue;
-            }
-
-            $entry = $entry->toArray();
-            $entry = array_combine(array_map('strtolower', array_keys($entry)), array_values($entry));
-            if (isset($entry['uid'])) {
-                $entry['samaccountname'] = $entry['uid'];
-            }
-
-            $company = '';
-            if (isset($entry['company'][0])) {
-                $company = $entry['company'][0];
-            } else if (isset($entry['o'][0])) {
-                $company = $entry['o'][0];
-            }
-
-            $department = '';
-            if (isset($entry['department'][0])) {
-                $department = $entry['department'][0];
-            } else if (isset($entry['businesscategory'][0])) {
-                $department = $entry['businesscategory'][0];
-            }
-
-            $memberOf = [];
-            if ($includeMember) {
-                $memberOf = $entry['memberof'] ?? [];
-            }
-
-            $user = [
-                'givenname'      => $entry['givenname'][0],
-                'sn'             => $entry['sn'][0],
-                'samaccountname' => $entry['samaccountname'][0],
-                'email'          => $entry['mail'][0],
-                'company'        => $company,
-                'department'     => $department,
-                'dn'             => $userDn,
-                'memberof'       => $memberOf,
-                'display_name'   => sprintf(
-                    '%s, %s (%s)',
-                    $entry['givenname'][0],
-                    $entry['sn'][0],
-                    $entry['samaccountname'][0]
-                )
-            ];
-
-            // Only load the first user.
-            $paging->end();
-            break;
-        }
-
-
-        if (isset($user)) {
-            if ($this->isOpenLdap === true && $includeMember === true) {
-                $user['memberof'] = $this->getGroupsFromUserOpenLdap($user);
-            }
-
-            // Load LDAP groups  from database
-            $user['ldapgroups'] = [];
-            if (!empty($user['memberof'])) {
-                /** @var LdapgroupsTable $LdapgroupsTable */
-                $LdapgroupsTable = TableRegistry::getTableLocator()->get('Ldapgroups');
-                $user['ldapgroups'] = $LdapgroupsTable->getGroupsByDn($user['memberof']);
-            }
-
-            return $user;
-        }
-
-        return null;
-
-    }
-
-    /**
      * @param array $user
      * @return array
      */
@@ -609,107 +511,172 @@ class LdapClient {
             //Do load all LDAP groups for database import and sync
             //$paging->end();
         }
-
-
         return $result;
     }
 
     /**
-     * @param string $sAMAccountName
+     * Retrieves users and optionally filters by sAMAccountName and group names.
+     * @param string $sAMAccountName Optional filter for a specific account name
+     * @param bool $includeMember Whether to include group memberships in the result
+     * @param array $groupNames Optional list of group names (e.g., ['Accounting', 'Admins'])
+     * @param string $baseDn
      * @return array
      */
-    public function getUsersForLdapImport($sAMAccountName = '', $includeMember = false) {
+    public function getUsersByGroupNames(string $sAMAccountName = '', bool $includeMember = false, array $groupNames = [], string $baseDn = ''): array {
+        // If the group names array is empty
+        if (empty($groupNames)) {
+            return [];
+        }
+
+        $filter = $this->getUsersFilter($sAMAccountName);
+        // Dynamically add group filters
+
+        if ($this->isOpenLdap === false) {
+            // --- MS Active Directory (Direct approach via memberOf) ---
+            $groupFilters = [];
+            foreach ($groupNames as $groupName) {
+                $fullGroupDn = "CN={$groupName},OU=Groups," . $baseDn;
+                $groupFilters[] = Filters::equal('memberOf', $fullGroupDn);
+            }
+            $filter = Filters::and($filter, Filters::or(...$groupFilters));
+
+        } else {
+            // --- Standard OpenLDAP (Approach via posixGroup and memberUid) ---
+            $allMemberUids = [];
+
+            foreach ($groupNames as $groupName) {
+                $possibleGroupDns = [
+                    "cn={$groupName},ou=group," . $baseDn,
+                    "cn={$groupName},ou=groups," . $baseDn
+                ];
+
+                foreach ($possibleGroupDns as $groupDn) {
+                    try {
+                        $groupEntry = $this->ldap->read($groupDn, ['memberUid']);
+
+                        if ($groupEntry && $groupEntry->has('memberUid')) {
+                            $uids = $groupEntry->get('memberUid')->getValues();
+                            foreach ($uids as $uid) {
+                                $allMemberUids[] = (string)$uid;
+                            }
+                            break;
+                        }
+                    } catch (OperationException $e) {
+                        // Log specific LDAP operation errors (e.g., No Such Object)
+                        Log::debug(sprintf('LDAP group path not found: "%s". Error: %s', $groupDn, $e->getMessage()));
+                        continue;
+                    } catch (\Exception $e) {
+                        // Catch connection or unexpected issues during group read
+                        Log::error(sprintf('Unexpected error reading LDAP group "%s": %s', $groupDn, $e->getMessage()));
+                        return [];
+                    }
+                }
+            }
+
+            // If no user IDs were found within the groups
+            if (empty($allMemberUids)) {
+                Log::info(sprintf('Search aborted: None of the specified groups %s contain members.', json_encode($groupNames)));
+                return [];
+            }
+
+            $uidFilters = [];
+            foreach (array_unique($allMemberUids) as $uid) {
+                $uidFilters[] = Filters::equal('uid', $uid);
+            }
+
+            $filter = Filters::and($filter, Filters::or(...$uidFilters));
+        }
 
 
         if ($this->isOpenLdap === false) {
-            //MS AD
             $requiredFields = ['samaccountname', 'mail', 'sn', 'givenname'];
-            $filter = $this->getUsersFilter($sAMAccountName);
-            $search = \FreeDSx\Ldap\Operations::search($filter, 'samaccountname', 'mail', 'sn', 'givenname', 'displayname', 'dn', 'memberOf', 'company', 'department');
+            $search = Operations::search($filter, 'samaccountname', 'mail', 'sn', 'givenname', 'displayname', 'dn', 'memberOf');
         } else {
-            //OpenLDAP
             $requiredFields = ['uid', 'mail', 'sn', 'givenname'];
-            $filter = $this->getUsersFilter($sAMAccountName);
-            $search = \FreeDSx\Ldap\Operations::search($filter, 'uid', 'mail', 'sn', 'givenname', 'displayname', 'dn', 'memberOf', 'o', 'businessCategory');
+            $search = Operations::search($filter, 'uid', 'mail', 'sn', 'givenname', 'displayname', 'dn');
         }
-
         $result = [];
-        $paging = $this->ldap->paging($search, 100);
-
         $droppedUsers = 0;
         $resultCount = 0;
-        while ($paging->hasEntries()) {
-            foreach ($paging->getEntries() as $entry) {
-                $resultCount++;
-                $userDn = (string)$entry->getDn();
-                if (empty($userDn)) {
-                    continue;
+        try {
+            $paging = $this->ldap->paging($search, 100);
+
+            // Use the native hasEntries logic, assigning entries to an array
+            while ($paging->hasEntries()) {
+                $entries = $paging->getEntries();
+
+                if (count($entries) === 0) {
+                    break;
                 }
 
-                $entry = $entry->toArray();
-                $entry = array_combine(array_map('strtolower', array_keys($entry)), array_values($entry));
-                foreach ($requiredFields as $requiredField) {
-                    if (!isset($entry[$requiredField])) {
-                        $droppedUsers++;
-                        continue 2;
+                foreach ($entries as $entry) {
+                    $resultCount++;
+                    $userDn = (string)$entry->getDn();
+                    if (empty($userDn)) {
+                        continue;
                     }
+
+                    $entryArray = $entry->toArray();
+                    $entryArray = array_combine(array_map('strtolower', array_keys($entryArray)), array_values($entryArray));
+
+                    // Validate required fields
+                    foreach ($requiredFields as $requiredField) {
+                        if (!isset($entryArray[$requiredField])) {
+                            $droppedUsers++;
+                            continue 2;
+                        }
+                    }
+
+                    if (isset($entryArray['uid'])) {
+                        $entryArray['samaccountname'] = $entryArray['uid'];
+                    }
+
+                    $memberOf = [];
+                    if ($includeMember) {
+                        if ($this->isOpenLdap) {
+                            $memberOf = $groupNames;
+                        } else {
+                            $memberOf = $entryArray['memberof'] ?? [];
+                        }
+                    }
+
+                    // Extract the first value safely from the LDAP property arrays
+                    $givenName = is_array($entryArray['givenname'])
+                        ? ($entryArray['givenname'][0] ?? '')
+                        : $entryArray['givenname'];
+
+                    $sn = is_array($entryArray['sn'])
+                        ? ($entryArray['sn'][0] ?? '')
+                        : $entryArray['sn'];
+
+                    $samAccountName = is_array($entryArray['samaccountname'])
+                        ? ($entryArray['samaccountname'][0] ?? '')
+                        : $entryArray['samaccountname'];
+
+                    $email = is_array($entryArray['mail'])
+                        ? ($entryArray['mail'][0] ?? '')
+                        : $entryArray['mail'];
+
+                    $result[] = [
+                        'givenname'      => $givenName,
+                        'sn'             => $sn,
+                        'samaccountname' => $samAccountName,
+                        'email'          => $email,
+                        'dn'             => $userDn,
+                        'memberof'       => $memberOf,
+                        'display_name'   => sprintf('%s, %s (%s)', $givenName, $sn, $samAccountName)
+                    ];
                 }
-
-                if (isset($entry['uid'])) {
-                    $entry['samaccountname'] = $entry['uid'];
-                }
-
-                $company = '';
-                if (isset($entry['company'][0])) {
-                    $company = $entry['company'][0];
-                } else if (isset($entry['o'][0])) {
-                    $company = $entry['o'][0];
-                }
-
-                $department = '';
-                if (isset($entry['department'][0])) {
-                    $department = $entry['department'][0];
-                } else if (isset($entry['businesscategory'][0])) {
-                    $department = $entry['businesscategory'][0];
-                }
-
-                $memberOf = [];
-                if ($includeMember) {
-                    $memberOf = $entry['memberof'] ?? [];
-                }
-
-                $result[] = [
-                    'givenname'      => $entry['givenname'][0],
-                    'sn'             => $entry['sn'][0],
-                    'samaccountname' => $entry['samaccountname'][0],
-                    'email'          => $entry['mail'][0],
-                    'company'        => $company,
-                    'department'     => $department,
-                    'dn'             => $userDn,
-                    'memberof'       => $memberOf,
-                    'display_name'   => sprintf(
-                        '%s, %s (%s)',
-                        $entry['givenname'][0],
-                        $entry['sn'][0],
-                        $entry['samaccountname'][0]
-                    )
-                ];
-
-                $lastUser = $result[array_key_last($result)];
-
-                // Load LDAP groups  from database
-                $lastUser['ldapgroups'] = [];
-                if (!empty($lastUser['memberof'])) {
-                    /** @var LdapgroupsTable $LdapgroupsTable */
-                    $LdapgroupsTable = TableRegistry::getTableLocator()->get('Ldapgroups');
-                    $lastUser['ldapgroups'] = $LdapgroupsTable->getGroupsByDn($lastUser['memberof']);
-                    $result[array_key_last($result)] = $lastUser;
-                }
-
             }
-            // Only load the first 100 users.
-            // Pass $sAMAccountName to search for a user
-            $paging->end();
+        } catch (ConnectionException $e) {
+            // Handle network drops or server timeouts during paging
+            Log::error(sprintf('LDAP connection lost during user paging sync: %s', $e->getMessage()));
+            // Return partial results collected so far, or return empty array based on business logic
+            return [];
+        } catch (\Exception $e) {
+            // Handle unexpected runtime issues gracefully
+            Log::error(sprintf('General error during LDAP user synchronization: %s', $e->getMessage()));
+            return [];
         }
 
         if ($droppedUsers > 0) {
@@ -723,6 +690,13 @@ class LdapClient {
         }
 
         return $result;
+    }
+
+    /**
+     * @return string
+     */
+    public function getBaseDn() {
+        return (string)$this->baseDn;
     }
 
 }

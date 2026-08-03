@@ -28,14 +28,11 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\itnovum\openITCOCKPIT\Filter\UserDefaultTemplatesFilter;
-use App\Model\Entity\Changelog;
-use App\Model\Table\ChangelogsTable;
 use App\Model\Table\UserDefaultTemplatesTable;
-use Cake\Cache\Cache;
+use App\Model\Table\UsersTable;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
-use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 
 /**
@@ -46,7 +43,7 @@ use itnovum\openITCOCKPIT\Database\PaginateOMat;
  */
 class UserDefaultTemplatesController extends AppController {
 
-    public function index() {
+    public function index(): void {
 
         /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
         $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
@@ -78,13 +75,16 @@ class UserDefaultTemplatesController extends AppController {
         $this->viewBuilder()->setOption('serialize', ['all_userdefaulttemplates']);
     }
 
-    public function add() {
+    public function add(): void {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
         $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
+
+        /** @var UsersTable $UsersTable */
+        $UsersTable = TableRegistry::getTableLocator()->get('Users');
 
         if ($this->request->is('post') || $this->request->is('put')) {
 
@@ -92,42 +92,45 @@ class UserDefaultTemplatesController extends AppController {
             if (!isset($data['UserDefaultTemplatesToUserContainers'])) {
                 $data['UserDefaultTemplatesToUserContainers'] = [];
             }
-            $data['user_containers'] = $UserDefaultTemplatesTable->containerPermissionsForSave(
+            $data['user_containers'] = $UsersTable->containerPermissionsForSave(
                 $data['UserDefaultTemplatesToUserContainers'],
                 $this->hasRootPrivileges,
                 $this->MY_RIGHTS_LEVEL
             );
 
-            $userDefaultTemplate = $UserDefaultTemplatesTable->newEmptyEntity();
-            $userDefaultTemplate = $UserDefaultTemplatesTable->patchEntity($userDefaultTemplate, $data);
-
-            $User = new \itnovum\openITCOCKPIT\Core\ValueObjects\User($this->getUser());
-
-            $data = [
-                'UserDefaultTemplate' => $data
-            ];
-
-            $userDefaultTemplate = $UserDefaultTemplatesTable->createUserDefaultTemplate($userDefaultTemplate, $data, $User->getId());
-            if ($userDefaultTemplate->hasErrors()) {
+            $userDefaultTemplateEntity = $UserDefaultTemplatesTable->newEmptyEntity();
+            $userDefaultTemplateEntity = $UserDefaultTemplatesTable->patchEntity($userDefaultTemplateEntity, $data);
+            $UserDefaultTemplatesTable->save($userDefaultTemplateEntity);
+            if ($userDefaultTemplateEntity->hasErrors()) {
                 $this->response = $this->response->withStatus(400);
-                $this->set('error', $userDefaultTemplate->getErrors());
+                $this->set('error', $userDefaultTemplateEntity->getErrors());
                 $this->viewBuilder()->setOption('serialize', ['error']);
                 return;
             }
 
-            Cache::clear('permissions');
-            $this->set('userDefaultTemplate', $userDefaultTemplate);
+            //No errors
+            if ($this->isJsonRequest()) {
+                $this->serializeCake4Id($userDefaultTemplateEntity); // REST API ID serialization
+                return;
+            }
+
+            $this->set('userDefaultTemplate', $userDefaultTemplateEntity);
             $this->viewBuilder()->setOption('serialize', ['userDefaultTemplate']);
+
         }
     }
 
-    public function edit($id = null) {
+    public function edit($id = null): void {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
         $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
+
+        /** @var UsersTable $UsersTable */
+        $UsersTable = TableRegistry::getTableLocator()->get('Users');
+
 
         if (!$UserDefaultTemplatesTable->existsById($id)) {
             throw new NotFoundException(__('User Default Template not found'));
@@ -148,8 +151,6 @@ class UserDefaultTemplatesController extends AppController {
             $this->render403();
             return;
         }
-
-        $User = new \itnovum\openITCOCKPIT\Core\ValueObjects\User($this->getUser());
 
         if ($this->request->is('get') && $this->isAngularJsRequest()) {
             //Return user default template information
@@ -188,26 +189,20 @@ class UserDefaultTemplatesController extends AppController {
                     }
                 }
             }
-            $data['user_containers'] = $UserDefaultTemplatesTable->containerPermissionsForSave(
+            $data['user_containers'] = $UsersTable->containerPermissionsForSave(
                 $data['UserDefaultTemplatesToUserContainers'],
                 $this->hasRootPrivileges,
                 $this->MY_RIGHTS_LEVEL
             );
-            $userDefaultTemplate = $UserDefaultTemplatesTable->get($id);
-            $userDefaultTemplate->setAccess('id', false);
 
+
+            $userDefaultTemplate = $UserDefaultTemplatesTable->get($id);
+            $userDefaultTemplate->id = $id;
             $userDefaultTemplate = $UserDefaultTemplatesTable->patchEntity($userDefaultTemplate, $data);
 
-            $data = [
-                'UserDefaultTemplate' => $data
-            ];
 
-            $userDefaultTemplate = $UserDefaultTemplatesTable->updateUserDefaultTemplate(
-                $userDefaultTemplate,
-                $data,
-                $userDefaultTemplateForChangelog,
-                $User->getId()
-            );
+            $UserDefaultTemplatesTable->save($userDefaultTemplate);
+
             if ($userDefaultTemplate->hasErrors()) {
                 $this->response = $this->response->withStatus(400);
                 $this->set('error', $userDefaultTemplate->getErrors());
@@ -215,7 +210,7 @@ class UserDefaultTemplatesController extends AppController {
                 return;
             }
 
-            Cache::clear('permissions');
+            // No errors
             $this->set('userDefaultTemplate', $userDefaultTemplate);
             $this->viewBuilder()->setOption('serialize', ['userDefaultTemplate']);
         }
@@ -229,59 +224,31 @@ class UserDefaultTemplatesController extends AppController {
             throw new MethodNotAllowedException();
         }
 
-        $User = new \itnovum\openITCOCKPIT\Core\ValueObjects\User($this->getUser());
-
         /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
         $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
 
         if (!$UserDefaultTemplatesTable->existsById($id)) {
-            throw new NotFoundException(__('User Default Template not found'));
+            throw new NotFoundException(__('User default template not found'));
         }
-
         $userDefaultTemplate = $UserDefaultTemplatesTable->getUserDefaultTemplateById($id);
-        $userDefaultTemplateForLog = $userDefaultTemplate;
-        $containersToCheck = $userDefaultTemplate['containers']['_ids']; //Containers defined by the user itself
 
-        if (!$this->allowedByContainerId($containersToCheck)) {
+        if (!$this->allowedByContainerId($userDefaultTemplate['container_id'])) {
             $this->render403();
             return;
         }
-
-        $userDefaultTemplate = $UserDefaultTemplatesTable->get($id);
-
-        if ($UserDefaultTemplatesTable->delete($userDefaultTemplate)) {
-
-            $containerIds = Hash::extract($userDefaultTemplateForLog, 'containers.{n}.id');
-
-            /** @var  ChangelogsTable $ChangelogsTable */
-            $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
-
-            $changelog_data = $ChangelogsTable->parseDataForChangelog(
-                'delete',
-                'UserDefaultTemplates',
-                $id,
-                OBJECT_USER_DEFAULT_TEMPLATES,
-                $containerIds,
-                $User->getId(),
-                $userDefaultTemplateForLog['name'],
-                $userDefaultTemplateForLog
-            );
-            if ($changelog_data) {
-                /** @var Changelog $changelogEntry */
-                $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
-                $ChangelogsTable->save($changelogEntry);
-
-            }
-
+        if (!in_array($userDefaultTemplate['container_id'], $this->MY_RIGHTS)) {
+            $this->render403();
+            return;
+        }
+        $userDefaultTemplateEntity = $UserDefaultTemplatesTable->get($id);
+        if ($UserDefaultTemplatesTable->delete($userDefaultTemplateEntity)) {
             $this->set('success', true);
             $this->viewBuilder()->setOption('serialize', ['success']);
-
             return;
         }
 
-        $this->response = $this->response->withStatus(400);
+        $this->response = $this->response->withStatus(500);
         $this->set('success', false);
         $this->viewBuilder()->setOption('serialize', ['success']);
-        return;
     }
 }

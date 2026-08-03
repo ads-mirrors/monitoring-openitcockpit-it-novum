@@ -75,11 +75,6 @@ class CreateUserDefaultTemplates extends BaseMigration {
                     'limit'   => 11,
                     'null'    => false,
                 ])
-                ->addColumn('container_id', 'integer', [
-                    'default' => null,
-                    'limit'   => 11,
-                    'null'    => false,
-                ])
                 ->addColumn('timezone', 'string', [
                     'default' => 'Europe/Berlin',
                     'limit'   => 100,
@@ -223,23 +218,5 @@ class CreateUserDefaultTemplates extends BaseMigration {
                 )
                 ->create();
         }
-
-        if ($this->hasTable('users')) {
-            $this->table('users')
-                ->addColumn('container_id', 'integer', [
-                    'after'   => 'usergroup_id',
-                    'default' => null,
-                    'limit'   => 11,
-                    'null'    => false,
-                ])
-                ->addColumn('user_default_template_id', 'integer', [
-                    'after'   => 'container_id',
-                    'default' => null,
-                    'limit'   => 11,
-                    'null'    => true,
-                ])
-                ->update();
-        }
-
     }
 }

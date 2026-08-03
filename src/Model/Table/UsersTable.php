@@ -164,17 +164,6 @@ class UsersTable extends Table {
             'foreignKey' => 'user_id'
         ]);
 
-        $this->belongsTo('FallbackContainers', [
-            'className'  => 'Containers',
-            'foreignKey' => 'container_id',
-            'joinType'   => 'INNER'
-        ]);
-
-        $this->belongsTo('UserDefaultTemplates', [
-            'foreignKey' => 'user_default_template_id',
-            'joinType'   => 'LEFT'
-        ]);
-
     }
 
     /**
@@ -204,12 +193,6 @@ class UsersTable extends Table {
             ->requirePresence('usergroup_id', 'create')
             ->greaterThan('usergroup_id', 0, __('You have to select a user role.'))
             ->allowEmptyString('usergroup_id', null, false);
-
-        $validator
-            ->integer('container_id')
-            ->requirePresence('container_id', 'create')
-            ->allowEmptyString('container_id', null, false)
-            ->greaterThanOrEqual('container_id', 1);
 
         $validator
             ->boolean('is_active')
@@ -467,8 +450,7 @@ class UsersTable extends Table {
 
         if (!empty($MY_RIGHTS)) {
             $query->where([
-                'ContainersUsersMemberships.container_id IN' => $MY_RIGHTS,
-                'Users.container_id IN'                      => $MY_RIGHTS,
+                'ContainersUsersMemberships.container_id IN' => $MY_RIGHTS
             ]);
         }
         $userIds = Hash::extract($query->toArray(), '{n}.id');
@@ -572,8 +554,6 @@ class UsersTable extends Table {
             ->select([
                 'Users.id',
                 'Users.usergroup_id',
-                'Users.container_id',
-                'Users.user_default_template_id',
                 'Users.email',
                 'Users.firstname',
                 'Users.lastname',
@@ -1774,8 +1754,6 @@ class UsersTable extends Table {
     }
 
 
-
-
     /**
      * @param array $dataToParse
      * @return array
@@ -2054,9 +2032,9 @@ class UsersTable extends Table {
                 'id',
                 'email'
             ])
+            ->disableHydration()
             ->all();
 
         return $result->toArray();
     }
-
 }

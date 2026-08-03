@@ -38,8 +38,6 @@ use Cake\ORM\Entity;
  *
  * @property int $id
  * @property int $usergroup_id
- * @property int $container_id
- * @property int $user_default_template_id
  * @property int $status
  * @property string $email
  * @property string $password
@@ -88,45 +86,43 @@ class User extends Entity {
      * @var array
      */
     protected array $_accessible = [
-        'usergroup_id'             => true,
-        'container_id'             => true,
-        'user_default_template_id' => true,
-        'email'                    => true,
-        'password'                 => true,
-        'firstname'                => true,
-        'lastname'                 => true,
-        'position'                 => true,
-        'company'                  => true,
-        'department'               => true,
-        'phone'                    => true,
-        'timezone'                 => true,
-        'i18n'                     => true,
-        'dateformat'               => true,
-        'image'                    => true,
-        'onetimetoken'             => true,
-        'samaccountname'           => true,
-        'ldap_dn'                  => true,
-        'showstatsinmenu'          => true,
-        'dashboard_tab_rotation'   => true,
-        'paginatorlength'          => true,
-        'is_active'                => true,
-        'recursive_browser'        => true,
-        'created'                  => true,
-        'modified'                 => true,
-        'usergroup'                => true,
-        'apikeys'                  => true,
-        'changelogs'               => true,
-        'contacts'                 => true,
-        'dashboard_tabs'           => true,
-        'instantreports_to_users'  => true,
-        'map_uploads'              => true,
-        'systemfailures'           => true,
-        'users_to_autoreports'     => true,
-        'users_to_containers'      => true,
-        'containers'               => true,
-        'usercontainerroles'       => true,
-        'is_oauth'                 => true,
-        'last_login'               => true
+        'usergroup_id'            => true,
+        'email'                   => true,
+        'password'                => true,
+        'firstname'               => true,
+        'lastname'                => true,
+        'position'                => true,
+        'company'                 => true,
+        'department'              => true,
+        'phone'                   => true,
+        'timezone'                => true,
+        'i18n'                    => true,
+        'dateformat'              => true,
+        'image'                   => true,
+        'onetimetoken'            => true,
+        'samaccountname'          => true,
+        'ldap_dn'                 => true,
+        'showstatsinmenu'         => true,
+        'dashboard_tab_rotation'  => true,
+        'paginatorlength'         => true,
+        'is_active'               => true,
+        'recursive_browser'       => true,
+        'created'                 => true,
+        'modified'                => true,
+        'usergroup'               => true,
+        'apikeys'                 => true,
+        'changelogs'              => true,
+        'contacts'                => true,
+        'dashboard_tabs'          => true,
+        'instantreports_to_users' => true,
+        'map_uploads'             => true,
+        'systemfailures'          => true,
+        'users_to_autoreports'    => true,
+        'users_to_containers'     => true,
+        'containers'              => true,
+        'usercontainerroles'      => true,
+        'is_oauth'                => true,
+        'last_login'              => true
     ];
 
     /**

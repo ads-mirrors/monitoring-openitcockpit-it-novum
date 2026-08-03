@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace App\Model\Entity;
 
+use Cake\I18n\DateTime;
 use Cake\ORM\Entity;
 
 /**
@@ -46,12 +47,12 @@ use Cake\ORM\Entity;
  * @property int $paginatorlength
  * @property int $recursive_browser
  * @property bool $is_oauth
- * @property \Cake\I18n\DateTime|null $created
- * @property \Cake\I18n\DateTime|null $modified
+ * @property DateTime|null $created
+ * @property DateTime|null $modified
  *
- * @property \App\Model\Entity\Usergroup $usergroup
- * @property \App\Model\Entity\UserDefaultTemplateToUserContainer[] $user_default_templates_to_user_containers
- * @property \App\Model\Entity\UserDefaultTemplateToContainer[] $user_default_templates_to_containers
+ * @property Usergroup $usergroup
+ * @property UserDefaultTemplateToUserContainer[] $user_default_templates_to_user_containers
+ * @property UserDefaultTemplateToContainer[] $user_default_templates_to_containers
  */
 class UserDefaultTemplate extends Entity {
     /**
@@ -65,7 +66,6 @@ class UserDefaultTemplate extends Entity {
      */
     protected array $_accessible = [
         'usergroup_id'             => true,
-        'container_id'             => true,
         'user_default_template_id' => true,
         'name'                     => true,
         'description'              => true,

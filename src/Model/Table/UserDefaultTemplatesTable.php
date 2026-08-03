@@ -29,12 +29,9 @@ namespace App\Model\Table;
 
 use App\itnovum\openITCOCKPIT\Filter\UserDefaultTemplatesFilter;
 use App\Lib\Traits\PaginationAndScrollIndexTrait;
-use App\Model\Entity\Changelog;
-use App\Model\Entity\UserDefaultTemplate;
 use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
-use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use Cake\Validation\Validator;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
@@ -111,12 +108,6 @@ class UserDefaultTemplatesTable extends Table {
             'saveStrategy'     => 'replace'
         ]);
 
-        $this->belongsTo('FallbackContainers', [
-            'className'  => 'Containers',
-            'foreignKey' => 'container_id',
-            'joinType'   => 'INNER'
-        ]);
-
     }
 
     /**
@@ -155,12 +146,6 @@ class UserDefaultTemplatesTable extends Table {
             ->requirePresence('usergroup_id', 'create')
             ->greaterThan('usergroup_id', 0, __('You have to select a user role.'))
             ->allowEmptyString('usergroup_id', null, false);
-
-        $validator
-            ->integer('container_id')
-            ->requirePresence('container_id', 'create')
-            ->allowEmptyString('container_id', null, false)
-            ->greaterThanOrEqual('container_id', 1);
 
         $validator
             ->scalar('timezone')
@@ -233,7 +218,7 @@ class UserDefaultTemplatesTable extends Table {
      * @param PaginateOMat|null $PaginateOMat
      * @return array
      */
-    public function getUserDefaultTemplatesIndex(UserDefaultTemplatesFilter $UserDefaultTemplatesFilter, $PaginateOMat = null, $MY_RIGHTS = []) {
+    public function getUserDefaultTemplatesIndex(UserDefaultTemplatesFilter $UserDefaultTemplatesFilter, PaginateOMat $PaginateOMat = null, $MY_RIGHTS = []) {
 
         $where = $UserDefaultTemplatesFilter->indexFilter();
 
@@ -251,7 +236,6 @@ class UserDefaultTemplatesTable extends Table {
                 'Usergroups',
                 'Containers',
             ]);
-
         if (!empty($MY_RIGHTS)) {
             $query->where([
                 'UserDefaultTemplatesToContainers.container_id IN' => $MY_RIGHTS
@@ -280,211 +264,6 @@ class UserDefaultTemplatesTable extends Table {
             }
         }
         return $result;
-    }
-
-    /**
-     * @param $containerPermissions
-     * @param bool $hasRootPrivileges
-     * @param array $MY_RIGHTS_LEVEL
-     * @return array
-     */
-    public function containerPermissionsForSave($containerPermissions, bool $hasRootPrivileges = false, array $MY_RIGHTS_LEVEL = []) {
-        //UserDefaultTemplatesToUserContainers
-
-        $dataForSave = [];
-        foreach ($containerPermissions as $containerId => $permissionLevel) {
-            if (!$hasRootPrivileges && !isset($MY_RIGHTS_LEVEL[$containerId])) {
-                //User has no rights to this container
-                continue;
-            }
-            $containerId = (int)$containerId;
-            $permissionLevel = (int)$permissionLevel;
-            if ($permissionLevel !== READ_RIGHT && $permissionLevel !== WRITE_RIGHT) {
-                $permissionLevel = READ_RIGHT;
-            }
-            if (!$hasRootPrivileges && $MY_RIGHTS_LEVEL[$containerId] < $containerPermissions[$containerId]) {
-                //avoid to set higher permission level than the user has
-                $permissionLevel = READ_RIGHT;
-            }
-
-            if ($containerId === ROOT_CONTAINER) {
-                // ROOT_CONTAINER is always read/write
-                $permissionLevel = WRITE_RIGHT;
-            }
-
-            $dataForSave[] = [
-                'id'        => $containerId,
-                '_joinData' => [
-                    'permission_level' => $permissionLevel
-                ]
-            ];
-        }
-
-        return $dataForSave;
-    }
-
-    /**
-     * This method provides a unified way to create new user default template. It will also make sure that the changelog is used
-     * It will always return an Entity object, so make sure to check for "hasErrors()"
-     *
-     * @param UserDefaultTemplate $entity The entity that will be saved by the Table
-     * @param array $userDefaultTemplates The userDefaultTemplates as array ( [ UserDefaultTemplates => [ name => Foo, id => 1 ... ] ] ) used by the Changelog
-     * @param int $userId The ID of the user that did the Change (0 = Cronjob)
-     * @return UserDefaultTemplate
-     */
-    public function createUserDefaultTemplate(UserDefaultTemplate $entity, array $userDefaultTemplates, int $userId): UserDefaultTemplate {
-        $this->save($entity);
-        if ($entity->hasErrors()) {
-            // We have some validation errors
-            // Let the caller (probably CakePHP Controller) handle the error
-            return $entity;
-        }
-
-        //No errors
-        /** @var ChangelogsTable $ChangelogsTable */
-        $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
-
-        $extDataForChangelog = $this->resolveDataForChangelog($userDefaultTemplates);
-        $containerIds = Hash::extract($userDefaultTemplates, 'UserDefaultTemplate.containers.{n}.id');
-
-        $changelog_data = $ChangelogsTable->parseDataForChangelog(
-            'add',
-            'UserDefaultTemplates',
-            $entity->get('id'),
-            OBJECT_USER_DEFAULT_TEMPLATES,
-            $containerIds,
-            $userId,
-            $entity->get('name'),
-            array_merge($userDefaultTemplates, $extDataForChangelog)
-        );
-
-        if ($changelog_data) {
-            /** @var Changelog $changelogEntry */
-            $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
-            $ChangelogsTable->save($changelogEntry);
-        }
-
-        return $entity;
-    }
-
-    /**
-     * @param array $dataToParse
-     * @return array
-     */
-    public function resolveDataForChangelog($dataToParse = []) {
-        $extDataForChangelog = [
-            'UserContainers' => [],
-            'Usergroup'      => [],
-            'Ldapgroups'     => []
-        ];
-
-        /** @var UsergroupsTable $UsergroupsTable */
-        $UsergroupsTable = TableRegistry::getTableLocator()->get('Usergroups');
-        /** @var ContainersTable $ContainersTable */
-        $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
-        /** @var $LdapgroupsTable LdapgroupsTable */
-        $LdapgroupsTable = TableRegistry::getTableLocator()->get('Ldapgroups');
-
-        //user containers
-        if (isset($dataToParse['UserDefaultTemplates']['UserContainers'])) {
-
-            if (isset($dataToParse['UserDefaultTemplates']['UserContainers']['_ids']) && !empty($dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToUserContainers'])) {
-                foreach ($dataToParse['User']['containers']['_ids'] as $id) {
-                    $containerWithName = $ContainersTable->getContainerById($id);
-                    if (!empty($containerWithName)) {
-                        $extDataForChangelog['UserContainers'][] = [
-                            'id'               => $id,
-                            'name'             => $containerWithName['name'],
-                            'permission_level' => $dataToParse['UserDefaultTemplates']['UserDefaultTemplatesToUserContainers'][$id],
-                        ];
-                    }
-                }
-            } else {
-                foreach ($dataToParse['UserDefaultTemplates']['UserContainers'] as $container) {
-                    $containerWithName = [];
-                    if (!isset($dataToParse['UserDefaultTemplates']['UserContainers']['name'])) {
-                        $containerWithName = $ContainersTable->getContainerById($container['id']);
-                    }
-                    $extDataForChangelog['UserContainers'][] = [
-                        'id'               => $container['id'],
-                        'name'             => (!empty($containerWithName)) ? $containerWithName['name'] : $container['name'],
-                        'permission_level' => $container['_joinData']['permission_level'],
-                    ];
-                }
-            }
-
-        }
-
-        //usergroup
-        if (isset($dataToParse['UserDefaultTemplates']['usergroup_id'])) {
-            $usergroup = $UsergroupsTable->getUsergroupById($dataToParse['UserDefaultTemplates']['usergroup_id']);
-            if (!empty($usergroup)) {
-                $extDataForChangelog['Usergroup'] = [
-                    'id'   => $usergroup['id'],
-                    'name' => $usergroup['name']
-                ];
-            }
-        }
-
-        //ldapgroups
-        if (isset($dataToParse['UserDefaultTemplates']['ldapgroups'])) {
-            foreach ($dataToParse['UserDefaultTemplates']['ldapgroups']['_ids'] as $id) {
-                $ldapgroupWithName = $LdapgroupsTable->getLdapgroupById($id);
-                if (!empty($ldapgroupWithName)) {
-                    $extDataForChangelog['Ldapgroup'][] = [
-                        'id'   => $id,
-                        'name' => $ldapgroupWithName['name']
-                    ];
-                }
-            }
-        }
-
-        return $extDataForChangelog;
-    }
-
-    /**
-     * This method provides a unified way to update an existing user default template. It will also make sure that the changelog is used
-     * It will always return an Entity object, so make sure to check for "hasErrors()"
-     *
-     * @param UserDefaultTemplate $entity The entity that will be updated by the Table
-     * @param array $newUserDefaultTemplate The new userDefaultTemplate as array ( [ UserDefaultTemplate => [ name => Foo, description => Bar ... ] ] ) used by the Changelog
-     * @param array $oldUserDefaultTemplate The old userDefaultTemplate as array ( [ UserDefaultTemplate => [ name => Foo, description => Bar ... ] ] ) used by the Changelog
-     * @param int $userId The ID of the user that did the Change (0 = Cronjob)
-     * @return UserDefaultTemplate
-     */
-    public function updateUserDefaultTemplate(UserDefaultTemplate $entity, array $newUserDefaultTemplate, array $oldUserDefaultTemplate, int $userId): UserDefaultTemplate {
-        $this->save($entity);
-        if ($entity->hasErrors()) {
-            // We have some validation errors
-            // Let the caller (probably CakePHP Controller) handle the error
-            return $entity;
-        }
-
-        //No errors
-        /** @var ChangelogsTable $ChangelogsTable */
-        $ChangelogsTable = TableRegistry::getTableLocator()->get('Changelogs');
-
-        $containerIds = Hash::extract($newUserDefaultTemplate, 'UserDefaultTemplate.containers.{n}.id');
-
-        $changelog_data = $ChangelogsTable->parseDataForChangelog(
-            'edit',
-            'UserDefaultTemplates',
-            $entity->get('id'),
-            OBJECT_USER_DEFAULT_TEMPLATES,
-            $containerIds,
-            $userId,
-            $entity->get('name'),
-            array_merge($this->resolveDataForChangelog($newUserDefaultTemplate), $newUserDefaultTemplate),
-            array_merge($this->resolveDataForChangelog($oldUserDefaultTemplate), $oldUserDefaultTemplate)
-        );
-
-        if ($changelog_data) {
-            /** @var Changelog $changelogEntry */
-            $changelogEntry = $ChangelogsTable->newEntity($changelog_data);
-            $ChangelogsTable->save($changelogEntry);
-        }
-
-        return $entity;
     }
 
     /**
@@ -673,4 +452,28 @@ class UserDefaultTemplatesTable extends Table {
         ];
     }
 
+    public function getUserDefaultTemplatesForLdapUserImport(): array {
+        $query = $this->find()
+            ->select([
+                'UserDefaultTemplates.id',
+                'UserDefaultTemplates.usergroup_id',
+                'UserDefaultTemplates.container_id',
+                'UserDefaultTemplates.name',
+                'UserDefaultTemplates.description',
+                'UserDefaultTemplates.timezone',
+                'UserDefaultTemplates.i18n',
+                'UserDefaultTemplates.dateformat',
+                'UserDefaultTemplates.showstatsinmenu',
+                'UserDefaultTemplates.paginatorlength',
+                'UserDefaultTemplates.recursive_browser',
+                'UserDefaultTemplates.is_oauth',
+                'Ldapgroups.id',
+                'Ldapgroups.cn'
+            ])
+            ->innerJoinWith('Ldapgroups')
+            ->disableHydration()
+            ->all();
+
+        return $this->emptyArrayIfNull($query->toArray());
+    }
 }
