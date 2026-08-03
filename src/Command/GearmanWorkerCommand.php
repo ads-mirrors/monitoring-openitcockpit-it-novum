@@ -1421,7 +1421,10 @@ class GearmanWorkerCommand extends Command {
         $gearmanClient = new \GearmanClient();
         $gearmanClient->addServer($gearmanConfig['address'], $gearmanConfig['port']);
         //This callback gets called, for any finished export task (like hosttemplates, services etc...)
-        $gearmanClient->setCompleteCallback([$this, 'exportCallback']);
+        // pass exportCallback as callback method. This is the new php 8.1 syntax. in older php versions we used to write it like so
+        // $gearmanClient->setCompleteCallback([$this, 'exportCallback']);
+        // but the old array method is not very IDE and type safety friendly.
+        $gearmanClient->setCompleteCallback($this->exportCallback(...));
 
         //Delete old configuration
         $entity = $ExportsTable->newEntity([

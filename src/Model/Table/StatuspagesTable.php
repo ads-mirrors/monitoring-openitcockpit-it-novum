@@ -180,6 +180,10 @@ class StatuspagesTable extends Table {
                 'provider' => 'table',
                 'message'  => __('This public identifier has already been taken.')
             ]);
+        $validator
+            ->integer('public_refresh')
+            ->allowEmptyString('public_refresh', null, false)
+            ->greaterThanOrEqual('public_refresh', 10);
 
         $validator
             ->boolean('public')
@@ -890,6 +894,7 @@ class StatuspagesTable extends Table {
                     'description'                 => $statuspage['description'],
                     'public_title'                => $statuspage['public_title'],
                     'public_identifier'           => $statuspage['public_identifier'],
+                    'public_refresh'              => $statuspage['public_refresh'],
                     'public'                      => $statuspage['public'],
                     'showDowntimes'               => $statuspage['show_downtimes'],
                     'showDowntimeComments'        => $statuspage['show_downtime_comments'],
@@ -913,6 +918,7 @@ class StatuspagesTable extends Table {
                 'description'                 => $statuspage['description'],
                 'public_title'                => $statuspage['public_title'],
                 'public_identifier'           => $statuspage['public_identifier'],
+                'public_refresh'              => $statuspage['public_refresh'],
                 'public'                      => $statuspage['public'],
                 'showDowntimes'               => $statuspage['show_downtimes'],
                 'showDowntimeComments'        => $statuspage['show_downtime_comments'],
