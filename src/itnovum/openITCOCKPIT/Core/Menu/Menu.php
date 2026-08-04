@@ -664,7 +664,7 @@ class Menu {
                     '/FilterbookmarkAllocations/index'
                 ))
                 ->addLink(new MenuLink(
-                    __('User Default Templates'),
+                    __('LDAP User Defaults'),
                     'UserDefaultTemplatesIndex',
                     'UserDefaultTemplates',
                     'index',

@@ -28,12 +28,16 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\itnovum\openITCOCKPIT\Filter\UserDefaultTemplatesFilter;
+use App\Model\Table\UsercontainerrolesTable;
 use App\Model\Table\UserDefaultTemplatesTable;
 use App\Model\Table\UsersTable;
 use Cake\Http\Exception\MethodNotAllowedException;
 use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
+use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
+use itnovum\openITCOCKPIT\Filter\GenericFilter;
 
 /**
  * UserDefaultTemplates Controller
@@ -250,5 +254,58 @@ class UserDefaultTemplatesController extends AppController {
         $this->response = $this->response->withStatus(500);
         $this->set('success', false);
         $this->viewBuilder()->setOption('serialize', ['success']);
+    }
+
+    public function loadContainerRolesByLdapGroupIds() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var UsercontainerrolesTable $UsercontainerrolesTable */
+        $UsercontainerrolesTable = TableRegistry::getTableLocator()->get('Usercontainerroles');
+
+        $GenericFilter = new GenericFilter($this->request);
+        $GenericFilter->setFilters([
+            'like' => [
+                'Usercontainerroles.name'
+            ]
+        ]);
+        $ldapGroupIds = $this->request->getQuery('ldapGroupIds', []);
+
+        $userContainerIds = $this->MY_RIGHTS;
+        if (!$this->hasRootPrivileges) {
+            $userContainerIds = array_filter($this->MY_RIGHTS_LEVEL, function ($v) {
+                return $v == WRITE_RIGHT;
+            }, ARRAY_FILTER_USE_BOTH);
+            $userContainerIds = array_keys($userContainerIds);
+        }
+        $ucr = Api::makeItJavaScriptAble(
+            $UsercontainerrolesTable->getUsercontainerrolesAsListByLdapGroupIds(
+                $GenericFilter,
+                $userContainerIds,
+                $ldapGroupIds
+            )
+        );
+        $filteredUserContainerRoles = [];
+
+        if (!$this->hasRootPrivileges && !empty($ucr)) {
+            $usercontainerRoleIdsToCheck = Hash::extract($ucr, '{n}.key');
+            $userContainerRolesWithContainerIDs = $UsercontainerrolesTable->getUsercontanerRoleWithAllContainerIdsByIds(
+                $usercontainerRoleIdsToCheck
+            );
+            // clean up user container roles
+            foreach ($ucr as $userContainerRole) {
+                if (isset($userContainerRolesWithContainerIDs[$userContainerRole['key']])) {
+                    //Check if user has rights to see all containers in container user role
+                    if (empty(array_diff($userContainerRolesWithContainerIDs[$userContainerRole['key']], $userContainerIds))) {
+                        $filteredUserContainerRoles[] = $userContainerRole;
+                    }
+                }
+            }
+            $ucr = $filteredUserContainerRoles;
+        }
+
+        $this->set('usercontainerroles', $ucr);
+        $this->viewBuilder()->setOption('serialize', ['usercontainerroles']);
     }
 }

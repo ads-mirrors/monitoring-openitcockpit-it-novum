@@ -130,6 +130,13 @@ class UserDefaultTemplatesTable extends Table {
             ], __('You have to choose at least one option.'));
 
         $validator
+            ->requirePresence('ldapgroups', true, __('You have to choose at least one LDAP group.'))
+            ->allowEmptyString('ldapgroups', null, false)
+            ->multipleOptions('ldapgroups', [
+                'min' => 1
+            ], __('You have to choose at least one LDAP group.'));
+
+        $validator
             ->scalar('name')
             ->maxLength('name', 255)
             ->requirePresence('name', 'create')

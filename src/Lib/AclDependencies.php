@@ -568,16 +568,16 @@ class AclDependencies {
             ->dependency('Users', 'edit', 'Users', 'loadContainerRoles')
             ->dependency('Users', 'edit', 'Users', 'loadLdapUserDetails')
             ->dependency('Users', 'edit', 'Users', 'loadContainerPermissions')
-            ->dependency('Users', 'edit', 'Users', 'loadContainersForAngular')
-            ->dependency('Users', 'add', 'Users', 'getUserDefaultTemplatesForUserEdit')
-            ->dependency('Users', 'edit', 'Users', 'getUserDefaultTemplatesForUserEdit');
+            ->dependency('Users', 'edit', 'Users', 'loadContainersForAngular');
 
         $this->dependency('UserDefaultTemplates', 'add', 'Users', 'loadContainersForAngular')
             ->dependency('UserDefaultTemplates', 'edit', 'Users', 'loadContainersForAngular')
             ->dependency('UserDefaultTemplates', 'add', 'Usergroups', 'loadLdapgroupsForAngular')
             ->dependency('UserDefaultTemplates', 'edit', 'Usergroups', 'loadLdapgroupsForAngular')
             ->dependency('UserDefaultTemplates', 'add', 'Containers', 'loadContainersByContainerIds')
-            ->dependency('UserDefaultTemplates', 'edit', 'Containers', 'loadContainersByContainerIds');
+            ->dependency('UserDefaultTemplates', 'edit', 'Containers', 'loadContainersByContainerIds')
+            ->dependency('UserDefaultTemplates', 'add', 'loadContainerRolesByLdapGroupIds', 'loadContainerRolesByLdapGroupIds')
+            ->dependency('UserDefaultTemplates', 'edit', 'loadContainerRolesByLdapGroupIds', 'loadContainerRolesByLdapGroupIds');
 
 
         $this

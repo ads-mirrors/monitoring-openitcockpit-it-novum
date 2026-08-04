@@ -215,6 +215,58 @@ class UsercontainerrolesTable extends Table {
     }
 
     /**
+     * @param GenericFilter $GenericFilter
+     * @param array $MY_RIGHTS
+     * @param array $ldapGroupIds
+     * @return array
+     */
+    public function getUsercontainerrolesAsListByLdapGroupIds(GenericFilter $GenericFilter, array $MY_RIGHTS = [], array $ldapGroupIds = []): array {
+        if (empty($ldapGroupIds)) {
+            return [];
+        }
+        if (!is_array($MY_RIGHTS)) {
+            $MY_RIGHTS = [$MY_RIGHTS];
+        }
+        $query = $this->find();
+
+        if (!empty($GenericFilter->genericFilters())) {
+            $query->where($GenericFilter->genericFilters());
+        }
+
+        $query->select([
+            'Usercontainerroles.id',
+            'Usercontainerroles.name'
+        ])
+            ->contain('Containers')
+            ->matching('Containers');
+        if (!empty($MY_RIGHTS)) {
+            $query->where([
+                    'ContainersUsercontainerrolesMemberships.container_id IN' => $MY_RIGHTS
+                ]
+            );
+        }
+        $query->innerJoinWith('Ldapgroups', function (Query $q) use ($ldapGroupIds) {
+            return $q->where([
+                'Ldapgroups.id IN' => $ldapGroupIds
+            ]);
+        });
+        $query->groupBy([
+            'Usercontainerroles.id'
+        ])
+            ->orderBy([
+                'Usercontainerroles.name' => 'asc',
+                'Usercontainerroles.id'   => 'asc'
+            ])
+            ->disableHydration();
+
+        $result = [];
+        foreach ($query->toArray() as $record) {
+            $result[$record['id']] = $record['name'];
+        }
+        return $result;
+    }
+
+    /**
      * @param UsercontainerrolesFilter $UsercontainerrolesFilter
      * @param PaginateOMat|null $PaginateOMat
      * @param array $MY_RIGHTS
