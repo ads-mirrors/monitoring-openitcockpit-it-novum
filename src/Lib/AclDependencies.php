@@ -576,8 +576,8 @@ class AclDependencies {
             ->dependency('UserDefaultTemplates', 'edit', 'Usergroups', 'loadLdapgroupsForAngular')
             ->dependency('UserDefaultTemplates', 'add', 'Containers', 'loadContainersByContainerIds')
             ->dependency('UserDefaultTemplates', 'edit', 'Containers', 'loadContainersByContainerIds')
-            ->dependency('UserDefaultTemplates', 'add', 'loadContainerRolesByLdapGroupIds', 'loadContainerRolesByLdapGroupIds')
-            ->dependency('UserDefaultTemplates', 'edit', 'loadContainerRolesByLdapGroupIds', 'loadContainerRolesByLdapGroupIds');
+            ->dependency('UserDefaultTemplates', 'add', 'UserDefaultTemplates', 'loadContainerRolesByLdapGroupIds')
+            ->dependency('UserDefaultTemplates', 'edit', 'UserDefaultTemplates', 'loadContainerRolesByLdapGroupIds');
 
 
         $this
