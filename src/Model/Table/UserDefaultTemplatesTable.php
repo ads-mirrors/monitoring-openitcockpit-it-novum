@@ -123,11 +123,23 @@ class UserDefaultTemplatesTable extends Table {
             ->allowEmptyString('id', null, 'create');
 
         $validator
-            ->requirePresence('containers', true, __('You have to choose at least one option.'))
+            ->requirePresence('containers', true, __('You have to choose at least one option container.'))
             ->allowEmptyString('containers', null, false)
             ->multipleOptions('containers', [
                 'min' => 1
-            ], __('You have to choose at least one option.'));
+            ], __('You have to choose at least one option container.'));
+
+        $validator
+            ->add('usercontainerroles', 'custom', [
+                'rule'    => [$this, 'validateHasContainerOrContainerUserRolePermissions'],
+                'message' => __('If no roles have been automatically assigned, please select at least one container.')
+            ]);
+
+        $validator
+            ->add('usercontainers', 'custom', [
+                'rule'    => [$this, 'validateHasContainerOrContainerUserRolePermissions'],
+                'message' => __('Please select at least one container if no roles are automatically assigned.')
+            ]);
 
         $validator
             ->requirePresence('ldapgroups', true, __('You have to choose at least one LDAP group.'))
@@ -209,6 +221,22 @@ class UserDefaultTemplatesTable extends Table {
         $rules->add($rules->existsIn(['usergroup_id'], 'Usergroups'), ['errorField' => 'usergroup_id']);
 
         return $rules;
+    }
+
+    /**
+     * @param mixed $value
+     * @param array $context
+     * @return bool
+     *
+     * Custom validation rule for containers and or user container roles
+     */
+    public function validateHasContainerOrContainerUserRolePermissions($value, $context) {
+        // ITC-3073
+        if (!empty($context['data']['usercontainers']['_ids']) || !empty($context['data']['usercontainerroles']['_ids'])) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -302,7 +330,7 @@ class UserDefaultTemplatesTable extends Table {
                 'Usergroups',
                 'UserContainers',
                 'Containers',
-                'Ldapgroups',
+                'Ldapgroups' => 'Usercontainerroles'
             ])
             ->disableHydration()
             ->first();
@@ -326,6 +354,9 @@ class UserDefaultTemplatesTable extends Table {
         ];
         $userDefaultTemplate['ldapgroups'] = [
             '_ids' => Hash::extract($query, 'ldapgroups.{n}.id')
+        ];
+        $userDefaultTemplate['usercontainerroles'] = [
+            '_ids' => Hash::extract($query, 'ldapgroups.{n}.usercontainerroles.{n}.id')
         ];
 
         //Build up data struct for radio inputs (only of user containers - NOT for container roles)

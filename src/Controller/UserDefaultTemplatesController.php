@@ -141,7 +141,6 @@ class UserDefaultTemplatesController extends AppController {
         }
 
         $userDefaultTemplate = $UserDefaultTemplatesTable->getUserDefaultTemplateForEdit($id);
-        $userDefaultTemplateForChangelog = $userDefaultTemplate;
         $containersToCheck = $userDefaultTemplate['UserDefaultTemplate']['containers']['_ids']; //Containers defined by the user itself
 
         $notPermittedUserContainerIds = [];
