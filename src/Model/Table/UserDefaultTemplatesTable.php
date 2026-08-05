@@ -311,7 +311,6 @@ class UserDefaultTemplatesTable extends Table {
             ->select([
                 'UserDefaultTemplates.id',
                 'UserDefaultTemplates.usergroup_id',
-                'UserDefaultTemplates.container_id',
                 'UserDefaultTemplates.name',
                 'UserDefaultTemplates.description',
                 'UserDefaultTemplates.timezone',
@@ -346,7 +345,8 @@ class UserDefaultTemplatesTable extends Table {
         foreach ($intCasts as $intCast) {
             $userDefaultTemplate[$intCast] = (int)$userDefaultTemplate[$intCast];
         }
-        $userDefaultTemplate['user_containers'] = [
+
+        $userDefaultTemplate['usercontainers'] = [
             '_ids' => Hash::extract($query, 'user_containers.{n}.id')
         ];
         $userDefaultTemplate['containers'] = [
@@ -370,7 +370,6 @@ class UserDefaultTemplatesTable extends Table {
             //Make this an empty object {} in the JSON, not an empty array []
             $userDefaultTemplate['UserDefaultTemplatesToUserContainers'] = new \stdClass();
         }
-
         return [
             'UserDefaultTemplate' => $userDefaultTemplate
         ];
@@ -495,7 +494,6 @@ class UserDefaultTemplatesTable extends Table {
             ->select([
                 'UserDefaultTemplates.id',
                 'UserDefaultTemplates.usergroup_id',
-                'UserDefaultTemplates.container_id',
                 'UserDefaultTemplates.name',
                 'UserDefaultTemplates.description',
                 'UserDefaultTemplates.timezone',
@@ -508,7 +506,9 @@ class UserDefaultTemplatesTable extends Table {
                 'Ldapgroups.id',
                 'Ldapgroups.cn'
             ])
-            ->innerJoinWith('Ldapgroups')
+            ->innerJoinWith('Ldapgroups', function (Query $query) {
+                return $query->contain(['Usercontainerroles']);
+            })
             ->disableHydration()
             ->all();
 
