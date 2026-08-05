@@ -1,0 +1,269 @@
+<?php
+// Copyright (C) 2015-2025  it-novum GmbH
+// Copyright (C) 2025-today AVENDIS GmbH
+//
+// This file is dual licensed
+//
+// 1.
+//     This program is free software: you can redistribute it and/or modify
+//     it under the terms of the GNU General Public License as published by
+//     the Free Software Foundation, version 3 of the License.
+//
+//     This program is distributed in the hope that it will be useful,
+//     but WITHOUT ANY WARRANTY; without even the implied warranty of
+//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//     GNU General Public License for more details.
+//
+//     You should have received a copy of the GNU General Public License
+//     along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+// 2.
+//     If you purchased an openITCOCKPIT Enterprise Edition you can use this file
+//     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
+//     License agreement and license key will be shipped with the order
+//     confirmation.
+
+// 2.
+//	If you purchased an openITCOCKPIT Enterprise Edition you can use this file
+//	under the terms of the openITCOCKPIT Enterprise Edition license agreement.
+//	License agreement and license key will be shipped with the order
+//	confirmation.
+
+declare(strict_types=1);
+
+namespace App\Command;
+
+use App\Model\Entity\User;
+use App\Model\Entity\Usercontainerrole;
+use App\Model\Table\SystemsettingsTable;
+use App\Model\Table\UsercontainerrolesTable;
+use App\Model\Table\UserDefaultTemplatesTable;
+use App\Model\Table\UsersTable;
+use Cake\Cache\Cache;
+use Cake\Command\Command;
+use Cake\Console\Arguments;
+use Cake\Console\ConsoleIo;
+use Cake\Console\ConsoleOptionParser;
+use Cake\Log\Log;
+use Cake\ORM\TableRegistry;
+use Cake\Utility\Hash;
+use FreeDSx\Ldap\Exception\OperationException;
+use itnovum\openITCOCKPIT\Core\Interfaces\CronjobInterface;
+use itnovum\openITCOCKPIT\Ldap\LdapClient;
+
+/**
+ * LdapGroupImport command.
+ */
+class LdapUserImportCommand extends Command implements CronjobInterface {
+
+    /**
+     * Hook method for defining this command's option parser.
+     *
+     * @see https://book.cakephp.org/3.0/en/console-and-shells/commands.html#defining-arguments-and-options
+     *
+     * @param \Cake\Console\ConsoleOptionParser $parser The parser to be defined
+     * @return \Cake\Console\ConsoleOptionParser The built parser.
+     */
+    public function buildOptionParser(ConsoleOptionParser $parser): ConsoleOptionParser {
+        return parent::buildOptionParser($parser);
+    }
+
+    /**
+     * Implement this method with your command's logic.
+     *
+     * @param \Cake\Console\Arguments $args The command arguments.
+     * @param \Cake\Console\ConsoleIo $io The console io
+     * @return null|void|int The exit code or null for success
+     */
+    public function execute(Arguments $args, ConsoleIo $io) {
+        /** @var SystemsettingsTable $SystemsettingsTable */
+        $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
+
+        if ($SystemsettingsTable->isLdapAuth() === false) {
+            // No LDAP no LDAP sync :)
+            return;
+        }
+
+        $this->syncLdapUsers($io);
+        //$this->assignUserContainerRolesToUsers($io);
+        Cache::clear('permissions');
+    }
+
+    /**
+     * @param ConsoleIo $io
+     * @return void
+     * @throws \FreeDSx\Ldap\Exception\BindException
+     * @throws OperationException
+     */
+    private function syncLdapUsers(ConsoleIo $io) {
+        /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
+        $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
+        $userDefaultTemplates = $UserDefaultTemplatesTable->getUserDefaultTemplatesForLdapUserImport();
+        $userDefaultTemplatesForLdapUserImportTest = [];
+
+        debug($userDefaultTemplates);
+        dd('OUTPUT END');
+
+        foreach ($userDefaultTemplates as $userDefaultTemplate) {
+            dd($userDefaultTemplate);
+            if (!isset($userDefaultTemplate['_matchingData']['Ldapgroups']['cn'])) {
+                $userDefaultTemplatesForLdapUserImportTest[$userDefaultTemplate['_matchingData']['Ldapgroups']['cn']] = [];
+            }
+            $userDefaultTemplatesForLdapUserImportTest[$userDefaultTemplate['_matchingData']['Ldapgroups']['cn']][$userDefaultTemplate['id']] = $userDefaultTemplate['id'];
+        }
+        debug($userDefaultTemplatesForLdapUserImportTest);
+        dd('END of INIT');
+        debug($userDefaultTemplatesForLdapUserImportTest);
+        debug($userDefaultTemplates);
+        $userDefaultTemplatesForLdapUserImport = Hash::combine(
+            $userDefaultTemplates,
+            '{n}._matchingData.Ldapgroups.id',
+            '{n}._matchingData.Ldapgroups.cn'
+        );
+        if (empty($userDefaultTemplatesForLdapUserImport)) {
+            $io->info('No user defaults with LDAP groups defined. LDAP user import not possible! ➜]');
+            return;
+        }
+        dd('END');
+        dd($userDefaultTemplatesForLdapUserImport);
+        debug($userDefaultTemplatesForLdapUserImport);
+        dd('End of test');
+        /** @var UsersTable $UsersTable */
+        $UsersTable = TableRegistry::getTableLocator()->get('Users');
+        $existingUsers = $UsersTable->getUsersForLdapImport();
+        $mailAdressesToCheck = Hash::extract($existingUsers, '{n}.email');
+
+        $io->out('Scan for new LDAP users. This will take a while...');
+
+        /** @var SystemsettingsTable $SystemsettingsTable */
+        $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
+        try {
+            $LdapClient = LdapClient::fromSystemsettings($SystemsettingsTable->findAsArraySection('FRONTEND'));
+            $usersFromLdap = $LdapClient->getUsersByGroupNames(
+                '',
+                true,
+                $userDefaultTemplatesForLdapUserImport,
+                $LdapClient->getBaseDn()
+            );
+
+            $usersToImport = [];
+            foreach ($usersFromLdap as $ldapUser) {
+                if (!empty($mailAdressesToCheck) && in_array($ldapUser['email'], $mailAdressesToCheck, true)) {
+                    // User already exists in database
+                    continue;
+                }
+                if (empty($ldapUser['samaccountname'])) {
+                    // Missing required field
+                    continue;
+                }
+                debug($ldapUser);
+
+            }
+
+            dd($usersFromLdap);
+        } catch (\Exception $e) {
+            $io->out('Error connecting to LDAP: ' . $e->getMessage());
+            return;
+        }
+        dd('End of test');
+
+        return;
+        // Add new LDAP Groups to database
+        $imported = 0;
+        foreach ($usersFromLdap as $usersromLdap) {
+            if (!isset($ldapGroupsFromDb[$ldapGroup['dn']])) {
+                // This LDAP user not exist in database
+                $entity = $LdapgroupsTable->newEntity([
+                    'cn'          => $ldapGroup['cn'],
+                    'dn'          => $ldapGroup['dn'],
+                    'description' => $ldapGroup['description']
+                ]);
+
+                if ($entity->hasErrors() === false) {
+                    $LdapgroupsTable->save($entity);
+                    $imported++;
+                    $io->out(sprintf('Imported LDAP user: <success>%s</success>', $ldapGroup['dn']));
+                }
+            }
+        }
+
+        $io->out(sprintf('Imported %s users.', $imported));
+
+        $io->success('   Ok');
+        $io->hr();
+    }
+
+    private function assignUserContainerRolesToUsers(ConsoleIo $io) {
+        $io->out('Assign User Container Roles that have LDAP associations to users');
+
+        /** @var SystemsettingsTable $SystemsettingsTable */
+        $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
+        $LdapClient = LdapClient::fromSystemsettings($SystemsettingsTable->findAsArraySection('FRONTEND'));
+
+        /** @var UsersTable $UsersTable */
+        $UsersTable = TableRegistry::getTableLocator()->get('Users');
+        /** @var UsercontainerrolesTable $UsercontainerrolesTable */
+        $UsercontainerrolesTable = TableRegistry::getTableLocator()->get('Usercontainerroles');
+
+        foreach ($UsersTable->getLdapUsersForSync() as $user) {
+            /** @var User $user */
+            $io->out(sprintf('Query LDAP groups from LDAP for user <success>%s</success>', $user->samaccountname));
+
+            $ldapUser = $LdapClient->getUser($user->samaccountname, true);
+            if ($ldapUser) {
+                $userContainerRoleContainerPermissionsLdap = $UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
+                    $ldapUser['memberof']
+                );
+
+                // Keep manually assigned user container roles
+                $data = [
+                    'usercontainerroles'      => [],
+                    // For validation only (always empty in the LdapGroupCommand bc this is part of the usercontainerroles array above)
+                    'usercontainerroles_ldap' => [
+                        '_ids' => []
+                    ],
+                    // Add any containers for the validation (in case usercontainerroles is empty)
+                    'containers'              => [
+                        '_ids' => Hash::extract($user, 'containers.{n}.id')
+                    ]
+                ];
+                foreach ($user->usercontainerroles as $usercontainerrole) {
+                    /** @var Usercontainerrole $usercontainerrole */
+                    $data['usercontainerroles'][$usercontainerrole->id] = [
+                        'id'        => $usercontainerrole->id,
+                        '_joinData' => [
+                            'through_ldap' => false // This got assigned manually
+                        ]
+                    ];
+                }
+
+                foreach ($userContainerRoleContainerPermissionsLdap as $usercontainerroleId => $usercontainerrole) {
+                    // Do not overwrite any manually user assignments
+                    if (!isset($data['usercontainerroles'][$usercontainerroleId])) {
+                        $data['usercontainerroles'][$usercontainerroleId] = [
+                            'id'        => $usercontainerroleId,
+                            '_joinData' => [
+                                'through_ldap' => true // This got assigned automatically via LDAP
+                            ]
+                        ];
+                    }
+                }
+
+                $user = $UsersTable->patchEntity($user, $data);
+                $UsersTable->save($user);
+                if ($user->hasErrors()) {
+                    Log::error(sprintf(
+                        'LdapGroupImportCommand: Could not save user [%s] %s',
+                        $user->id,
+                        $user->samaccountname
+                    ));
+                    Log::error(json_encode($user->getErrors()));
+                }
+            }
+
+        }
+
+        $io->success('   Ok');
+        $io->hr();
+    }
+}
