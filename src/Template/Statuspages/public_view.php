@@ -80,12 +80,14 @@ $logo = new Logo();
                         </div>
                     </div>
 
-                    <div
-                            class="p-3 bg-<?= h($statuspage['statuspage']['cumulatedColor']); ?> rounded overflow-hidden position-relative text-white">
-                        <div>
-                            <h5 class="d-block l-h-n m-0 fw-500">
+                    <div class="p-3 bg-<?= h($statuspage['statuspage']['cumulatedColor']); ?> rounded overflow-hidden position-relative text-white">
+                        <div class="d-flex align-items-baseline gap-2">
+                            <h5 class="l-h-n m-0 fw-500 d-inline">
                                 <?= h($statuspage['statuspage']['cumulatedHumanStatus']); ?>
                             </h5>
+                            <?php if ($statuspage['statuspage']['cumulatedColorId'] > 0 && !empty($statuspage['statuspage']['lastStateChange'])): ?>
+                                <span>(<?= __('State since'); ?>: <?= h($statuspage['statuspage']['lastStateChange']); ?>)</span>
+                            <?php endif; ?>
                         </div>
                         <i class="<?= h($statuspage['statuspage']['cumulatedIcon']); ?> statuspage-icon position-absolute pos-right pos-bottom opacity-15 pe-1"></i>
                     </div>
@@ -120,7 +122,12 @@ $logo = new Logo();
 
                                                 <!-- Handle status name -->
                                                 <div class="col-12">
-                                                    <h6 class="<?= h($item['cumulatedColor']); ?>"><?= h($item['cumulatedStateName']); ?></h6>
+                                                    <span>
+                                                        <span class="h6 me-2 <?= h($item['cumulatedColor']); ?>"><?= h($item['cumulatedStateName']); ?></span>
+                                                        <?php if ($item['cumulatedColorId'] > 0 &&  !empty($item['lastStateChange'])): ?>
+                                                            (<?= __('State since'); ?>: <?= h($item['lastStateChange']); ?>)
+                                                        <?php endif; ?>
+                                                    </span>
                                                 </div>
                                                 <!-- end of status name -->
                                                 <!-- Handle acknowledgement comments -->
