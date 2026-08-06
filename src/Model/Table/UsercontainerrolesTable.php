@@ -237,7 +237,14 @@ class UsercontainerrolesTable extends Table {
             'Usercontainerroles.id',
             'Usercontainerroles.name'
         ])
-            ->contain('Containers')
+            ->contain([
+                'Containers',
+                'Ldapgroups' => function ($q) use ($ldapGroupIds) {
+                    return $q->where([
+                        'Ldapgroups.id IN' => $ldapGroupIds
+                    ]);
+                }
+            ])
             ->matching('Containers');
         if (!empty($MY_RIGHTS)) {
             $query->where([
@@ -261,7 +268,10 @@ class UsercontainerrolesTable extends Table {
 
         $result = [];
         foreach ($query->toArray() as $record) {
-            $result[$record['id']] = $record['name'];
+            $result[$record['id']] = [
+                'name'       => $record['name'],
+                'ldapgroups' => Hash::remove($record['ldapgroups'], '{n}._joinData')
+            ];
         }
         return $result;
     }

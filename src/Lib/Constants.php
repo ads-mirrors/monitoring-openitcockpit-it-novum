@@ -161,7 +161,6 @@ class Constants {
         define('OBJECT_RESOURCE', 1 << 31);                  // ScmModule
         define('OBJECT_RESOURCEGROUP', 1 << 32);             // ScmModule
         define('OBJECT_CALENDAR', 1 << 33);
-        define('OBJECT_USER_DEFAULT_TEMPLATES', 1 << 34);
     }
 
     private function defineHosttemplateTypes(): void {

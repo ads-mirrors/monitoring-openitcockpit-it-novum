@@ -99,35 +99,39 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
         /** @var UserDefaultTemplatesTable $UserDefaultTemplatesTable */
         $UserDefaultTemplatesTable = TableRegistry::getTableLocator()->get('UserDefaultTemplates');
         $userDefaultTemplates = $UserDefaultTemplatesTable->getUserDefaultTemplatesForLdapUserImport();
-        $userDefaultTemplatesForLdapUserImportTest = [];
 
-        debug($userDefaultTemplates);
-        dd('OUTPUT END');
+        $ldapGroupsToUserDefaultTemplates = [];
+        $ldapGroupsToUserContainerRoles = [];
+        $userDefaultTemplatesWithIdAsIndex = [];
 
         foreach ($userDefaultTemplates as $userDefaultTemplate) {
-            dd($userDefaultTemplate);
-            if (!isset($userDefaultTemplate['_matchingData']['Ldapgroups']['cn'])) {
-                $userDefaultTemplatesForLdapUserImportTest[$userDefaultTemplate['_matchingData']['Ldapgroups']['cn']] = [];
+            $userDefaultTemplatesWithIdAsIndex[$userDefaultTemplate['id']] = $userDefaultTemplate;
+            foreach ($userDefaultTemplate['ldapgroups'] as $ldapGroup) {
+                $ldapGroupsToUserDefaultTemplates[$ldapGroup['dn']]['templates'][$userDefaultTemplate['id']] = $userDefaultTemplate['id'];
+                foreach ($ldapGroup['usercontainerroles'] as $userContainerRole) {
+                    $ldapGroupsToUserContainerRoles[$ldapGroup['dn']]['usercontainerroles'][$userContainerRole['id']] = $userContainerRole['id'];
+                }
             }
-            $userDefaultTemplatesForLdapUserImportTest[$userDefaultTemplate['_matchingData']['Ldapgroups']['cn']][$userDefaultTemplate['id']] = $userDefaultTemplate['id'];
         }
-        debug($userDefaultTemplatesForLdapUserImportTest);
-        dd('END of INIT');
-        debug($userDefaultTemplatesForLdapUserImportTest);
-        debug($userDefaultTemplates);
+
+        $userDefaultTemplatesWithIdAsIndex = Hash::remove($userDefaultTemplatesWithIdAsIndex, '{n}.ldapgroups');
+        $userDefaultTemplatesWithIdAsIndex = Hash::remove($userDefaultTemplatesWithIdAsIndex, '{n}._matchingData');
+
+        //debug($ldapGroupsToUserDefaultTemplates);
+        //debug($ldapGroupsToUserContainerRoles);
+        //debug($userDefaultTemplatesWithIdAsIndex);
+
+
         $userDefaultTemplatesForLdapUserImport = Hash::combine(
             $userDefaultTemplates,
             '{n}._matchingData.Ldapgroups.id',
             '{n}._matchingData.Ldapgroups.cn'
         );
-        if (empty($userDefaultTemplatesForLdapUserImport)) {
+        if (empty($userDefaultTemplatesWithIdAsIndex)) {
             $io->info('No user defaults with LDAP groups defined. LDAP user import not possible! ➜]');
             return;
         }
-        dd('END');
-        dd($userDefaultTemplatesForLdapUserImport);
-        debug($userDefaultTemplatesForLdapUserImport);
-        dd('End of test');
+
         /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $existingUsers = $UsersTable->getUsersForLdapImport();
@@ -145,27 +149,28 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
                 $userDefaultTemplatesForLdapUserImport,
                 $LdapClient->getBaseDn()
             );
-
             $usersToImport = [];
             foreach ($usersFromLdap as $ldapUser) {
-                if (!empty($mailAdressesToCheck) && in_array($ldapUser['email'], $mailAdressesToCheck, true)) {
+                if (!empty($mailAdressesToCheck) && in_array(strtolower($ldapUser['email']), $mailAdressesToCheck, true)) {
                     // User already exists in database
+                    $io->info(sprintf('⚠️ User already exists:  %s [%s]', $ldapUser['display_name'], strtolower($ldapUser['email'])));
                     continue;
                 }
                 if (empty($ldapUser['samaccountname'])) {
                     // Missing required field
+                    $io->error('❗ Missing required field sAMAccountName (Security Account Manager Account Name)');
                     continue;
                 }
-                debug($ldapUser);
+                debug($ldapUser['display_name']);
 
             }
 
-            dd($usersFromLdap);
+            //dd($usersFromLdap);
         } catch (\Exception $e) {
             $io->out('Error connecting to LDAP: ' . $e->getMessage());
             return;
         }
-        dd('End of test');
+        dd('SizeOf: ' . sizeof($usersFromLdap));
 
         return;
         // Add new LDAP Groups to database
@@ -193,7 +198,8 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
         $io->hr();
     }
 
-    private function assignUserContainerRolesToUsers(ConsoleIo $io) {
+    private
+    function assignUserContainerRolesToUsers(ConsoleIo $io) {
         $io->out('Assign User Container Roles that have LDAP associations to users');
 
         /** @var SystemsettingsTable $SystemsettingsTable */

@@ -129,17 +129,6 @@ class UserDefaultTemplatesTable extends Table {
                 'min' => 1
             ], __('You have to choose at least one option container.'));
 
-        $validator
-            ->add('usercontainerroles', 'custom', [
-                'rule'    => [$this, 'validateHasContainerOrContainerUserRolePermissions'],
-                'message' => __('If no roles have been automatically assigned, please select at least one container.')
-            ]);
-
-        $validator
-            ->add('usercontainers', 'custom', [
-                'rule'    => [$this, 'validateHasContainerOrContainerUserRolePermissions'],
-                'message' => __('Please select at least one container if no roles are automatically assigned.')
-            ]);
 
         $validator
             ->requirePresence('ldapgroups', true, __('You have to choose at least one LDAP group.'))
@@ -509,6 +498,7 @@ class UserDefaultTemplatesTable extends Table {
             ->innerJoinWith('Ldapgroups', function (Query $query) {
                 return $query->contain(['Usercontainerroles']);
             })
+            ->contain(['UserContainers'])
             ->disableHydration()
             ->all();
 

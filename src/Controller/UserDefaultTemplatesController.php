@@ -234,15 +234,12 @@ class UserDefaultTemplatesController extends AppController {
             throw new NotFoundException(__('User default template not found'));
         }
         $userDefaultTemplate = $UserDefaultTemplatesTable->getUserDefaultTemplateById($id);
+        $containerIdsToCheck = Hash::extract($userDefaultTemplate, 'containers.{n}.id');
+        if (!$this->allowedByContainerId($containerIdsToCheck)) {
+            $this->render403();
+            return;
+        }
 
-        if (!$this->allowedByContainerId($userDefaultTemplate['container_id'])) {
-            $this->render403();
-            return;
-        }
-        if (!in_array($userDefaultTemplate['container_id'], $this->MY_RIGHTS)) {
-            $this->render403();
-            return;
-        }
         $userDefaultTemplateEntity = $UserDefaultTemplatesTable->get($id);
         if ($UserDefaultTemplatesTable->delete($userDefaultTemplateEntity)) {
             $this->set('success', true);
@@ -278,33 +275,53 @@ class UserDefaultTemplatesController extends AppController {
             }, ARRAY_FILTER_USE_BOTH);
             $userContainerIds = array_keys($userContainerIds);
         }
-        $ucr = Api::makeItJavaScriptAble(
-            $UsercontainerrolesTable->getUsercontainerrolesAsListByLdapGroupIds(
-                $GenericFilter,
-                $userContainerIds,
-                $ldapGroupIds
-            )
+        $ucr = $UsercontainerrolesTable->getUsercontainerrolesAsListByLdapGroupIds(
+            $GenericFilter,
+            $userContainerIds,
+            $ldapGroupIds
         );
         $filteredUserContainerRoles = [];
 
         if (!$this->hasRootPrivileges && !empty($ucr)) {
-            $usercontainerRoleIdsToCheck = Hash::extract($ucr, '{n}.key');
+            $usercontainerRoleIdsToCheck = array_keys($ucr);
             $userContainerRolesWithContainerIDs = $UsercontainerrolesTable->getUsercontanerRoleWithAllContainerIdsByIds(
                 $usercontainerRoleIdsToCheck
             );
             // clean up user container roles
-            foreach ($ucr as $userContainerRole) {
-                if (isset($userContainerRolesWithContainerIDs[$userContainerRole['key']])) {
+            foreach ($ucr as $key => $userContainerRole) {
+                if (isset($userContainerRolesWithContainerIDs[$key])) {
                     //Check if user has rights to see all containers in container user role
-                    if (empty(array_diff($userContainerRolesWithContainerIDs[$userContainerRole['key']], $userContainerIds))) {
-                        $filteredUserContainerRoles[] = $userContainerRole;
+                    if (empty(array_diff($userContainerRolesWithContainerIDs[$key], $userContainerIds))) {
+                        $filteredUserContainerRoles[$key] = $userContainerRole;
                     }
                 }
             }
             $ucr = $filteredUserContainerRoles;
         }
 
-        $this->set('usercontainerroles', $ucr);
-        $this->viewBuilder()->setOption('serialize', ['usercontainerroles']);
+
+        $usercontainerrolesByLdapGroup = [];
+        foreach ($ucr as $key => $userContainerRole) {
+            foreach ($userContainerRole['ldapgroups'] as $ldapGroup) {
+                if (!isset($usercontainerrolesByLdapGroup[$ldapGroup['id']])) {
+                    $usercontainerrolesByLdapGroup[$ldapGroup['id']] = [
+                        'id' => $ldapGroup['id'],
+                        'cn' => $ldapGroup['cn'],
+                        'dn' => $ldapGroup['dn']
+                    ];
+                }
+                $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key] = [
+                    'id'                   => $key,
+                    'name'                 => $userContainerRole['name'],
+                    'containerPermissions' => $UsercontainerrolesTable->getContainerPermissionsByUserContainerRoleIds($key)[$key] ?? []
+                ];
+            }
+        }
+
+        $usercontainerrolesByLdapGroup = Api::makeItJavaScriptAble($usercontainerrolesByLdapGroup);
+
+
+        $this->set('usercontainerrolesByLdapGroup', $usercontainerrolesByLdapGroup);
+        $this->viewBuilder()->setOption('serialize', ['usercontainerrolesByLdapGroup']);
     }
 }

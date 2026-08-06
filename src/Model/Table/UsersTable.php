@@ -2027,14 +2027,14 @@ class UsersTable extends Table {
      * @return User[]
      */
     public function getUsersForLdapImport() {
-        $result = $this->find()
-            ->select([
-                'id',
-                'email'
-            ])
+        $query = $this->find();
+        $query->select([
+            'id',
+            'email' => $query->func()->lcase(['email' => 'identifier'])
+        ])
             ->disableHydration()
             ->all();
 
-        return $result->toArray();
+        return $query->toArray();
     }
 }
