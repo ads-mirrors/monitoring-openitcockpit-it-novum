@@ -492,6 +492,7 @@ class UserDefaultTemplatesTable extends Table {
                 'UserDefaultTemplates.paginatorlength',
                 'UserDefaultTemplates.recursive_browser',
                 'UserDefaultTemplates.is_oauth',
+                'UserDefaultTemplates.dashboard_tab_rotation',
                 'Ldapgroups.id',
                 'Ldapgroups.cn'
             ])

@@ -33,8 +33,6 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Model\Entity\User;
-use App\Model\Entity\Usercontainerrole;
 use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\UsercontainerrolesTable;
 use App\Model\Table\UserDefaultTemplatesTable;
@@ -101,26 +99,18 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
         $userDefaultTemplates = $UserDefaultTemplatesTable->getUserDefaultTemplatesForLdapUserImport();
 
         $ldapGroupsToUserDefaultTemplates = [];
-        $ldapGroupsToUserContainerRoles = [];
         $userDefaultTemplatesWithIdAsIndex = [];
 
         foreach ($userDefaultTemplates as $userDefaultTemplate) {
             $userDefaultTemplatesWithIdAsIndex[$userDefaultTemplate['id']] = $userDefaultTemplate;
             foreach ($userDefaultTemplate['ldapgroups'] as $ldapGroup) {
                 $ldapGroupsToUserDefaultTemplates[$ldapGroup['dn']]['templates'][$userDefaultTemplate['id']] = $userDefaultTemplate['id'];
-                foreach ($ldapGroup['usercontainerroles'] as $userContainerRole) {
-                    $ldapGroupsToUserContainerRoles[$ldapGroup['dn']]['usercontainerroles'][$userContainerRole['id']] = $userContainerRole['id'];
-                }
             }
         }
 
+
         $userDefaultTemplatesWithIdAsIndex = Hash::remove($userDefaultTemplatesWithIdAsIndex, '{n}.ldapgroups');
         $userDefaultTemplatesWithIdAsIndex = Hash::remove($userDefaultTemplatesWithIdAsIndex, '{n}._matchingData');
-
-        //debug($ldapGroupsToUserDefaultTemplates);
-        //debug($ldapGroupsToUserContainerRoles);
-        //debug($userDefaultTemplatesWithIdAsIndex);
-
 
         $userDefaultTemplatesForLdapUserImport = Hash::combine(
             $userDefaultTemplates,
@@ -141,6 +131,10 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
 
         /** @var SystemsettingsTable $SystemsettingsTable */
         $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
+
+        /** @var UsercontainerrolesTable $UsercontainerrolesTable */
+        $UsercontainerrolesTable = TableRegistry::getTableLocator()->get('Usercontainerroles');
+
         try {
             $LdapClient = LdapClient::fromSystemsettings($SystemsettingsTable->findAsArraySection('FRONTEND'));
             $usersFromLdap = $LdapClient->getUsersByGroupNames(
@@ -149,11 +143,11 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
                 $userDefaultTemplatesForLdapUserImport,
                 $LdapClient->getBaseDn()
             );
-            $usersToImport = [];
+            $imported = 0;
             foreach ($usersFromLdap as $ldapUser) {
                 if (!empty($mailAdressesToCheck) && in_array(strtolower($ldapUser['email']), $mailAdressesToCheck, true)) {
                     // User already exists in database
-                    $io->info(sprintf('⚠️ User already exists:  %s [%s]', $ldapUser['display_name'], strtolower($ldapUser['email'])));
+                    //$io->info(sprintf('⚠️ User already exists:  %s [%s]', $ldapUser['display_name'], strtolower($ldapUser['email'])));
                     continue;
                 }
                 if (empty($ldapUser['samaccountname'])) {
@@ -161,88 +155,87 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
                     $io->error('❗ Missing required field sAMAccountName (Security Account Manager Account Name)');
                     continue;
                 }
-                debug($ldapUser['display_name']);
-
-            }
-
-            //dd($usersFromLdap);
-        } catch (\Exception $e) {
-            $io->out('Error connecting to LDAP: ' . $e->getMessage());
-            return;
-        }
-        dd('SizeOf: ' . sizeof($usersFromLdap));
-
-        return;
-        // Add new LDAP Groups to database
-        $imported = 0;
-        foreach ($usersFromLdap as $usersromLdap) {
-            if (!isset($ldapGroupsFromDb[$ldapGroup['dn']])) {
-                // This LDAP user not exist in database
-                $entity = $LdapgroupsTable->newEntity([
-                    'cn'          => $ldapGroup['cn'],
-                    'dn'          => $ldapGroup['dn'],
-                    'description' => $ldapGroup['description']
-                ]);
-
-                if ($entity->hasErrors() === false) {
-                    $LdapgroupsTable->save($entity);
-                    $imported++;
-                    $io->out(sprintf('Imported LDAP user: <success>%s</success>', $ldapGroup['dn']));
+                if (empty($ldapUser['memberof'])) {
+                    // Missing for import required field
+                    $io->error('❗ Missing required field memberof');
+                    continue;
                 }
-            }
-        }
 
-        $io->out(sprintf('Imported %s users.', $imported));
+                $data = [
+                    'firstname'      => $ldapUser['givenname'],
+                    'lastname'       => $ldapUser['sn'],
+                    'email'          => $ldapUser['email'],
+                    'phone'          => $ldapUser['telephonenumber'] ?? null,
+                    'is_active'      => 1,
+                    'samaccountname' => $ldapUser['samaccountname'],
+                    'ldap_dn'        => $ldapUser['dn'],
+                    'company'        => $ldapUser['company'] ?? null,
+                    'department'     => $ldapUser['department'] ?? null,
 
-        $io->success('   Ok');
-        $io->hr();
-    }
+                ];
 
-    private
-    function assignUserContainerRolesToUsers(ConsoleIo $io) {
-        $io->out('Assign User Container Roles that have LDAP associations to users');
+                $UsersTable->getValidator()->remove('password');
+                $UsersTable->getValidator()->remove('confirm_password');
 
-        /** @var SystemsettingsTable $SystemsettingsTable */
-        $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
-        $LdapClient = LdapClient::fromSystemsettings($SystemsettingsTable->findAsArraySection('FRONTEND'));
+                $matchedGroup = null;
+                $matchedTemplateData = null;
 
-        /** @var UsersTable $UsersTable */
-        $UsersTable = TableRegistry::getTableLocator()->get('Users');
-        /** @var UsercontainerrolesTable $UsercontainerrolesTable */
-        $UsercontainerrolesTable = TableRegistry::getTableLocator()->get('Usercontainerroles');
 
-        foreach ($UsersTable->getLdapUsersForSync() as $user) {
-            /** @var User $user */
-            $io->out(sprintf('Query LDAP groups from LDAP for user <success>%s</success>', $user->samaccountname));
-
-            $ldapUser = $LdapClient->getUser($user->samaccountname, true);
-            if ($ldapUser) {
                 $userContainerRoleContainerPermissionsLdap = $UsercontainerrolesTable->getContainerPermissionsByLdapUserMemberOf(
                     $ldapUser['memberof']
                 );
 
-                // Keep manually assigned user container roles
-                $data = [
-                    'usercontainerroles'      => [],
-                    // For validation only (always empty in the LdapGroupCommand bc this is part of the usercontainerroles array above)
-                    'usercontainerroles_ldap' => [
-                        '_ids' => []
-                    ],
-                    // Add any containers for the validation (in case usercontainerroles is empty)
-                    'containers'              => [
-                        '_ids' => Hash::extract($user, 'containers.{n}.id')
-                    ]
-                ];
-                foreach ($user->usercontainerroles as $usercontainerrole) {
-                    /** @var Usercontainerrole $usercontainerrole */
-                    $data['usercontainerroles'][$usercontainerrole->id] = [
-                        'id'        => $usercontainerrole->id,
-                        '_joinData' => [
-                            'through_ldap' => false // This got assigned manually
-                        ]
-                    ];
+                foreach ($ldapGroupsToUserDefaultTemplates as $groupDn => $data) {
+                    if (in_array($groupDn, $ldapUser['memberof'], true)) {
+                        $matchedGroup = $groupDn;
+                        $matchedTemplateData = $data;
+                        break; // First match for template founded
+                    }
                 }
 
+                if (!$matchedGroup) {
+                    // no default template found for this user, skip it
+                    $io->info(sprintf('⚠️ No matching default template found for user: %s [%s]', $ldapUser['display_name'], $matchedGroup));
+                    continue;
+                }
+
+                $possibleUserDefaultTemplates = array_keys($matchedTemplateData['templates']);
+                if (!empty($possibleUserDefaultTemplates)) {
+                    $userDefaultTemlate = $userDefaultTemplatesWithIdAsIndex[$possibleUserDefaultTemplates[0]];
+                    $io->info(sprintf('✅ Matching default template found for user: %s → %s [ID: %s]',
+                            $ldapUser['display_name'],
+                            $userDefaultTemlate['name'],
+                            $userDefaultTemlate['id']
+                        )
+                    );
+                    $containers = [];
+                    if (!empty($userDefaultTemlate['user_containers'])) {
+                        foreach ($userDefaultTemlate['user_containers'] as $userContainer) {
+                            $containers[] = [
+                                'id'        => $userContainer['id'],
+                                '_joinData' => [
+                                    'permission_level' => $userContainer['_joinData']['permission_level']
+                                ]
+                            ];
+                        }
+                    }
+                    $data = [
+                        'firstname'               => $ldapUser['givenname'],
+                        'lastname'                => $ldapUser['sn'],
+                        'email'                   => $ldapUser['email'],
+                        'phone'                   => $ldapUser['telephonenumber'] ?? null,
+                        'is_active'               => 1,
+                        'samaccountname'          => $ldapUser['samaccountname'],
+                        'company'                 => $ldapUser['company'] ?? null,
+                        'department'              => $ldapUser['department'] ?? null,
+                        'usercontainerroles_ldap' => [
+                            '_ids' => []
+                        ],
+                        'containers'              => $containers
+                    ];
+                    $data = array_merge($data, $userDefaultTemlate);
+
+                }
                 foreach ($userContainerRoleContainerPermissionsLdap as $usercontainerroleId => $usercontainerrole) {
                     // Do not overwrite any manually user assignments
                     if (!isset($data['usercontainerroles'][$usercontainerroleId])) {
@@ -254,22 +247,34 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
                         ];
                     }
                 }
+                $userEntity = $UsersTable->newEmptyEntity();
+                $userEntity = $UsersTable->patchEntity($userEntity, $data);
+                $userEntity = $UsersTable->createUser(
+                    $userEntity,
+                    ['User' => $data],
+                    0
+                );
 
-                $user = $UsersTable->patchEntity($user, $data);
-                $UsersTable->save($user);
-                if ($user->hasErrors()) {
+                if ($userEntity->hasErrors()) {
                     Log::error(sprintf(
-                        'LdapGroupImportCommand: Could not save user [%s] %s',
-                        $user->id,
-                        $user->samaccountname
+                        'LdapUserImportCommand: Could not save user [%s] %s',
+                        $userEntity->id,
+                        $userEntity->samaccountname
                     ));
-                    Log::error(json_encode($user->getErrors()));
+                    Log::error(json_encode($userEntity->getErrors()));
                 }
+
+                $imported++;
+                $io->out(sprintf('Imported LDAP user: <success>%s</success>', $ldapUser['display_name']));
             }
 
-        }
+            $io->out(sprintf('Imported %s users.', $imported));
+            $io->success('   Ok');
+            $io->hr();
 
-        $io->success('   Ok');
-        $io->hr();
+        } catch (\Exception $e) {
+            $io->error('‼️ Error connecting to LDAP: ' . $e->getMessage());
+            return;
+        }
     }
 }
