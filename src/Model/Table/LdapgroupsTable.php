@@ -278,12 +278,81 @@ class LdapgroupsTable extends Table {
             ->where([
                 'Ldapgroups.id' => $id
             ]);
-        
+
         $result = $query->first();
         if (empty($result)) {
             return [];
         }
         return $result->toArray();
+    }
+
+    /**
+     * @param array $where
+     * @param $selected
+     * @return array
+     */
+    public function getLdapgroupsWitContainerRolesForAngular(array $where, $selected = []) {
+        if (!is_array($selected)) {
+            $selected = [$selected];
+        }
+
+        $query = $this->find('list')
+            ->innerJoinWith('Usercontainerroles');
+
+        if (is_array($selected)) {
+            $selected = array_filter($selected);
+        }
+        if (!empty($selected)) {
+            $where['NOT'] = [
+                'Ldapgroups.id IN' => $selected
+            ];
+        }
+
+        if (!empty($where['NOT'])) {
+            // https://github.com/cakephp/cakephp/issues/14981#issuecomment-694770129
+            $where['NOT'] = [
+                'OR' => $where['NOT']
+            ];
+        }
+        if (!empty($where)) {
+            $query->where($where);
+        }
+        $query->orderBy([
+            'Ldapgroups.cn' => 'asc'
+        ]);
+        $query->limit(ITN_AJAX_LIMIT);
+
+        $ldapgroupsWithLimit = $query->toArray();
+
+        $selectedLdapgroups = [];
+        if (!empty($selected)) {
+            $query = $this->find('list')
+                ->innerJoinWith('Usercontainerroles');
+            $where = [
+                'Ldapgroups.id IN' => $selected
+            ];
+
+            if (!empty($where['NOT'])) {
+                // https://github.com/cakephp/cakephp/issues/14981#issuecomment-694770129
+                $where['NOT'] = [
+                    'OR' => $where['NOT']
+                ];
+            }
+
+            if (!empty($where)) {
+                $query->where($where);
+            }
+            $query->orderBy([
+                'Ldapgroups.cn' => 'asc'
+            ]);
+
+            $selectedLdapgroups = $query->toArray();
+
+        }
+
+        $ldapgroups = $ldapgroupsWithLimit + $selectedLdapgroups;
+        asort($ldapgroups, SORT_FLAG_CASE | SORT_NATURAL);
+        return $ldapgroups;
     }
 
 }

@@ -28,6 +28,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\itnovum\openITCOCKPIT\Filter\UserDefaultTemplatesFilter;
+use App\Model\Table\LdapgroupsTable;
+use App\Model\Table\SystemsettingsTable;
 use App\Model\Table\UsercontainerrolesTable;
 use App\Model\Table\UserDefaultTemplatesTable;
 use App\Model\Table\UsersTable;
@@ -38,6 +40,7 @@ use Cake\Utility\Hash;
 use itnovum\openITCOCKPIT\Core\AngularJS\Api;
 use itnovum\openITCOCKPIT\Database\PaginateOMat;
 use itnovum\openITCOCKPIT\Filter\GenericFilter;
+use itnovum\openITCOCKPIT\Filter\LdapgroupFilter;
 
 /**
  * UserDefaultTemplates Controller
@@ -318,10 +321,41 @@ class UserDefaultTemplatesController extends AppController {
             }
         }
 
+        foreach ($usercontainerrolesByLdapGroup as $key => $userContainerRole) {
+            $usercontainerrolesByLdapGroup[$key]['containerroles'] = array_values($userContainerRole['containerroles']);
+        }
+
         $usercontainerrolesByLdapGroup = Api::makeItJavaScriptAble($usercontainerrolesByLdapGroup);
 
 
         $this->set('usercontainerrolesByLdapGroup', $usercontainerrolesByLdapGroup);
         $this->viewBuilder()->setOption('serialize', ['usercontainerrolesByLdapGroup']);
+    }
+
+    public function loadLdapgroupsWithContainerRolesForAngular() {
+        if (!$this->isAngularJsRequest()) {
+            throw new MethodNotAllowedException();
+        }
+
+        /** @var SystemsettingsTable $SystemsettingsTable */
+        $SystemsettingsTable = TableRegistry::getTableLocator()->get('Systemsettings');
+        $isLdapAuth = $SystemsettingsTable->isLdapAuth();
+        $ldapgroups = [];
+
+        if ($isLdapAuth === true) {
+            $selected = $this->request->getQuery('selected', []);
+            $LdapgroupFilter = new LdapgroupFilter($this->request);
+            $where = $LdapgroupFilter->ajaxFilter();
+
+            /** @var $LdapgroupsTable LdapgroupsTable */
+            $LdapgroupsTable = TableRegistry::getTableLocator()->get('Ldapgroups');
+            $ldapgroups = $LdapgroupsTable->getLdapgroupsWitContainerRolesForAngular($where, $selected);
+
+            $ldapgroups = Api::makeItJavaScriptAble($ldapgroups);
+        }
+
+        $this->set('isLdapAuth', $isLdapAuth);
+        $this->set('ldapgroups', $ldapgroups);
+        $this->viewBuilder()->setOption('serialize', ['ldapgroups', 'isLdapAuth']);
     }
 }
