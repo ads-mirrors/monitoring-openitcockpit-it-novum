@@ -220,13 +220,11 @@ class UsercontainerrolesTable extends Table {
      * @param array $ldapGroupIds
      * @return array
      */
-    public function getUsercontainerrolesAsListByLdapGroupIds(GenericFilter $GenericFilter, array $MY_RIGHTS = [], array $ldapGroupIds = []): array {
+    public function getUsercontainerrolesAsListByLdapGroupIds(GenericFilter $GenericFilter, array $ldapGroupIds = []): array {
         if (empty($ldapGroupIds)) {
             return [];
         }
-        if (!is_array($MY_RIGHTS)) {
-            $MY_RIGHTS = [$MY_RIGHTS];
-        }
+
         $query = $this->find();
 
         if (!empty($GenericFilter->genericFilters())) {
@@ -246,12 +244,7 @@ class UsercontainerrolesTable extends Table {
                 }
             ])
             ->matching('Containers');
-        if (!empty($MY_RIGHTS)) {
-            $query->where([
-                    'ContainersUsercontainerrolesMemberships.container_id IN' => $MY_RIGHTS
-                ]
-            );
-        }
+
         $query->innerJoinWith('Ldapgroups', function (Query $q) use ($ldapGroupIds) {
             return $q->where([
                 'Ldapgroups.id IN' => $ldapGroupIds

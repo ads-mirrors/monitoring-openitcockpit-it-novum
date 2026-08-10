@@ -147,10 +147,11 @@ class UserDefaultTemplatesController extends AppController {
         $containersToCheck = $userDefaultTemplate['UserDefaultTemplate']['containers']['_ids']; //Containers defined by the user itself
 
         $notPermittedUserContainerIds = [];
-        foreach ($userDefaultTemplate['UserDefaultTemplate']['UserDefaultTemplatesToUserContainers'] as $containerId => $rightLevel) {
-            if (!isset($this->MY_RIGHTS_LEVEL[$containerId]) || (isset($this->MY_RIGHTS_LEVEL[$containerId]) && $this->MY_RIGHTS_LEVEL[$containerId] < $rightLevel)) {
-                $notPermittedUserContainerIds[] = $containerId;
-            }
+        if (!$this->hasRootPrivileges) {
+            $notPermittedUserContainerIds = array_diff(
+                $containersToCheck,
+                $this->getWriteContainers()
+            );
         }
 
         if (!$this->allowedByContainerId($containersToCheck)) {
@@ -271,37 +272,10 @@ class UserDefaultTemplatesController extends AppController {
         ]);
         $ldapGroupIds = $this->request->getQuery('ldapGroupIds', []);
 
-        $userContainerIds = $this->MY_RIGHTS;
-        if (!$this->hasRootPrivileges) {
-            $userContainerIds = array_filter($this->MY_RIGHTS_LEVEL, function ($v) {
-                return $v == WRITE_RIGHT;
-            }, ARRAY_FILTER_USE_BOTH);
-            $userContainerIds = array_keys($userContainerIds);
-        }
         $ucr = $UsercontainerrolesTable->getUsercontainerrolesAsListByLdapGroupIds(
             $GenericFilter,
-            $userContainerIds,
             $ldapGroupIds
         );
-        $filteredUserContainerRoles = [];
-
-        if (!$this->hasRootPrivileges && !empty($ucr)) {
-            $usercontainerRoleIdsToCheck = array_keys($ucr);
-            $userContainerRolesWithContainerIDs = $UsercontainerrolesTable->getUsercontanerRoleWithAllContainerIdsByIds(
-                $usercontainerRoleIdsToCheck
-            );
-            // clean up user container roles
-            foreach ($ucr as $key => $userContainerRole) {
-                if (isset($userContainerRolesWithContainerIDs[$key])) {
-                    //Check if user has rights to see all containers in container user role
-                    if (empty(array_diff($userContainerRolesWithContainerIDs[$key], $userContainerIds))) {
-                        $filteredUserContainerRoles[$key] = $userContainerRole;
-                    }
-                }
-            }
-            $ucr = $filteredUserContainerRoles;
-        }
-
 
         $usercontainerrolesByLdapGroup = [];
         foreach ($ucr as $key => $userContainerRole) {
@@ -313,11 +287,39 @@ class UserDefaultTemplatesController extends AppController {
                         'dn' => $ldapGroup['dn']
                     ];
                 }
+
                 $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key] = [
                     'id'                   => $key,
                     'name'                 => $userContainerRole['name'],
                     'containerPermissions' => $UsercontainerrolesTable->getContainerPermissionsByUserContainerRoleIds($key)[$key] ?? []
                 ];
+                if ($this->hasRootPrivileges) {
+                    $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key] = Hash::insert(
+                        $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key],
+                        'containerPermissions.containers.{n}.allowView',
+                        true
+                    );
+                    $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['allowEdit'] = true;
+                } else {
+                    $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['allowEdit'] = null;
+                    if (!empty($usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['containerPermissions']['containers'])) {
+                        foreach ($usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['containerPermissions']['containers'] as $containerKey => $container) {
+                            if ($this->isWritableContainer($container['id'])) {
+                                if (is_null($usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['allowEdit']) ||
+                                    $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['allowEdit'] !== false) {
+                                    $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['allowEdit'] = $this->isWritableContainer($container['id']);
+                                }
+                            } else {
+                                $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['allowEdit'] = false;
+                            }
+                            $allowView = in_array($container['id'], $this->MY_RIGHTS, true);
+                            $path = $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['containerPermissions']['containers'][$containerKey]['path'];
+                            $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['containerPermissions']['containers'][$containerKey]['allowView'] = $allowView;
+                            $usercontainerrolesByLdapGroup[$ldapGroup['id']]['containerroles'][$key]['containerPermissions']['containers'][$containerKey]['path'] = ($allowView) ? $path : __('RESTRICTED CONTAINER');
+
+                        }
+                    }
+                }
             }
         }
 
