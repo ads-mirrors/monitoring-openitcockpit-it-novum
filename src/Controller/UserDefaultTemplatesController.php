@@ -162,7 +162,7 @@ class UserDefaultTemplatesController extends AppController {
         if ($this->request->is('get') && $this->isAngularJsRequest()) {
             //Return user default template information
             $this->set('userDefaultTemplate', $userDefaultTemplate['UserDefaultTemplate']);
-            $this->set('notPermittedUserContainerIds', array_map('intval', $notPermittedUserContainerIds)); // Make sure its a int array for Angular
+            $this->set('notPermittedUserContainerIds', array_values(array_map('intval', $notPermittedUserContainerIds))); // Make sure its a int array for Angular
             $this->viewBuilder()->setOption('serialize', ['userDefaultTemplate', 'notPermittedUserContainerIds']);
             return;
         }
