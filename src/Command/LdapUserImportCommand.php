@@ -115,7 +115,10 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
         $userDefaultTemplatesForLdapUserImport = Hash::combine(
             $userDefaultTemplates,
             '{n}._matchingData.Ldapgroups.id',
-            '{n}._matchingData.Ldapgroups.cn'
+            // We need the DN for the LDAP group to match it with the LDAP user memberOf attribute
+            // The DN contains the pull path (e.g. CN=G_Role_Finance,OU=Groups,OU=Contoso,DC=ad,DC=openitcockpit,DC=com)
+            // while the CN contains only the group name (e.g. G_Role_Finance)
+            '{n}._matchingData.Ldapgroups.dn'
         );
         if (empty($userDefaultTemplatesWithIdAsIndex)) {
             $io->info('No user defaults with LDAP groups defined. LDAP user import not possible! ➜]');
@@ -140,8 +143,7 @@ class LdapUserImportCommand extends Command implements CronjobInterface {
             $usersFromLdap = $LdapClient->getUsersByGroupNames(
                 '',
                 true,
-                $userDefaultTemplatesForLdapUserImport,
-                $LdapClient->getBaseDn()
+                $userDefaultTemplatesForLdapUserImport
             );
             $imported = 0;
             foreach ($usersFromLdap as $ldapUser) {

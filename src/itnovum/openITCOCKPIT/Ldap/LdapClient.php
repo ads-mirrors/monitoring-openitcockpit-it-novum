@@ -519,13 +519,12 @@ class LdapClient {
      * Retrieves users and optionally filters by sAMAccountName and group names.
      * @param string $sAMAccountName Optional filter for a specific account name
      * @param bool $includeMember Whether to include group memberships in the result
-     * @param array $groupNames Optional list of group names (e.g., ['Accounting', 'Admins'])
-     * @param string $baseDn
+     * @param array $groupDNs List of group DNs (e.g., ['CN=G_File_Finance_RW,OU=Groups,OU=Contoso,DC=ad,DC=openitcockpit,DC=com', 'CN=G_Role_IT,OU=Groups,OU=Contoso,DC=ad,DC=openitcockpit,DC=com'])
      * @return array
      */
-    public function getUsersByGroupNames(string $sAMAccountName = '', bool $includeMember = false, array $groupNames = [], string $baseDn = ''): array {
+    public function getUsersByGroupNames(string $sAMAccountName = '', bool $includeMember = false, array $groupDNs = []): array {
         // If the group names array is empty
-        if (empty($groupNames)) {
+        if (empty($groupDNs)) {
             return [];
         }
 
@@ -535,48 +534,54 @@ class LdapClient {
         if ($this->isOpenLdap === false) {
             // --- MS Active Directory (Direct approach via memberOf) ---
             $groupFilters = [];
-            foreach ($groupNames as $groupName) {
-                $fullGroupDn = "CN={$groupName},OU=Groups," . $baseDn;
-                $groupFilters[] = Filters::equal('memberOf', $fullGroupDn);
+            foreach ($groupDNs as $groupDN) {
+                $groupFilters[] = Filters::equal('memberOf', $groupDN);
             }
             $filter = Filters::and($filter, Filters::or(...$groupFilters));
 
         } else {
-            // --- Standard OpenLDAP (Approach via posixGroup and memberUid) ---
+            // --- OpenLDAP (groupDNs are full DNs; read memberUid directly from each group) ---
             $allMemberUids = [];
 
-            foreach ($groupNames as $groupName) {
-                $possibleGroupDns = [
-                    "cn={$groupName},ou=group," . $baseDn,
-                    "cn={$groupName},ou=groups," . $baseDn
-                ];
+            foreach ($groupDNs as $groupDn) {
+                try {
+                    $groupEntry = $this->ldap->read($groupDn, ['memberUid', 'uniqueMember']);
 
-                foreach ($possibleGroupDns as $groupDn) {
-                    try {
-                        $groupEntry = $this->ldap->read($groupDn, ['memberUid']);
-
-                        if ($groupEntry && $groupEntry->has('memberUid')) {
-                            $uids = $groupEntry->get('memberUid')->getValues();
-                            foreach ($uids as $uid) {
-                                $allMemberUids[] = (string)$uid;
-                            }
-                            break;
-                        }
-                    } catch (OperationException $e) {
-                        // Log specific LDAP operation errors (e.g., No Such Object)
-                        Log::debug(sprintf('LDAP group path not found: "%s". Error: %s', $groupDn, $e->getMessage()));
+                    if (!$groupEntry) {
                         continue;
-                    } catch (\Exception $e) {
-                        // Catch connection or unexpected issues during group read
-                        Log::error(sprintf('Unexpected error reading LDAP group "%s": %s', $groupDn, $e->getMessage()));
-                        return [];
                     }
+
+                    // Schema: memberUid
+                    if ($groupEntry->has('memberUid')) {
+                        foreach ($groupEntry->get('memberUid')->getValues() as $uid) {
+                            $allMemberUids[] = (string)$uid;
+                        }
+                    }
+
+                    // Optional schema: uniqueMember (extract uid=... from DN-like values)
+                    if ($groupEntry->has('uniqueMember')) {
+                        foreach ($groupEntry->get('uniqueMember')->getValues() as $memberDn) {
+                            $memberDnString = (string)$memberDn;
+                            if (preg_match('/^uid=([^,]+)/i', $memberDnString, $matches)) {
+                                $allMemberUids[] = $matches[1];
+                            }
+                        }
+                    }
+                } catch (OperationException $e) {
+                    Log::debug(sprintf('LDAP group DN not found or unreadable: "%s". Error: %s', $groupDn, $e->getMessage()));
+                    continue;
+                } catch (\Exception $e) {
+                    Log::error(sprintf('Unexpected error reading LDAP group "%s": %s', $groupDn, $e->getMessage()));
+                    return [];
                 }
             }
 
+            $allMemberUids = array_values(array_unique(array_filter($allMemberUids)));
+
+
             // If no user IDs were found within the groups
             if (empty($allMemberUids)) {
-                Log::info(sprintf('Search aborted: None of the specified groups %s contain members.', json_encode($groupNames)));
+                Log::info(sprintf('Search aborted: None of the specified groups %s contain members.', json_encode($groupDNs)));
                 return [];
             }
 
@@ -587,7 +592,6 @@ class LdapClient {
 
             $filter = Filters::and($filter, Filters::or(...$uidFilters));
         }
-
 
         if ($this->isOpenLdap === false) {
             $requiredFields = ['samaccountname', 'mail', 'sn', 'givenname'];
@@ -635,7 +639,7 @@ class LdapClient {
                     $memberOf = [];
                     if ($includeMember) {
                         if ($this->isOpenLdap) {
-                            $memberOf = $groupNames;
+                            $memberOf = $groupDNs;
                         } else {
                             $memberOf = $entryArray['memberof'] ?? [];
                         }

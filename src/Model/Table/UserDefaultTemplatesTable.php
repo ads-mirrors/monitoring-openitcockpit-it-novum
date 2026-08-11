@@ -494,7 +494,8 @@ class UserDefaultTemplatesTable extends Table {
                 'UserDefaultTemplates.is_oauth',
                 'UserDefaultTemplates.dashboard_tab_rotation',
                 'Ldapgroups.id',
-                'Ldapgroups.cn'
+                'Ldapgroups.cn',
+                'Ldapgroups.dn'
             ])
             ->innerJoinWith('Ldapgroups', function (Query $query) {
                 return $query->contain(['Usercontainerroles']);
