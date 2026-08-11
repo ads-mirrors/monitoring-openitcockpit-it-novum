@@ -23,45 +23,36 @@
 //     License agreement and license key will be shipped with the order
 //     confirmation.
 
-namespace itnovum\openITCOCKPIT\Filter;
+declare(strict_types=1);
 
+namespace App\Model\Entity;
 
-class LdapgroupFilter extends Filter {
+use Cake\ORM\Entity;
 
+/**
+ * UserDefaultTemplateToContainer Entity
+ *
+ * @property int $id
+ * @property int $user_default_template_id
+ * @property int $container_id
+ *
+ * @property \App\Model\Entity\UserDefaultTemplate $user_default_template
+ * @property \App\Model\Entity\Container $container
+ */
+class UserDefaultTemplateToContainer extends Entity {
     /**
-     * @return array
+     * Fields that can be mass assigned using newEntity() or patchEntity().
+     *
+     * Note that when '*' is set to true, this allows all unspecified fields to
+     * be mass assigned. For security purposes, it is advised to set '*' to false
+     * (or remove it), and explicitly make individual fields accessible as needed.
+     *
+     * @var array<string, bool>
      */
-    public function indexFilter() {
-        $filters = [
-            'like'   => [
-                'Ldapgroups.cn',
-                'Ldapgroups.dn',
-                'Ldapgroups.description',
-            ],
-            'equals' => [
-                'Ldapgroups.id'
-            ]
-        ];
-
-        return $this->getConditionsByFilters($filters);
-    }
-
-    /**
-     * @return array
-     */
-    public function ajaxFilter() {
-        $filters = [
-            'like'   => [
-                'Ldapgroups.cn',
-                'Ldapgroups.dn',
-                'Ldapgroups.description',
-            ],
-            'equals' => [
-                'Ldapgroups.id'
-            ]
-        ];
-
-        return $this->getConditionsByFilters($filters);
-    }
-
+    protected array $_accessible = [
+        'user_default_template_id' => true,
+        'container_id'             => true,
+        'user_default_template'    => true,
+        'container'                => true,
+    ];
 }

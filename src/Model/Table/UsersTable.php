@@ -1754,8 +1754,6 @@ class UsersTable extends Table {
     }
 
 
-
-
     /**
      * @param array $dataToParse
      * @return array
@@ -2023,5 +2021,20 @@ class UsersTable extends Table {
             $return[$user['id']] = $user['lastname'] . ', ' . $user['firstname'];
         }
         return $return;
+    }
+
+    /**
+     * @return User[]
+     */
+    public function getUsersForLdapImport() {
+        $query = $this->find();
+        $query->select([
+            'id',
+            'email' => $query->func()->lcase(['email' => 'identifier'])
+        ])
+            ->disableHydration()
+            ->all();
+
+        return $query->toArray();
     }
 }

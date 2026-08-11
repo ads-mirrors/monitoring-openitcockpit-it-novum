@@ -570,6 +570,15 @@ class AclDependencies {
             ->dependency('Users', 'edit', 'Users', 'loadContainerPermissions')
             ->dependency('Users', 'edit', 'Users', 'loadContainersForAngular');
 
+        $this->dependency('UserDefaultTemplates', 'add', 'Users', 'loadContainersForAngular')
+            ->dependency('UserDefaultTemplates', 'edit', 'Users', 'loadContainersForAngular')
+            ->dependency('UserDefaultTemplates', 'add', 'UserDefaultTemplates', 'loadLdapgroupsWithContainerRolesForAngular')
+            ->dependency('UserDefaultTemplates', 'edit', 'UserDefaultTemplates', 'loadLdapgroupsWithContainerRolesForAngular')
+            ->dependency('UserDefaultTemplates', 'add', 'Containers', 'loadContainersByContainerIds')
+            ->dependency('UserDefaultTemplates', 'edit', 'Containers', 'loadContainersByContainerIds')
+            ->dependency('UserDefaultTemplates', 'add', 'UserDefaultTemplates', 'loadContainerRolesByLdapGroupIds')
+            ->dependency('UserDefaultTemplates', 'edit', 'UserDefaultTemplates', 'loadContainerRolesByLdapGroupIds');
+
 
         $this
             ->dependency('Tenants', 'index', 'Tenants', 'view')
@@ -606,12 +615,16 @@ class AclDependencies {
         $this
             ->dependency('Usergroups', 'index', 'Usergroups', 'view')
             ->dependency('Usergroups', 'add', 'Usergroups', 'loadLdapgroupsForAngular')
-            ->dependency('Usergroups', 'edit', 'Usergroups', 'loadLdapgroupsForAngular');
+            ->dependency('Usergroups', 'edit', 'Usergroups', 'loadLdapgroupsForAngular')
+            ->dependency('Usergroups', 'add', 'Usergroups', 'append')
+            ->dependency('Usergroups', 'edit', 'Usergroups', 'append');
 
 
         $this
             ->dependency('Usercontainerroles', 'add', 'Usercontainerroles', 'loadLdapgroupsForAngular')
-            ->dependency('Usercontainerroles', 'edit', 'Usercontainerroles', 'loadLdapgroupsForAngular');
+            ->dependency('Usercontainerroles', 'edit', 'Usercontainerroles', 'loadLdapgroupsForAngular')
+            ->dependency('Usercontainerroles', 'add', 'Usercontainerroles', 'append')
+            ->dependency('Usercontainerroles', 'edit', 'Usercontainerroles', 'append');
 
         $this
             ->dependency('Backups', 'index', 'Backups', 'checkBackupFinished');
