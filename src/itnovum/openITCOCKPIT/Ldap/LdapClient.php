@@ -31,6 +31,7 @@ use Cake\Log\Log;
 use Cake\ORM\TableRegistry;
 use Cake\Utility\Hash;
 use FreeDSx\Ldap\Exception\ConnectionException;
+use FreeDSx\Ldap\Exception\OperationException;
 use FreeDSx\Ldap\Operations;
 use FreeDSx\Ldap\Search\Filters;
 
