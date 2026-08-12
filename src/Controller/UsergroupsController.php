@@ -584,7 +584,7 @@ class UsergroupsController extends AppController {
             $LdapgroupFilter = new LdapgroupFilter($this->request);
             $where = $LdapgroupFilter->ajaxFilter();
 
-            /** @var $LdapgroupsTable LdapgroupsTable */
+            /** @var LdapgroupsTable $LdapgroupsTable */
             $LdapgroupsTable = TableRegistry::getTableLocator()->get('Ldapgroups');
             $ldapgroups = $LdapgroupsTable->getLdapgroupsForAngular($where, $selected);
 

@@ -64,7 +64,7 @@ class HostdependenciesController extends AppController {
             throw new MethodNotAllowedException();
         }
 
-        /** @var $HostdependenciesTable HostdependenciesTable */
+        /** @var HostdependenciesTable $HostdependenciesTable */
         $HostdependenciesTable = TableRegistry::getTableLocator()->get('Hostdependencies');
 
         $HostdependenciesFilter = new HostdependenciesFilter($this->request);
@@ -96,7 +96,7 @@ class HostdependenciesController extends AppController {
             throw new MethodNotAllowedException();
         }
 
-        /** @var $HostdependenciesTable HostdependenciesTable */
+        /** @var HostdependenciesTable $HostdependenciesTable */
         $HostdependenciesTable = TableRegistry::getTableLocator()->get('Hostdependencies');
 
         if (!$HostdependenciesTable->exists($id)) {
@@ -344,10 +344,10 @@ class HostdependenciesController extends AppController {
         $User = new User($this->getUser());
         $UserTime = $User->getUserTime();
 
-        /** @var $HostsTable HostsTable */
+        /** @var HostsTable $HostsTable */
         $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
 
-        /** @var $HostgroupsTable HostgroupsTable */
+        /** @var HostgroupsTable $HostgroupsTable */
         $HostgroupsTable = TableRegistry::getTableLocator()->get('Hostgroups');
 
         /** @var HostdependenciesTable $HostdependenciesTable */

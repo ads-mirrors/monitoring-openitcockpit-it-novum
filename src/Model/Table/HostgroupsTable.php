@@ -175,7 +175,7 @@ class HostgroupsTable extends Table {
             $containerIds = [$containerIds];
         }
 
-        /** @var $ContainersTable ContainersTable */
+        /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
         $tenantContainerIds = [];
 
@@ -359,9 +359,9 @@ class HostgroupsTable extends Table {
             'Hosttemplate' => [],
         ];
 
-        /** @var $HostsTable HostsTable */
+        /** @var HostsTable $HostsTable */
         $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
-        /** @var $HosttemplatesTable HosttemplatesTable */
+        /** @var HosttemplatesTable $HosttemplatesTable */
         $HosttemplatesTable = TableRegistry::getTableLocator()->get('Hosttemplates');
 
         if (!empty($dataToParse['Hostgroup']['hosts']['_ids'])) {
@@ -818,7 +818,7 @@ class HostgroupsTable extends Table {
             ])->disableHydration();
         try {
             $tmpResult = $query->firstOrFail();
-            /** @var $HostsTable HostsTable */
+            /** @var HostsTable $HostsTable */
             $HostsTable = TableRegistry::getTableLocator()->get('Hosts');
 
             $hosts = [];
@@ -1529,7 +1529,7 @@ class HostgroupsTable extends Table {
         if (!is_array($hostIds)) {
             $hostIds = [$hostIds];
         }
-        /** @var $ContainersTable ContainersTable */
+        /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
         $tenantContainerIds = [];
 

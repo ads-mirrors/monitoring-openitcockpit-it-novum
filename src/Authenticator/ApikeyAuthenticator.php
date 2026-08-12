@@ -103,7 +103,7 @@ class ApikeyAuthenticator extends AbstractAuthenticator implements StatelessInte
      */
     public function saveLastUseDate($apiKey) {
 
-        /** @var $ApikeysTable ApikeysTable */
+        /** @var ApikeysTable $ApikeysTable */
         $ApikeysTable = TableRegistry::getTableLocator()->get('Apikeys');
         $apiKeyId = $ApikeysTable->getIdByApiKey($apiKey);
 
