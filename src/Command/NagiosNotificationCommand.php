@@ -837,11 +837,22 @@ class NagiosNotificationCommand extends Command {
                 //$PuppeteerChartRenderClient->setHeight(180);
                 //$PuppeteerChartRenderClient->setWidth(560);
                 $PuppeteerChartRenderClient->setTimezone(date_default_timezone_get());
+
+                $graphHostName = $Host->getHostname();
+                if (strlen($graphHostName) > 30) {
+                    $graphHostName = substr($graphHostName, 0, 30) . '...';
+                }
+
+                $graphServiceName = $Service->getServicename();
+                if (strlen($graphServiceName) > 30) {
+                    $graphServiceName = substr($graphServiceName, 0, 30) . '...';
+                }
+
                 $PuppeteerChartRenderClient->setTitle(
                     sprintf(
                         '%s - %s',
-                        $Host->getHostname(),
-                        $Service->getServicename()
+                        $graphHostName,
+                        $graphServiceName
                     ));
 
                 // Render two gauges per chart
