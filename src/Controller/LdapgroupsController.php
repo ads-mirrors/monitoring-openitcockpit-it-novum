@@ -52,7 +52,7 @@ class LdapgroupsController extends AppController {
 
         $LdapgroupFilter = new LdapgroupFilter($this->request);
 
-        /** @var $LdapgroupsTable LdapgroupsTable */
+        /** @var LdapgroupsTable $LdapgroupsTable */
         $LdapgroupsTable = TableRegistry::getTableLocator()->get('Ldapgroups');
 
         $PaginateOMat = new PaginateOMat($this, $this->isScrollRequest(), $LdapgroupFilter->getPage());

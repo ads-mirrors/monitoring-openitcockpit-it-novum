@@ -63,7 +63,7 @@ class ProfileController extends AppController {
         $User = new User($this->getUser());
         $UserTime = $User->getUserTime();
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
 
         if (!$UsersTable->existsById($User->getId())) {
@@ -151,7 +151,7 @@ class ProfileController extends AppController {
     public function changePassword() {
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $Hasher = $UsersTable->getDefaultPasswordHasher();
 
@@ -219,7 +219,7 @@ class ProfileController extends AppController {
 
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $user = $UsersTable->get($User->getId(), contain: [
             'Containers'
@@ -291,7 +291,7 @@ class ProfileController extends AppController {
         $User = new User($this->getUser());
         $UserTime = $User->getUserTime();
 
-        /** @var $ApikeysTable ApikeysTable */
+        /** @var ApikeysTable $ApikeysTable */
         $ApikeysTable = TableRegistry::getTableLocator()->get('Apikeys');
 
         if ($this->request->is('get')) {
@@ -370,7 +370,7 @@ class ProfileController extends AppController {
             throw new MethodNotAllowedException();
         }
 
-        /** @var $ApikeysTable ApikeysTable */
+        /** @var ApikeysTable $ApikeysTable */
         $ApikeysTable = TableRegistry::getTableLocator()->get('Apikeys');
 
         if ($this->request->is('get')) {
@@ -440,7 +440,7 @@ class ProfileController extends AppController {
 
         $User = new User($this->getUser());
 
-        /** @var $ApikeysTable ApikeysTable */
+        /** @var ApikeysTable $ApikeysTable */
         $ApikeysTable = TableRegistry::getTableLocator()->get('Apikeys');
 
         $apikey = $ApikeysTable->getApikeyByIdAndUserId($id, $User->getId());
@@ -468,7 +468,7 @@ class ProfileController extends AppController {
 
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $user = $UsersTable->get($User->getId(), contain: [
             'Containers'
@@ -519,7 +519,7 @@ class ProfileController extends AppController {
 
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
 
 
@@ -552,7 +552,7 @@ class ProfileController extends AppController {
         if (!$this->isApiRequest()) {
             throw new MethodNotAllowedException();
         }
-        if(!$this->request->is('post')) {
+        if (!$this->request->is('post')) {
             throw new MethodNotAllowedException();
         }
         $User = new User($this->getUser());
@@ -564,7 +564,7 @@ class ProfileController extends AppController {
         $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
         $device = $DeviceTable->findOrCreate(
             ['device_id' => $token],   // ← find by token
-            function($entity) use ($userId) {
+            function ($entity) use ($userId) {
                 $entity->set('user_id', $userId);  // ← only set on create
             }
         );
@@ -581,7 +581,7 @@ class ProfileController extends AppController {
         if (!$this->isApiRequest()) {
             throw new MethodNotAllowedException();
         }
-        if(!$this->request->is('post')) {
+        if (!$this->request->is('post')) {
             throw new MethodNotAllowedException();
         }
         $User = new User($this->getUser());

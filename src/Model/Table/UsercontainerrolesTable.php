@@ -390,7 +390,7 @@ class UsercontainerrolesTable extends Table {
             ->disableHydration()
             ->all();
 
-        /** @var $ContainersTable ContainersTable */
+        /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
 
         $result = [];
@@ -426,7 +426,7 @@ class UsercontainerrolesTable extends Table {
             ->disableHydration()
             ->all();
 
-        /** @var $ContainersTable ContainersTable */
+        /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
 
         $result = [];
