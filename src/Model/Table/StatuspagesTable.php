@@ -491,7 +491,7 @@ class StatuspagesTable extends Table {
                             1 => 0, // Down
                             2 => 0, // Unreachable
                         ],
-                        'lastChange' => [
+                        'lastChange'               => [
                             0 => [],
                             1 => [],
                             2 => []
@@ -513,7 +513,7 @@ class StatuspagesTable extends Table {
                             2 => 0, // Critical
                             3 => 0, // Unknown
                         ],
-                        'lastChange' => [
+                        'lastChange'               => [
                             0 => [],
                             1 => [],
                             2 => [],
@@ -696,8 +696,8 @@ class StatuspagesTable extends Table {
                     'isInDowntime'        => false,
                     'downtimeData'        => [],
                     'plannedDowntimeData' => [],
-                    'lastStateChange'   => null,
-                    'lastStateChangeRaw' => null
+                    'lastStateChange'     => null,
+                    'lastStateChangeRaw'  => null
 
 
                 ];
@@ -731,7 +731,7 @@ class StatuspagesTable extends Table {
                 // Merge host state and service state into one single cumulated state
                 $cumulatedStateId = $statuspage[$objectType][$index]['state_summary']['hosts']['cumulatedStateId'];
                 $cumulatedStateName = $statuspage[$objectType][$index]['state_summary']['hosts']['cumulatedStateName'];
-                $cumulatedHostLastStateChange = $statuspage[$objectType][$index]['state_summary']['hosts']['cumulatedLastChange'] ?? null ;
+                $cumulatedHostLastStateChange = $statuspage[$objectType][$index]['state_summary']['hosts']['cumulatedLastChange'] ?? null;
                 $cumulatedServiceLastStateChange = $statuspage[$objectType][$index]['state_summary']['services']['cumulatedLastChange'] ?? null;
                 $item['cumulatedStateName'] = $cumulatedStateName;
                 $item['cumulatedColorId'] = $cumulatedStateId;
@@ -968,33 +968,34 @@ class StatuspagesTable extends Table {
         //debug($items[0]);
 
         usort($items, function ($a, $b) {
-            // 1. Primär: cumulatedColorId absteigend sortieren
+            // primary sort with spaceship-operator descending by cumulatedColorid
             $colorComp = ($b['cumulatedColorId'] ?? 0) <=> ($a['cumulatedColorId'] ?? 0);
             if ($colorComp !== 0) {
                 return $colorComp;
             }
 
-            // 2. Sekundär (für Items mit derselben/höchsten cumulatedColorId): lastChangeStateRaw absteigend
-            return ($b['lastStateChangeRaw'] ?? 0) <=> ($a['lastStateChangeRaw'] ?? 0);
+            // secondary sort ascending by timestamps
+            return ($a['lastStateChangeRaw'] ?? 0) <=> ($b['lastStateChangeRaw'] ?? 0);
         });
 
 
         $colorMap = [
             -1 => 'not-monitored',
-            0 => 'ok',
-            1 => 'warning',
-            2 => 'critical',
-            3 => 'unknown'
+            0  => 'ok',
+            1  => 'warning',
+            2  => 'critical',
+            3  => 'unknown'
         ];
 
         $groupedMap = [];
         $fallbackPrefix = 'Ungrouped';
 
-// 1. Items grouped by tag and status
+        // 1. Items grouped by tag and status
         foreach ($items as $item) {
             $colorId = $item['cumulatedColorId'] ?? 0;
-
+            //items with tags
             if (!empty($item['tags'])) {
+                //item can have multiple tags
                 foreach ($item['tags'] as $tag) {
                     $tag = trim($tag);
                     if ($tag !== '') {
@@ -1005,12 +1006,31 @@ class StatuspagesTable extends Table {
                     }
                 }
             } else {
-                // ungrouped items sorted by status
+                // ungrouped items (without tag) sorted by status
                 $groupedMap[$fallbackPrefix . '_' . $colorId]['groupName'] = $fallbackPrefix;
                 $groupedMap[$fallbackPrefix . '_' . $colorId]['colorId'] = $colorId;
                 $groupedMap[$fallbackPrefix . '_' . $colorId]['items'][] = $item;
             }
         }
+        // result example
+        /* [
+            'FIOB_0' => [
+                'groupName' => 'FIOB',
+                'colorId' => 0,
+                'items' => [item1, item3, ...]
+            ],
+            'FIOB_2' => [
+                'groupName' => 'FIOB',
+                'colorId' => 2,
+                'items' => [item2, ...]
+            ],
+            'Ungrouped_0' => [
+                'groupName' => 'Ungrouped',
+                'colorId' => 0,
+                'items' => [item4, ...]
+            ],
+            ...
+        ] */
 
         //  sort groups
         uksort($groupedMap, function ($keyA, $keyB) use ($groupedMap, $fallbackPrefix) {
@@ -1029,7 +1049,7 @@ class StatuspagesTable extends Table {
             if ($isFallbackA && !$isFallbackB) return 1;
             if (!$isFallbackA && $isFallbackB) return -1;
 
-            // Same name, same state, order by name-
+            // when all same(name, state) order natural by name
             return strnatcasecmp($groupA['groupName'], $groupB['groupName']);
 
         });
@@ -1040,18 +1060,17 @@ class StatuspagesTable extends Table {
             $colorId = $groupData['colorId'];
 
             $groupedItems[] = [
-                'group' => $groupData['groupName'],
-                'colorId' => $colorId,
-                // Liefert direkt 'ok', 'warning', 'critical', 'unknown' oder 'not-monitored'
+                'group'          => $groupData['groupName'],
+                'colorId'        => $colorId,
                 'cumulatedColor' => $colorMap[$colorId] ?? 'unknown',
-                'isUngrouped' => ($groupData['groupName'] === $fallbackPrefix),
-                'items' => $groupData['items']
+                'isUngrouped'    => ($groupData['groupName'] === $fallbackPrefix),
+                'items'          => $groupData['items']
             ];
         }
 
 
         $statuspageView = [
-            'statuspage' => [
+            'statuspage'   => [
                 'uuid'                        => $statuspage['uuid'],
                 'id'                          => $id,
                 'name'                        => $statuspage['name'],
@@ -1068,9 +1087,9 @@ class StatuspagesTable extends Table {
                 'cumulatedColor'              => $items[0]['cumulatedColor'],
                 'cumulatedHumanStatus'        => $items[0]['cumulatedStateName'],
                 'cumulatedIcon'               => $stateIcons[$items[0]['cumulatedColorId']] ?? 'fa-solid fa-eye-low-vision',
-                'lastStateChange'              => $items[0]['lastStateChange'],
+                'lastStateChange'             => $items[0]['lastStateChange'],
             ],
-            'items' => $items,
+            'items'        => $items,
             'groupedItems' => $groupedItems,
         ];
 

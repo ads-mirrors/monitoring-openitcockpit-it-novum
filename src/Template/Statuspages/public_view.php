@@ -29,7 +29,9 @@ use itnovum\openITCOCKPIT\Core\Views\Logo;
 /**
  * @var \App\View\AppView $this
  * @var array $statuspage
+ * @var string $systemname
  * @var int $id
+ * @var string $timezone
  */
 
 $logo = new Logo();
@@ -72,7 +74,7 @@ $logo = new Logo();
                         </div>
                         <div class="small mt-1">
                             <?= __('Last refresh') ?>
-                            : <?= h((new DateTime())->format('Y-m-d H:i:s')) ?> <?= __('(Servertime)') ?>
+                            : <?= h((new DateTime())->format('Y-m-d H:i:s')) ?> <?= __('(Servertime, Timezone: ') ?> <?= h($timezone); ?>)
                         </div>
                         <div class="small mt-1">
                             <?= __('Refresh interval') ?>
@@ -86,7 +88,7 @@ $logo = new Logo();
                                 <?= h($statuspage['statuspage']['cumulatedHumanStatus']); ?>
                             </h5>
                             <?php if ($statuspage['statuspage']['cumulatedColorId'] > 0 && !empty($statuspage['statuspage']['lastStateChange'])): ?>
-                                <span><?= __('State since'); ?>: <?= h($statuspage['statuspage']['lastStateChange']); ?></span>
+                                <span><?= __('State since'); ?>: <?= h($statuspage['statuspage']['lastStateChange']); ?>(<?= h($timezone); ?>)</span>
                             <?php endif; ?>
                         </div>
                         <i class="<?= h($statuspage['statuspage']['cumulatedIcon']); ?> statuspage-icon position-absolute pos-right pos-bottom opacity-15 pe-1"></i>
@@ -126,7 +128,7 @@ $logo = new Logo();
 
                                                         <span class="h6 me-2 <?= h($item['cumulatedColor']); ?>"><?= h($item['cumulatedStateName']); ?></span>
                                                         <?php if ($item['cumulatedColorId'] > 0 &&  !empty($item['lastStateChange'])): ?>
-                                                        <span>  <?= __('State since'); ?>: <?= h($item['lastStateChange']); ?></span>
+                                                        <span>  <?= __('State since'); ?>: <?= h($item['lastStateChange']); ?>(<?= h($timezone); ?>)</span>
                                                         <?php endif; ?>
 
                                                     </div>
