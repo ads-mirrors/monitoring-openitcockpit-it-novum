@@ -22,6 +22,7 @@
 //     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
 //     License agreement and license key will be shipped with the order
 //     confirmation.
+//
 
 // 2.
 //	If you purchased an openITCOCKPIT Enterprise Edition you can use this file
@@ -102,6 +103,7 @@ class ProfileController extends AppController {
 
             $user = $UsersTable->get($User->getId());
             $user->setAccess('id', false);
+            $user->setAccess('usergroup_id', false);
 
             if ($isLdapUser) {
                 $data['is_ldap'] = true;
