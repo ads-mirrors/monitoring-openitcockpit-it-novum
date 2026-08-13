@@ -999,7 +999,7 @@ class StatuspagesTable extends Table {
                 foreach ($item['tags'] as $tag) {
                     $tag = trim($tag);
                     if ($tag !== '') {
-                        // Key kombiniert Tag und Status (z.B. "FIOB_99" und "FIOB_0")
+                        // Key combined tag and status (z.B. "FIOB_99" and "FIOB_0")
                         $groupedMap[$tag . '_' . $colorId]['groupName'] = $tag;
                         $groupedMap[$tag . '_' . $colorId]['colorId'] = $colorId;
                         $groupedMap[$tag . '_' . $colorId]['items'][] = $item;
