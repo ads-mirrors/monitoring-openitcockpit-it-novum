@@ -22,6 +22,7 @@
 //     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
 //     License agreement and license key will be shipped with the order
 //     confirmation.
+//
 
 // 2.
 //	If you purchased an openITCOCKPIT Enterprise Edition you can use this file
@@ -356,12 +357,12 @@ class ProfileController extends AppController {
                     $this->response = $this->response->withStatus(400);
                     $this->set('error', $apikey->getErrors());
                     $this->viewBuilder()->setOption('serialize', ['error']);
-                    return;
-                } else {
-                    $this->set('message', __('API key updated successfully'));
-                    $this->viewBuilder()->setOption('serialize', ['message']);
+
                     return;
                 }
+                $this->set('message', __('API key updated successfully'));
+                $this->viewBuilder()->setOption('serialize', ['message']);
+
             }
 
         }
