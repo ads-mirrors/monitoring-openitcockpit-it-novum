@@ -345,23 +345,25 @@ class ProfileController extends AppController {
             if (isset($data['id'])) {
                 $id = $data['id'];
 
-                if (!$ApikeysTable->existsById($id)) {
+                $apikey = $ApikeysTable->getApikeyByIdAndUserId($id, $User->getId());
+                if (empty($apikey)) {
                     throw new NotFoundException(__('Invalid API key'));
                 }
-                $apikey = $ApikeysTable->get($id);
-                $apikey = $ApikeysTable->patchEntity($apikey, $data);
+                $apikey = $ApikeysTable->patchEntity($apikey, [
+                    'description' => $data['description'],
+                ]);
 
                 $ApikeysTable->save($apikey);
                 if ($apikey->hasErrors()) {
                     $this->response = $this->response->withStatus(400);
                     $this->set('error', $apikey->getErrors());
                     $this->viewBuilder()->setOption('serialize', ['error']);
-                    return;
-                } else {
-                    $this->set('message', __('API key updated successfully'));
-                    $this->viewBuilder()->setOption('serialize', ['message']);
+
                     return;
                 }
+                $this->set('message', __('API key updated successfully'));
+                $this->viewBuilder()->setOption('serialize', ['message']);
+
             }
 
         }
