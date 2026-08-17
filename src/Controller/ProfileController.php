@@ -343,7 +343,8 @@ class ProfileController extends AppController {
             if (isset($data['id'])) {
                 $id = $data['id'];
 
-                if (!$ApikeysTable->existsById($id)) {
+                $apikey = $ApikeysTable->getApikeyByIdAndUserId($id, $User->getId());
+                if (empty($apikey)) {
                     throw new NotFoundException(__('Invalid API key'));
                 }
                 $apikey = $ApikeysTable->get($id);
