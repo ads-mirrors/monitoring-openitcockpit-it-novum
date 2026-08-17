@@ -964,8 +964,6 @@ class StatuspagesTable extends Table {
                 'items'      => [],
             ];
         }
-        //$items = Hash::sort($items, '{n}.cumulatedColorId', 'desc');
-        //debug($items[0]);
 
         usort($items, function ($a, $b) {
             // primary sort with spaceship-operator descending by cumulatedColorid

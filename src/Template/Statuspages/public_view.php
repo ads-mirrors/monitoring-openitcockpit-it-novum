@@ -74,7 +74,8 @@ $logo = new Logo();
                         </div>
                         <div class="small mt-1">
                             <?= __('Last refresh') ?>
-                            : <?= h((new DateTime())->format('Y-m-d H:i:s')) ?> <?= __('(Servertime, Timezone: ') ?> <?= h($timezone); ?>)
+                            : <?= h((new DateTime())->format('Y-m-d H:i:s')) ?> <?= __('(Servertime, Timezone: ') ?> <?= h($timezone); ?>
+                            )
                         </div>
                         <div class="small mt-1">
                             <?= __('Refresh interval') ?>
@@ -82,13 +83,15 @@ $logo = new Logo();
                         </div>
                     </div>
 
-                    <div class="p-3 bg-<?= h($statuspage['statuspage']['cumulatedColor']); ?> rounded overflow-hidden position-relative text-white">
+                    <div
+                        class="p-3 bg-<?= h($statuspage['statuspage']['cumulatedColor']); ?> rounded overflow-hidden position-relative text-white">
                         <div class="d-flex align-items-baseline justify-content-between position-relative z-1 pe-5">
                             <h5 class="l-h-n m-0 fw-500 d-inline">
                                 <?= h($statuspage['statuspage']['cumulatedHumanStatus']); ?>
                             </h5>
                             <?php if ($statuspage['statuspage']['cumulatedColorId'] > 0 && !empty($statuspage['statuspage']['lastStateChange'])): ?>
-                                <span><?= __('State since'); ?>: <?= h($statuspage['statuspage']['lastStateChange']); ?>(<?= h($timezone); ?>)</span>
+                                <span><?= __('State since'); ?>: <?= h($statuspage['statuspage']['lastStateChange']); ?>
+                                    (<?= h($timezone); ?>)</span>
                             <?php endif; ?>
                         </div>
                         <i class="<?= h($statuspage['statuspage']['cumulatedIcon']); ?> statuspage-icon position-absolute pos-right pos-bottom opacity-15 pe-1"></i>
@@ -114,7 +117,7 @@ $logo = new Logo();
                                     <div class="card d-flex flex-row min-h-110 mb-2">
                                         <div class="p-2">
                                             <div
-                                                    class="h-100 status-line bg-<?= h($item['cumulatedColor']); ?> shadow-<?= h($item['cumulatedColor']); ?>"></div>
+                                                class="h-100 status-line bg-<?= h($item['cumulatedColor']); ?> shadow-<?= h($item['cumulatedColor']); ?>"></div>
                                         </div>
                                         <div class="flex-1">
                                             <div class="row p-2">
@@ -126,9 +129,12 @@ $logo = new Logo();
                                                 <div class="col-12">
                                                     <div class="d-flex justify-content-between align-items-baseline">
 
-                                                        <span class="h6 me-2 <?= h($item['cumulatedColor']); ?>"><?= h($item['cumulatedStateName']); ?></span>
-                                                        <?php if ($item['cumulatedColorId'] > 0 &&  !empty($item['lastStateChange'])): ?>
-                                                        <span>  <?= __('State since'); ?>: <?= h($item['lastStateChange']); ?>(<?= h($timezone); ?>)</span>
+                                                        <span
+                                                            class="h6 me-2 <?= h($item['cumulatedColor']); ?>"><?= h($item['cumulatedStateName']); ?></span>
+                                                        <?php if ($item['cumulatedColorId'] > 0 && !empty($item['lastStateChange'])): ?>
+                                                            <span>  <?= __('State since'); ?>
+                                                                : <?= h($item['lastStateChange']); ?>
+                                                                (<?= h($timezone); ?>)</span>
                                                         <?php endif; ?>
 
                                                     </div>
@@ -137,7 +143,7 @@ $logo = new Logo();
                                                 <!-- Handle acknowledgement comments -->
                                                 <?php if (!empty($item['acknowledgedProblemsText']) && $statuspage['statuspage']['showAcknowledgements'] && $item['cumulatedColorId'] > 0): ?>
                                                     <?php
-                                                    // Eindeutige ID für jedes Objekt erzeugen
+                                                    // create unique ID for each object
                                                     $uniqueId = 'ack-comments-' . h($item['type'] ?? 'item') . '-' . h($item['id']);
                                                     $hasComments = !empty($item['acknowledgeComment']);
                                                     ?>
@@ -147,9 +153,9 @@ $logo = new Logo();
 
                                                             <?php if ($hasComments): ?>
                                                                 <span
-                                                                        class="p-0 me-2 text-decoration-none"
-                                                                        onclick="toggleSection('<?= $uniqueId; ?>', this)"
-                                                                        title="<?= __('expand comments'); ?>">
+                                                                    class="p-0 me-2 text-decoration-none"
+                                                                    onclick="toggleSection('<?= $uniqueId; ?>', this)"
+                                                                    title="<?= __('expand comments'); ?>">
                                                                     <i class="far fa-plus-square fa-lg icon-toggle"></i>
                                                                 </span>
                                                             <?php endif; ?>
@@ -158,10 +164,12 @@ $logo = new Logo();
                                                         </div>
 
                                                         <?php if ($hasComments): ?>
-                                                            <div id="<?= $uniqueId; ?>" class="ps-4 mt-1" style="display: none;">
+                                                            <div id="<?= $uniqueId; ?>" class="ps-4 mt-1"
+                                                                 style="display: none;">
                                                                 <?php foreach ($item['acknowledgeComment'] as $comment): ?>
                                                                     <div class="text-truncate small">
-                                                                        <strong><?= __('Comment'); ?>:</strong> <?= h($comment); ?>
+                                                                        <strong><?= __('Comment'); ?>
+                                                                            :</strong> <?= h($comment); ?>
                                                                     </div>
                                                                 <?php endforeach; ?>
                                                             </div>
@@ -179,26 +187,30 @@ $logo = new Logo();
                                                                     <div class="pt-1 d-flex align-items-center">
                                                                         <i class="fa fa-power-off me-1"></i>
                                                                         <span
-                                                                                class="p-0 me-2 text-decoration-none"
-                                                                                onclick="toggleSection('<?= $currentId; ?>', this)"
-                                                                                title="<?= __('expand downtime data'); ?>">
+                                                                            class="p-0 me-2 text-decoration-none"
+                                                                            onclick="toggleSection('<?= $currentId; ?>', this)"
+                                                                            title="<?= __('expand downtime data'); ?>">
                                                                             <i class="far fa-plus-square fa-lg icon-toggle"></i>
                                                                         </span>
                                                                         <span><?= count($item['downtimeData']); ?> <?= __('current maintenances'); ?></span>
                                                                     </div>
 
                                                                     <!-- Collapsible Container (Hidden by default) -->
-                                                                    <div id="<?= $currentId; ?>" class="mt-2" style="display: none;">
+                                                                    <div id="<?= $currentId; ?>" class="mt-2"
+                                                                         style="display: none;">
                                                                         <?php foreach ($item['downtimeData'] as $downtime): ?>
                                                                             <div class="row mb-1">
                                                                                 <div class="col-xs-12 col-md-3">
-                                                                                    <strong><?= __('Start'); ?>:</strong> <?= h($downtime['scheduledStartTime']); ?>
+                                                                                    <strong><?= __('Start'); ?>
+                                                                                        :</strong> <?= h($downtime['scheduledStartTime']); ?>
                                                                                 </div>
                                                                                 <div class="col-xs-12 col-md-3">
-                                                                                    <strong><?= __('End'); ?>:</strong> <?= h($downtime['scheduledEndTime']); ?>
+                                                                                    <strong><?= __('End'); ?>
+                                                                                        :</strong> <?= h($downtime['scheduledEndTime']); ?>
                                                                                 </div>
                                                                                 <div class="col-xs-12 col-md-3">
-                                                                                    <strong><?= __('Comment'); ?>:</strong> <?= h($downtime['comment']); ?>
+                                                                                    <strong><?= __('Comment'); ?>
+                                                                                        :</strong> <?= h($downtime['comment']); ?>
                                                                                 </div>
                                                                             </div>
                                                                         <?php endforeach; ?>
@@ -217,26 +229,30 @@ $logo = new Logo();
                                                                     <div class="pt-1 d-flex align-items-center">
                                                                         <i class="fa fa-power-off me-1"></i>
                                                                         <span
-                                                                                class="p-0 me-2 text-decoration-none"
-                                                                                onclick="toggleSection('<?= $plannedId; ?>', this)"
-                                                                                title="<?= __('expand downtime data'); ?>">
+                                                                            class="p-0 me-2 text-decoration-none"
+                                                                            onclick="toggleSection('<?= $plannedId; ?>', this)"
+                                                                            title="<?= __('expand downtime data'); ?>">
                                                                             <i class="far fa-plus-square fa-lg icon-toggle"></i>
                                                                         </span>
                                                                         <span><?= count($item['plannedDowntimeData']); ?> <?= __('scheduled maintenances for the next 10 days'); ?></span>
                                                                     </div>
 
                                                                     <!-- Collapsible Container (Hidden by default) -->
-                                                                    <div id="<?= $plannedId; ?>" class="mt-2" style="display: none;">
+                                                                    <div id="<?= $plannedId; ?>" class="mt-2"
+                                                                         style="display: none;">
                                                                         <?php foreach ($item['plannedDowntimeData'] as $downtime): ?>
                                                                             <div class="row mb-1">
                                                                                 <div class="col-xs-12 col-md-3">
-                                                                                    <strong><?= __('Start'); ?>:</strong> <?= h($downtime['scheduledStartTime']); ?>
+                                                                                    <strong><?= __('Start'); ?>
+                                                                                        :</strong> <?= h($downtime['scheduledStartTime']); ?>
                                                                                 </div>
                                                                                 <div class="col-xs-12 col-md-3">
-                                                                                    <strong><?= __('End'); ?>:</strong> <?= h($downtime['scheduledEndTime']); ?>
+                                                                                    <strong><?= __('End'); ?>
+                                                                                        :</strong> <?= h($downtime['scheduledEndTime']); ?>
                                                                                 </div>
                                                                                 <div class="col-xs-12 col-md-3">
-                                                                                    <strong><?= __('Comment'); ?>:</strong> <?= h($downtime['comment']); ?>
+                                                                                    <strong><?= __('Comment'); ?>
+                                                                                        :</strong> <?= h($downtime['comment']); ?>
                                                                                 </div>
                                                                             </div>
                                                                         <?php endforeach; ?>
@@ -251,7 +267,7 @@ $logo = new Logo();
                                         </div>
                                         <div class="p-2 hidden-md-down">
                                             <div
-                                                    class="h-100 status-line bg-<?= h($item['cumulatedColor']); ?> shadow-<?= h($item['cumulatedColor']); ?>"></div>
+                                                class="h-100 status-line bg-<?= h($item['cumulatedColor']); ?> shadow-<?= h($item['cumulatedColor']); ?>"></div>
                                         </div>
                                     </div>
                                     <!-- end object card -->
@@ -270,19 +286,19 @@ $logo = new Logo();
 <script>
     function toggleSection(elementId, btn) {
         const container = document.getElementById(elementId);
-        if (!container) return;
+        if(!container) return;
 
         const icon = btn.querySelector('.icon-toggle');
 
-        if (container.style.display === 'none') {
+        if(container.style.display === 'none') {
             container.style.display = 'block';
-            if (icon) {
+            if(icon) {
                 icon.classList.remove('fa-plus-square');
                 icon.classList.add('fa-minus-square');
             }
         } else {
             container.style.display = 'none';
-            if (icon) {
+            if(icon) {
                 icon.classList.remove('fa-minus-square');
                 icon.classList.add('fa-plus-square');
             }
