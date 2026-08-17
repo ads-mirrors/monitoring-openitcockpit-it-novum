@@ -347,8 +347,9 @@ class ProfileController extends AppController {
                 if (empty($apikey)) {
                     throw new NotFoundException(__('Invalid API key'));
                 }
-                $apikey = $ApikeysTable->get($id);
-                $apikey = $ApikeysTable->patchEntity($apikey, $data);
+                $apikey = $ApikeysTable->patchEntity($apikey, [
+                    'description' => $data['description'],
+                ]);
 
                 $ApikeysTable->save($apikey);
                 if ($apikey->hasErrors()) {
