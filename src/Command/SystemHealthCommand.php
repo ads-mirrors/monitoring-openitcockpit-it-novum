@@ -35,6 +35,7 @@ namespace App\Command;
 
 use App\itnovum\openITCOCKPIT\Core\SystemHealthNotification;
 use App\itnovum\openITCOCKPIT\Supervisor\Supervisorctl;
+use App\Model\Table\SystemHealthUsersTable;
 use App\Model\Table\SystemsettingsTable;
 use Cake\Cache\Cache;
 use Cake\Command\Command;
@@ -241,7 +242,7 @@ class SystemHealthCommand extends Command implements CronjobInterface {
 
         if (Plugin::isLoaded('DistributeModule')) {
             $data['isDistributeModuleInstalled'] = true;
-            /** @var $SatellitesTable SatellitesTable */
+            /** @var SatellitesTable $SatellitesTable */
             $SatellitesTable = TableRegistry::getTableLocator()->get('DistributeModule.Satellites');
             $data['satellites'] = $SatellitesTable->getSatellitesStatus(new SatelliteFilter(new ServerRequest()));
         }
@@ -275,7 +276,7 @@ class SystemHealthCommand extends Command implements CronjobInterface {
                 return;
             }
 
-            /** @var $SystemHealthUsersTable SystemHealthUsersTable */
+            /** @var SystemHealthUsersTable $SystemHealthUsersTable */
             $SystemHealthUsersTable = TableRegistry::getTableLocator()->get('SystemHealthUsers');
             $users = $SystemHealthUsersTable->getUsersForNotifications($notify_on_warning, $notify_on_critical, $notify_on_recovery);
 

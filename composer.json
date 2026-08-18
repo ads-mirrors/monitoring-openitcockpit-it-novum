@@ -23,7 +23,7 @@
         }
     ],
     "require": {
-        "php": ">=8.1",
+        "php": ">=8.2",
         "ext-calendar": "*",
         "ext-curl": "*",
         "ext-gd": "*",
@@ -47,9 +47,10 @@
         "cakephp/plugin-installer": "^2.0",
         "cboden/ratchet": "^0.4.1",
         "chillerlan/php-qrcode": "^3.4.1 || ^4.3.3",
+        "corsinvest/cv4pve-api-php": "^9.2",
         "damienharper/adf-tools": "^1.1",
         "erusev/parsedown": "^1.8",
-        "erusev/parsedown-extra": "^0.9",
+        "erusev/parsedown-extra": "^0.9.0",
         "freedsx/ldap": "^0.8",
         "friendsofcake/cakephp-csvview": "^5.0",
         "guzzlehttp/guzzle": "^7.4",

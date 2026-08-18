@@ -46,6 +46,12 @@ BASHCONF=/opt/openitc/etc/mysql/bash.conf
 OSVERSION=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2)
 OS_BASE="debian"
 
+# To be backwards compatible we assume that the system is using Redis
+HAS_VALKEY="false"
+if command -v valkey-cli &> /dev/null; then
+    HAS_VALKEY="true"
+fi
+
 echo "Copy required system files"
 rsync -K -a ${APPDIR}/system/etc/. /etc/ # we use rsync because the destination can be a symlink on RHEL
 chown root:root /etc

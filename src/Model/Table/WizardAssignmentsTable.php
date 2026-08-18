@@ -284,7 +284,7 @@ class WizardAssignmentsTable extends Table {
             'network'                      => [
                 'type_id'     => 'network',
                 'title'       => __('Network'),
-                'description' => __('Used to check any kind of network devices and interfaces like: Switch, Router, Firewall, Access Point, ...'),
+                'description' => __('Effortlessly monitor your network devices and interfaces — from switches and routers to firewalls and access points.'),
                 'image'       => 'network.png',
                 'category'    => ['linux', 'network'],
                 'active'      => true
@@ -532,8 +532,8 @@ class WizardAssignmentsTable extends Table {
             'network-interfaces'           => [
                 'type_id'     => 'network-interfaces',
                 'title'       => __('Network Interfaces'),
-                'description' => __('Used to check any kind of network devices and interfaces like: Switch, Router, Firewall, Access Point, ...'),
-                'image'       => 'network.png',
+                'description' => __('A comprehensive solution for monitoring diverse network infrastructure and interfaces like: Switch, Router, Firewall, Access Point, ...'),
+                'image'       => 'network_extended.jpg',
                 'category'    => ['linux', 'network'],
                 'active'      => true
             ],
@@ -649,6 +649,38 @@ class WizardAssignmentsTable extends Table {
                 'category'    => ['network', 'hardware'],
                 'active'      => true
             ],
+            'raritan-kvm'                  => [
+                'type_id'     => 'raritan-kvm',
+                'title'       => __('Raritan KVM'),
+                'description' => __('Monitor your Raritan KVM via SNMP.'),
+                'image'       => 'raritan.png',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ],
+            'sonicwall'                    => [
+                'type_id'     => 'sonicwall',
+                'title'       => __('SonicWall'),
+                'description' => __('Monitor your SonicWall via SNMP.'),
+                'image'       => 'sonicwall.svg',
+                'category'    => ['cloud', 'network'],
+                'active'      => true
+            ],
+            'symantec-mail-gateway'        => [
+                'type_id'     => 'symantec-mail-gateway',
+                'title'       => __('Symantec Mail Gateway'),
+                'description' => __('Monitor your Symantec Mail Gateway via SNMP.'),
+                'image'       => 'symantec.svg',
+                'category'    => ['network', 'mail'],
+                'active'      => true
+            ],
+            'arista-network'               => [
+                'type_id'     => 'arista-network',
+                'title'       => __('Arista Network'),
+                'description' => __('Monitor your Arista network via SNMP.'),
+                'image'       => 'arista-networks.svg',
+                'category'    => ['network', 'hardware'],
+                'active'      => true
+            ]
         ];
 
         $possibleWizardsResult = [];

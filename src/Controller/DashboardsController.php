@@ -959,7 +959,7 @@ class DashboardsController extends AppController {
         $User = new User($this->getUser());
         $UserTime = $User->getUserTime();
 
-        /** @var $ContainersTable ContainersTable */
+        /** @var ContainersTable $ContainersTable */
         $ContainersTable = TableRegistry::getTableLocator()->get('Containers');
 
         $containerIds = [];
@@ -1686,7 +1686,7 @@ class DashboardsController extends AppController {
 
             $MY_RIGHTS = [];
             if ($this->hasRootPrivileges === false) {
-                /** @var $ContainersTable ContainersTable */
+                /** @var ContainersTable $ContainersTable */
                 //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
                 //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
                 // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to
@@ -1777,7 +1777,7 @@ class DashboardsController extends AppController {
 
             $MY_RIGHTS = [];
             if ($this->hasRootPrivileges === false) {
-                /** @var $ContainersTable ContainersTable */
+                /** @var ContainersTable $ContainersTable */
                 //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
                 //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
                 // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to
@@ -1930,7 +1930,7 @@ class DashboardsController extends AppController {
 
             $MY_RIGHTS = [];
             if ($this->hasRootPrivileges === false) {
-                /** @var $ContainersTable ContainersTable */
+                /** @var ContainersTable $ContainersTable */
                 //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
                 //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
                 // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to
@@ -2024,7 +2024,7 @@ class DashboardsController extends AppController {
 
             $MY_RIGHTS = [];
             if ($this->hasRootPrivileges === false) {
-                /** @var $ContainersTable ContainersTable */
+                /** @var ContainersTable $ContainersTable */
                 //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
                 //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
                 // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to
@@ -2252,7 +2252,7 @@ class DashboardsController extends AppController {
         if ($this->request->is('get')) {
             $MY_RIGHTS = [];
             if ($this->hasRootPrivileges === false) {
-                /** @var $ContainersTable ContainersTable */
+                /** @var ContainersTable $ContainersTable */
                 //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
                 //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
                 // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to
@@ -2487,7 +2487,7 @@ class DashboardsController extends AppController {
         }
         $MY_RIGHTS = [];
         if ($this->hasRootPrivileges === false) {
-            /** @var $ContainersTable ContainersTable */
+            /** @var ContainersTable $ContainersTable */
             //$ContainersTable = TableRegistry::getTableLocator()->get('Containers');
             //$MY_RIGHTS = $ContainersTable->resolveChildrenOfContainerIds($this->MY_RIGHTS);
             // ITC-2863 $this->MY_RIGHTS is already resolved and contains all containerIds a user has access to

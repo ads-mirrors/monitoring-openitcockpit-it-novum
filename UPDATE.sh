@@ -45,6 +45,12 @@ INIFILE=/opt/openitc/etc/mysql/mysql.cnf
 DUMPINIFILE=/opt/openitc/etc/mysql/dump.cnf
 BASHCONF=/opt/openitc/etc/mysql/bash.conf
 
+# To be backwards compatible we assume that the system is using Redis
+HAS_VALKEY="false"
+if command -v valkey-cli &> /dev/null; then
+    HAS_VALKEY="true"
+fi
+
 if [[ ! -f "$BASHCONF" ]]; then
   MYSQL_USER=openitcockpit
   MYSQL_DATABASE=openitcockpit
@@ -375,8 +381,13 @@ for i in "$@"; do
   esac
 done
 
-echo "Flush redis cache"
-redis-cli FLUSHALL
+if [[ "$HAS_VALKEY" == "true" ]]; then
+    echo "Flush valkey cache"
+    valkey-cli FLUSHALL
+else
+    echo "Flush redis cache"
+    redis-cli FLUSHALL
+fi
 echo ""
 
 if [[ "$NORESTART" == "true" ]]; then
@@ -398,6 +409,20 @@ if [[ -f "/etc/redhat-release" ]]; then
 fi
 
 PHPVersion=$(php -r "echo substr(PHP_VERSION, 0, 3);")
+
+if [[ "$OS_BASE" == "RHEL" ]]; then
+    # did a php version upgrade happen like form 8.1 to 8.3?
+    if [ ! -d "/etc/php/${PHPVersion}/fpm" ]; then
+        echo "Detected php version update"
+
+        mkdir -p "/etc/php/${PHPVersion}/fpm"
+
+        # Link RedHat config to where they are on Debian
+        ln -s /etc/php-fpm.conf "/etc/php/${PHPVersion}/fpm/php-fpm.conf"
+        ln -s /etc/php.d "/etc/php/${PHPVersion}/fpm/conf.d"
+        ln -s /etc/php-fpm.d "/etc/php/${PHPVersion}/fpm/pool.d"
+    fi
+fi
 
 if [[ "$NOSYSTEMFILES" == "false" ]]; then
   echo "Copy required system files"

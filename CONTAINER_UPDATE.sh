@@ -46,6 +46,12 @@ BASHCONF=/opt/openitc/etc/mysql/bash.conf
 OSVERSION=$(grep VERSION_CODENAME /etc/os-release | cut -d= -f2)
 OS_BASE="debian"
 
+# To be backwards compatible we assume that the system is using Redis
+HAS_VALKEY="false"
+if command -v valkey-cli &> /dev/null; then
+    HAS_VALKEY="true"
+fi
+
 if [[ ! -f "$BASHCONF" ]]; then
   MYSQL_USER=openitcockpit
   MYSQL_DATABASE=openitcockpit
@@ -320,8 +326,14 @@ for i in "$@"; do
   esac
 done
 
-echo "Flush redis cache"
-redis-cli -h $OITC_REDIS_HOST -p $OITC_REDIS_PORT FLUSHALL
+
+if [[ "$HAS_VALKEY" == "true" ]]; then
+    echo "Flush valkey cache"
+    valkey-cli -h $OITC_REDIS_HOST -p $OITC_REDIS_PORT FLUSHALL
+else
+    echo "Flush redis cache"
+    redis-cli -h $OITC_REDIS_HOST -p $OITC_REDIS_PORT FLUSHALL
+fi
 echo ""
 
 echo "Copy required system files"

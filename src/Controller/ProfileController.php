@@ -22,6 +22,7 @@
 //     under the terms of the openITCOCKPIT Enterprise Edition license agreement.
 //     License agreement and license key will be shipped with the order
 //     confirmation.
+//
 
 // 2.
 //	If you purchased an openITCOCKPIT Enterprise Edition you can use this file
@@ -57,13 +58,13 @@ class ProfileController extends AppController {
 
     public function edit() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
         $UserTime = $User->getUserTime();
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
 
         if (!$UsersTable->existsById($User->getId())) {
@@ -102,6 +103,7 @@ class ProfileController extends AppController {
 
             $user = $UsersTable->get($User->getId());
             $user->setAccess('id', false);
+            $user->setAccess('usergroup_id', false);
 
             if ($isLdapUser) {
                 $data['is_ldap'] = true;
@@ -151,7 +153,7 @@ class ProfileController extends AppController {
     public function changePassword() {
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $Hasher = $UsersTable->getDefaultPasswordHasher();
 
@@ -214,12 +216,12 @@ class ProfileController extends AppController {
 
     public function upload_profile_icon() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $user = $UsersTable->get($User->getId(), contain: [
             'Containers'
@@ -291,7 +293,7 @@ class ProfileController extends AppController {
         $User = new User($this->getUser());
         $UserTime = $User->getUserTime();
 
-        /** @var $ApikeysTable ApikeysTable */
+        /** @var ApikeysTable $ApikeysTable */
         $ApikeysTable = TableRegistry::getTableLocator()->get('Apikeys');
 
         if ($this->request->is('get')) {
@@ -343,23 +345,25 @@ class ProfileController extends AppController {
             if (isset($data['id'])) {
                 $id = $data['id'];
 
-                if (!$ApikeysTable->existsById($id)) {
+                $apikey = $ApikeysTable->getApikeyByIdAndUserId($id, $User->getId());
+                if (empty($apikey)) {
                     throw new NotFoundException(__('Invalid API key'));
                 }
-                $apikey = $ApikeysTable->get($id);
-                $apikey = $ApikeysTable->patchEntity($apikey, $data);
+                $apikey = $ApikeysTable->patchEntity($apikey, [
+                    'description' => $data['description'],
+                ]);
 
                 $ApikeysTable->save($apikey);
                 if ($apikey->hasErrors()) {
                     $this->response = $this->response->withStatus(400);
                     $this->set('error', $apikey->getErrors());
                     $this->viewBuilder()->setOption('serialize', ['error']);
-                    return;
-                } else {
-                    $this->set('message', __('API key updated successfully'));
-                    $this->viewBuilder()->setOption('serialize', ['message']);
+
                     return;
                 }
+                $this->set('message', __('API key updated successfully'));
+                $this->viewBuilder()->setOption('serialize', ['message']);
+
             }
 
         }
@@ -367,10 +371,10 @@ class ProfileController extends AppController {
 
     public function create_apikey() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
-        /** @var $ApikeysTable ApikeysTable */
+        /** @var ApikeysTable $ApikeysTable */
         $ApikeysTable = TableRegistry::getTableLocator()->get('Apikeys');
 
         if ($this->request->is('get')) {
@@ -434,13 +438,13 @@ class ProfileController extends AppController {
 
     public function delete_apikey($id = null) {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
 
         $User = new User($this->getUser());
 
-        /** @var $ApikeysTable ApikeysTable */
+        /** @var ApikeysTable $ApikeysTable */
         $ApikeysTable = TableRegistry::getTableLocator()->get('Apikeys');
 
         $apikey = $ApikeysTable->getApikeyByIdAndUserId($id, $User->getId());
@@ -463,12 +467,12 @@ class ProfileController extends AppController {
 
     public function deleteImage() {
         if (!$this->isApiRequest()) {
-            throw new \Cake\Http\Exception\MethodNotAllowedException();
+            throw new MethodNotAllowedException();
         }
 
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
         $user = $UsersTable->get($User->getId(), contain: [
             'Containers'
@@ -519,7 +523,7 @@ class ProfileController extends AppController {
 
         $User = new User($this->getUser());
 
-        /** @var $UsersTable UsersTable */
+        /** @var UsersTable $UsersTable */
         $UsersTable = TableRegistry::getTableLocator()->get('Users');
 
 
@@ -546,5 +550,50 @@ class ProfileController extends AppController {
             $session->write('Auth', $UsersTable->get($User->getId()));
         }
 
+    }
+
+    public function registerDevice() {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        if (!$this->request->is('post')) {
+            throw new MethodNotAllowedException();
+        }
+        $User = new User($this->getUser());
+        $token = $this->request->getData('Token');
+        if (empty($token)) {
+            throw new BadRequestException('Token is required');
+        }
+        $userId = $User->getId();
+        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $device = $DeviceTable->findOrCreate(
+            ['device_id' => $token],   // ← find by token
+            function ($entity) use ($userId) {
+                $entity->set('user_id', $userId);  // ← only set on create
+            }
+        );
+
+        // update user_id if device already exists with different user
+        if ($device->user_id !== $userId) {
+            $device->set('user_id', $userId);
+            $DeviceTable->save($device);
+        }
+
+    }
+
+    public function unregisterDevice() {
+        if (!$this->isApiRequest()) {
+            throw new MethodNotAllowedException();
+        }
+        if (!$this->request->is('post')) {
+            throw new MethodNotAllowedException();
+        }
+        $User = new User($this->getUser());
+        $token = $this->request->getData('Token');
+        if (empty($token)) {
+            throw new BadRequestException('Token is required');
+        }
+        $DeviceTable = TableRegistry::getTableLocator()->get('MobileDevices');
+        $DeviceTable->deleteAll(['device_id' => $token]);
     }
 }
