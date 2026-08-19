@@ -70,7 +70,7 @@ class SupervisorCommand extends Command {
                 'oitc_cmd',
                 'gearman_worker',
                 'event-collectd',     //todo
-                'push_notification',
+                'openitcockpit-websocket', // replaced push_notification
                 'prometheus_bridge',
                 'customalert_worker', //todo
 

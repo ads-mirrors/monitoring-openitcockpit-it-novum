@@ -970,11 +970,13 @@ class GearmanWorkerCommand extends Command {
                     'isStatusengineRunning'     => false,
                     'isNpcdRunning'             => false,
                     'isOitcCmdRunning'          => false,
-                    'isSudoServerRunning'       => false,
+                    'isSudoServerRunning'       => false, // Replaced by openitcockpit-websocket.service
                     'isNstaRunning'             => false,
                     'isGearmanWorkerRunning'    => true,
+                    'isPushNotificationRunning' => false, // Replaced by openitcockpit-websocket.service
+                    'isNodeJsServerRunning'     => false,
                     'isPushNotificationRunning' => false,
-                    'isNodeJsServerRunning'     => false
+                    'isWebsocketServerRunning'  => false
                 ];
 
                 if (IS_CONTAINER === false) {
@@ -1011,9 +1013,11 @@ class GearmanWorkerCommand extends Command {
                         $state['isNstaRunning'] = true;
                     }
 
-                    exec($systemsetting['INIT']['INIT.PUSH_NOTIFICATION'] . $errorRedirect, $output, $returncode);
+                    $state['isPushNotificationRunning'] = false; // ITC-3487 push_notification got removed
+
+                    exec('systemctl status openitcockpit-websocket.service' . $errorRedirect, $output, $returncode);
                     if ($returncode == 0) {
-                        $state['isPushNotificationRunning'] = true;
+                        $state['isWebsocketServerRunning'] = true;
                     }
 
                     exec($systemsetting['INIT']['INIT.OPENITCOCKPIT_NODE'] . $errorRedirect, $output, $returncode);
@@ -1032,8 +1036,9 @@ class GearmanWorkerCommand extends Command {
                         'isSudoServerRunning'       => false, // ITC-3487 sudo_server got removed
                         'isNstaRunning'             => $Supervisorctl->isRunning('nsta'),
                         'isGearmanWorkerRunning'    => true,
-                        'isPushNotificationRunning' => $Supervisorctl->isRunning('push_notification'),
-                        'isNodeJsServerRunning'     => $Supervisorctl->isRunning('openitcockpit-node')
+                        'isPushNotificationRunning' => false, // ITC-3487 push_notification got removed
+                        'isNodeJsServerRunning'     => $Supervisorctl->isRunning('openitcockpit-node'),
+                        'isWebsocketServerRunning'  => $Supervisorctl->isRunning('openitcockpit-websocket')
                     ];
 
                 }

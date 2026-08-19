@@ -85,8 +85,8 @@ Output:
 <?php echo __('Service oitc_cmd is not running!'); ?>
 <?= PHP_EOL ?>
 <?php endif; ?>
-<?php if (!$systemHealth['isPushNotificationRunning']): ?>
-<?php echo __('Service push_notification is not running!'); ?>
+<?php if (!$systemHealth['isWebsocketServerRunning']): ?>
+<?php echo __('Service openitcockpit-websocket is not running!'); ?>
 <?= PHP_EOL ?>
 <?php endif; ?>
 <?php if (!$systemHealth['isNodeJsServerRunning']): ?>

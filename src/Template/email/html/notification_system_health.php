@@ -231,7 +231,7 @@ echo $this->element('emails/style');
                                         </li>
                                     <?php endif; ?>
 
-                                    <?php if (!$systemHealth['isPushNotificationRunning']): ?>
+                                    <?php if (!$systemHealth['isWebsocketServerRunning']): ?>
                                         <li>
                                             <span>
                                                 <div class="padding-5">
@@ -240,7 +240,7 @@ echo $this->element('emails/style');
                                                         <?php echo __('Warning'); ?>
                                                     </h6>
 
-                                                    <i><?php echo __('Service push_notification is not running!'); ?></i>
+                                                    <i><?php echo __('Service openitcockpit-websocket is not running!'); ?></i>
                                                 </div>
                                             </span>
                                         </li>

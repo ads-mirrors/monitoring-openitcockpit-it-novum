@@ -104,15 +104,16 @@ class SystemHealthCommand extends Command implements CronjobInterface {
             'isStatusengineRunning'           => false,
             'isNpcdRunning'                   => false,
             'isOitcCmdRunning'                => false,
-            'isSudoServerRunning'             => false,
+            'isSudoServerRunning'             => false, // Replaced by openitcockpit-websocket.service
             'isNstaRunning'                   => false,
             'isGearmanWorkerRunning'          => false,
             'isNdoInstalled'                  => false,
             'isStatusengineInstalled'         => true, //NDOUtils are not supported anymore
             'isStatusenginePerfdataProcessor' => true, //NPCD is not supported anymore
             'isDistributeModuleInstalled'     => false,
-            'isPushNotificationRunning'       => false,
-            'isNodeJsServerRunning'           => false
+            'isPushNotificationRunning'       => false, // Replaced by openitcockpit-websocket.service
+            'isNodeJsServerRunning'           => false,
+            'isWebsocketServerRunning'        => false
         ];
 
         if (IS_CONTAINER) {
@@ -131,8 +132,9 @@ class SystemHealthCommand extends Command implements CronjobInterface {
                 'isStatusengineInstalled'         => true, //NDOUtils are not supported anymore
                 'isStatusenginePerfdataProcessor' => true, //NPCD is not supported anymore
                 'isDistributeModuleInstalled'     => false,
-                'isPushNotificationRunning'       => $Supervisorctl->isRunning('push_notification'),
-                'isNodeJsServerRunning'           => $Supervisorctl->isRunning('openitcockpit-node')
+                'isPushNotificationRunning'       => false, // ITC-3487 push_notification got removed
+                'isNodeJsServerRunning'           => $Supervisorctl->isRunning('openitcockpit-node'),
+                'isWebsocketServerRunning'        => $Supervisorctl->isRunning('openitcockpit-websocket')
             ];
         }
 
@@ -208,9 +210,11 @@ class SystemHealthCommand extends Command implements CronjobInterface {
                 $data['isNstaRunning'] = true;
             }
 
-            exec($systemsetting['INIT']['INIT.PUSH_NOTIFICATION'] . $errorRedirect, $output, $returncode);
+            $data['isPushNotificationRunning'] = false; // ITC-3487 push_notification got removed
+
+            exec('systemctl status openitcockpit-websocket.service' . $errorRedirect, $output, $returncode);
             if ($returncode == 0) {
-                $data['isPushNotificationRunning'] = true;
+                $data['isWebsocketServerRunning'] = true;
             }
 
             exec($systemsetting['INIT']['INIT.OPENITCOCKPIT_NODE'] . $errorRedirect, $output, $returncode);
@@ -331,7 +335,7 @@ class SystemHealthCommand extends Command implements CronjobInterface {
             $this->setHealthState('warning');
         }
 
-        if (!$dataForEmail['isSudoServerRunning']) {
+        if (!$dataForEmail['isWebsocketServerRunning']) {
             $this->setHealthState('warning');
         }
 
