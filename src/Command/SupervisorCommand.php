@@ -68,7 +68,6 @@ class SupervisorCommand extends Command {
 
                 // openITCOCKPIT background
                 'oitc_cmd',
-                'sudo_server',
                 'gearman_worker',
                 'event-collectd',     //todo
                 'push_notification',

@@ -124,7 +124,7 @@ class SystemHealthCommand extends Command implements CronjobInterface {
                 'isStatusengineRunning'           => $Supervisorctl->isRunning('statusengine'),
                 'isNpcdRunning'                   => false,
                 'isOitcCmdRunning'                => $Supervisorctl->isRunning('oitc_cmd'),
-                'isSudoServerRunning'             => $Supervisorctl->isRunning('sudo_server'),
+                'isSudoServerRunning'             => false, // ITC-3487 sudo_server got removed
                 'isNstaRunning'                   => $Supervisorctl->isRunning('nsta'),
                 'isGearmanWorkerRunning'          => $Supervisorctl->isRunning('gearman_worker'),
                 'isNdoInstalled'                  => false,
@@ -201,10 +201,7 @@ class SystemHealthCommand extends Command implements CronjobInterface {
                 $data['isOitcCmdRunning'] = true;
             }
 
-            exec($systemsetting['INIT']['INIT.SUDO_SERVER_STATUS'] . $errorRedirect, $output, $returncode);
-            if ($returncode == 0) {
-                $data['isSudoServerRunning'] = true;
-            }
+            $data['isSudoServerRunning'] = false; // ITC-3487 sudo_server got removed
 
             exec($systemsetting['INIT']['INIT.NSTA_STATUS'] . $errorRedirect, $output, $returncode);
             if ($returncode == 0) {

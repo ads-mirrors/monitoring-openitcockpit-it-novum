@@ -81,10 +81,6 @@ Output:
 <?php echo __('Performance data processer NPCD is not running!'); ?>
 <?= PHP_EOL ?>
 <?php endif; ?>
-<?php if (!$systemHealth['isSudoServerRunning']): ?>
-<?php echo __('Service sudo_server is not running!'); ?>
-<?= PHP_EOL ?>
-<?php endif; ?>
 <?php if (!$systemHealth['isOitcCmdRunning']): ?>
 <?php echo __('Service oitc_cmd is not running!'); ?>
 <?= PHP_EOL ?>

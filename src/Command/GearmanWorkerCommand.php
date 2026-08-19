@@ -1004,10 +1004,7 @@ class GearmanWorkerCommand extends Command {
                         $state['isOitcCmdRunning'] = true;
                     }
 
-                    exec($systemsetting['INIT']['INIT.SUDO_SERVER_STATUS'] . $errorRedirect, $output, $returncode);
-                    if ($returncode == 0) {
-                        $state['isSudoServerRunning'] = true;
-                    }
+                    $state['isSudoServerRunning'] = false; // ITC-3487 sudo_server got removed
 
                     exec($systemsetting['INIT']['INIT.NSTA_STATUS'] . $errorRedirect, $output, $returncode);
                     if ($returncode == 0) {
@@ -1032,7 +1029,7 @@ class GearmanWorkerCommand extends Command {
                         'isStatusengineRunning'     => $Supervisorctl->isRunning('statusengine'),
                         'isNpcdRunning'             => false,
                         'isOitcCmdRunning'          => $Supervisorctl->isRunning('oitc_cmd'),
-                        'isSudoServerRunning'       => $Supervisorctl->isRunning('sudo_server'),
+                        'isSudoServerRunning'       => false, // ITC-3487 sudo_server got removed
                         'isNstaRunning'             => $Supervisorctl->isRunning('nsta'),
                         'isGearmanWorkerRunning'    => true,
                         'isPushNotificationRunning' => $Supervisorctl->isRunning('push_notification'),

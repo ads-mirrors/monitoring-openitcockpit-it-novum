@@ -217,20 +217,6 @@ echo $this->element('emails/style');
                                         </li>
                                     <?php endif; ?>
 
-                                    <?php if (!$systemHealth['isSudoServerRunning']): ?>
-                                        <li>
-                                            <span>
-                                                <div class="padding-5">
-                                                    <h6>
-                                                        <i class="fa fa-warning warning"></i>
-                                                        <?php echo __('Warning'); ?>
-                                                    </h6>
-                                                    <i><?php echo __('Service sudo_server is not running!'); ?></i>
-                                                </div>
-                                            </span>
-                                        </li>
-                                    <?php endif; ?>
-
                                     <?php if (!$systemHealth['isOitcCmdRunning']): ?>
                                         <li>
                                             <span>
