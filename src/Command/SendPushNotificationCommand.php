@@ -48,6 +48,8 @@ use itnovum\openITCOCKPIT\Core\Views\ServicestatusIcon;
  *
  * Usage:
  * oitc send_push_notification --type Host --notificationtype PROBLEM --hostuuid c36b8048-93ce-4385-ac19-ab5c90574b77 --state 1 --output "This host is down right now" --ackauthor "" --ackcomment "" --user-id 1
+ * @deprecated The PushNotificationsCommand is deprecated and was replaced by
+ * https://github.com/openITCOCKPIT/openITCOCKPIT-websocket
  */
 class SendPushNotificationCommand extends Command {
 
